@@ -1,8 +1,10 @@
 import os
 
 class Config:
-    # Use Environment Variable in Vercel, or fallback to the provided link
-    MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://amadoreleoncio:d60N5tmrtcA1cdZh@pf.okaqzml.mongodb.net/OJT?retryWrites=true&w=majority&appName=PF")
+    # Remove the link from the second argument!
+    # If the variable isn't found, it returns None (causing an error), which is safer than leaking data.
+    MONGO_URI = os.environ.get("MONGO_URI") 
+    
     DB_NAME = "OJT"
-    SECRET_KEY = os.environ.get("SECRET_KEY", "ojt_secret_key_change_me")
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB Max Upload
+    SECRET_KEY = os.environ.get("SECRET_KEY", "local_secret_key")
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024
