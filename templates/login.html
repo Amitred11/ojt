@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-[80vh] flex flex-col justify-center">
+    <h1 class="text-4xl font-800 mb-2 bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Welcome</h1>
+    <p class="text-slate-400 mb-8">Sign in to your tracker</p>
+
+    {% if error %}
+    <div class="bg-red-500/10 text-red-400 p-3 rounded-xl text-sm font-bold mb-4 text-center border border-red-500/20">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" class="space-y-4">
+        <input type="text" name="username" placeholder="Username" required class="w-full input-glass rounded-2xl px-5 py-4 outline-none focus:border-indigo-500 transition-all font-semibold">
+        <input type="password" name="password" placeholder="Password" required class="w-full input-glass rounded-2xl px-5 py-4 outline-none focus:border-indigo-500 transition-all font-semibold">
+        <button class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-800 py-4 rounded-2xl mt-4 shadow-lg shadow-indigo-600/20">Sign In</button>
+    </form>
+    <div class="mt-6 text-center text-sm text-slate-500 font-semibold">
+        No account? <a href="{{ url_for('auth.register') }}" class="text-indigo-400">Create one</a>
+    </div>
+</div>
+{% endblock %}
