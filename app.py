@@ -1,55 +1,62 @@
+import os
 import asyncio
-import sqlite3
 from datetime import datetime, date
 from quart import Quart, render_template_string, request, redirect, url_for
+from motor.motor_asyncio import AsyncIOMotorClient
+from bson.objectid import ObjectId
 
 app = Quart(__name__)
 
-# CHANGED: New DB name to avoid conflict with your old single-entry table
-DB = "ojt_v2.db"
+# CONFIGURATION
+# I added your specific MongoDB link here as the default.
+# On Vercel, it's safer to add this as an Environment Variable, but this will work immediately.
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://amadoreleoncio:d60N5tmrtcA1cdZh@pf.okaqzml.mongodb.net/OJT?retryWrites=true&w=majority&appName=PF")
 REQUIRED_HOURS = 486
 
-def init_db():
-    with sqlite3.connect(DB) as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                log_date TEXT UNIQUE,
-                am_in TEXT,
-                am_out TEXT,
-                pm_in TEXT,
-                pm_out TEXT,
-                hours REAL
-            )
-        """)
+# Database Connection
+client = AsyncIOMotorClient(MONGO_URI)
+# This will automatically use the "OJT" database defined in your link
+db = client.get_database("OJT")
+collection = db.logs
 
-def get_logs():
-    with sqlite3.connect(DB) as conn:
-        conn.row_factory = sqlite3.Row
-        raw_logs = conn.execute("SELECT * FROM logs ORDER BY log_date DESC").fetchall()
-        
-        processed_logs = []
-        for log in raw_logs:
+async def get_logs():
+    # Find all logs, sort by date descending
+    cursor = collection.find().sort("log_date", -1)
+    raw_logs = await cursor.to_list(length=None)
+    
+    processed_logs = []
+    for log in raw_logs:
+        try:
             d = datetime.strptime(log['log_date'], '%Y-%m-%d')
-            log_dict = dict(log)
-            log_dict['display_day'] = d.strftime('%d')
-            log_dict['display_month'] = d.strftime('%b')
-            log_dict['display_weekday'] = d.strftime('%A')
+            # Convert Mongo's ObjectId to string for the HTML template
+            log['id'] = str(log['_id'])
             
-            # Format empty times for display
-            log_dict['am_str'] = f"{log['am_in']} - {log['am_out']}" if log['am_in'] and log['am_out'] else "No AM Log"
-            log_dict['pm_str'] = f"{log['pm_in']} - {log['pm_out']}" if log['pm_in'] and log['pm_out'] else "No PM Log"
+            log['display_day'] = d.strftime('%d')
+            log['display_month'] = d.strftime('%b')
+            log['display_weekday'] = d.strftime('%A')
             
-            processed_logs.append(log_dict)
-        return processed_logs
+            log['am_str'] = f"{log.get('am_in')} - {log.get('am_out')}" if log.get('am_in') and log.get('am_out') else "No AM Log"
+            log['pm_str'] = f"{log.get('pm_in')} - {log.get('pm_out')}" if log.get('pm_in') and log.get('pm_out') else "No PM Log"
+            
+            processed_logs.append(log)
+        except Exception as e:
+            print(f"Error processing log: {e}")
+            continue
+            
+    return processed_logs
 
-def get_total_hours():
-    with sqlite3.connect(DB) as conn:
-        result = conn.execute("SELECT SUM(hours) FROM logs").fetchone()[0]
-        return round(result or 0, 2)
+async def get_total_hours():
+    # Use MongoDB Aggregation to sum the 'hours' field
+    pipeline = [
+        {"$group": {"_id": None, "total": {"$sum": "$hours"}}}
+    ]
+    # aggregate returns a cursor
+    result = await collection.aggregate(pipeline).to_list(length=1)
+    if result:
+        return round(result[0]['total'], 2)
+    return 0.0
 
 def calculate_session(t_in, t_out):
-    """Helper to calculate hours between two time strings"""
     if not t_in or not t_out:
         return 0.0
     try:
@@ -65,26 +72,32 @@ async def index():
         form = await request.form
         log_date = form.get("log_date")
         
-        # Get all 4 time inputs
         am_in = form.get("am_in")
         am_out = form.get("am_out")
         pm_in = form.get("pm_in")
         pm_out = form.get("pm_out")
         
-        # Calculate total
         morning_hours = calculate_session(am_in, am_out)
         afternoon_hours = calculate_session(pm_in, pm_out)
         total_hours = round(morning_hours + afternoon_hours, 2)
 
-        with sqlite3.connect(DB) as conn:
-            conn.execute("""
-                INSERT OR REPLACE INTO logs (log_date, am_in, am_out, pm_in, pm_out, hours)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (log_date, am_in, am_out, pm_in, pm_out, total_hours))
+        # UPSERT: Update if date exists, Insert if it doesn't
+        await collection.update_one(
+            {"log_date": log_date},
+            {"$set": {
+                "log_date": log_date,
+                "am_in": am_in,
+                "am_out": am_out,
+                "pm_in": pm_in,
+                "pm_out": pm_out,
+                "hours": total_hours
+            }},
+            upsert=True
+        )
         return redirect(url_for("index"))
 
-    logs = get_logs()
-    total = get_total_hours()
+    logs = await get_logs()
+    total = await get_total_hours()
     remaining = max(0, REQUIRED_HOURS - total)
     progress = min((total / REQUIRED_HOURS) * 100, 100)
 
@@ -97,10 +110,12 @@ async def index():
         today=date.today().isoformat()
     )
 
-@app.route("/delete/<int:log_id>")
+@app.route("/delete/<string:log_id>")
 async def delete_log(log_id):
-    with sqlite3.connect(DB) as conn:
-        conn.execute("DELETE FROM logs WHERE id = ?", (log_id,))
+    try:
+        await collection.delete_one({"_id": ObjectId(log_id)})
+    except:
+        pass 
     return redirect(url_for("index"))
 
 TEMPLATE = """
@@ -282,8 +297,6 @@ TEMPLATE = """
 </body>
 </html>
 """
-
-init_db()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
