@@ -7,23 +7,25 @@ tracker_bp = Blueprint('tracker', __name__)
 REQUIRED_HOURS = 486
 
 # --- HELPER FUNCTIONS ---
-def calculate_session(t_in, t_out):
-    """Returns decimal hours for storage (e.g., 1.5)"""
-    if not t_in or not t_out: return 0.0
+
+def get_minutes_diff(t_in, t_out):
+    if not t_in or not t_out: return 0
     try:
         fmt = "%H:%M"
-        tdelta = datetime.strptime(t_out, fmt) - datetime.strptime(t_in, fmt)
-        return tdelta.total_seconds() / 3600
-    except ValueError: return 0.0
+        t1 = datetime.strptime(t_in, fmt)
+        t2 = datetime.strptime(t_out, fmt)
+        diff_seconds = (t2 - t1).total_seconds()
+        return int(diff_seconds // 60)
+    except ValueError:
+        return 0
 
-def format_hm(decimal_hours):
-    """Converts 4.5 -> '4h 30m'"""
-    if not decimal_hours: return "0h 0m"
-    hours = int(decimal_hours)
-    minutes = int(round((decimal_hours - hours) * 60))
-    return f"{hours}h {minutes}m"
+def minutes_to_string(total_minutes):
+    hours = total_minutes // 60
+    mins = total_minutes % 60
+    return f"{hours}h {mins}m"
 
 # --- ROUTES ---
+
 @tracker_bp.route("/tracker", methods=["GET", "POST"])
 async def index():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
@@ -35,15 +37,16 @@ async def index():
         am_in, am_out = form.get("am_in"), form.get("am_out")
         pm_in, pm_out = form.get("pm_in"), form.get("pm_out")
         
-        # Calculate decimal for math/storage
-        total_decimal = round(calculate_session(am_in, am_out) + calculate_session(pm_in, pm_out), 2)
+        day_minutes = get_minutes_diff(am_in, am_out) + get_minutes_diff(pm_in, pm_out)
+        hours_decimal = round(day_minutes / 60, 2)
 
         await logs_col.update_one(
             {"log_date": log_date, "user_id": user_id},
             {"$set": {
                 "am_in": am_in, "am_out": am_out, 
                 "pm_in": pm_in, "pm_out": pm_out, 
-                "hours": total_decimal
+                "hours": hours_decimal,
+                "total_minutes": day_minutes
             }},
             upsert=True
         )
@@ -53,41 +56,47 @@ async def index():
     cursor = logs_col.find({"user_id": user_id}).sort("log_date", -1)
     raw_logs = await cursor.to_list(length=None)
     
-    # Calculate Total (Decimal)
-    pipeline = [{"$match": {"user_id": user_id}}, {"$group": {"_id": None, "total": {"$sum": "$hours"}}}]
-    agg = await logs_col.aggregate(pipeline).to_list(length=1)
-    
-    total_val = round(agg[0]['total'], 2) if agg else 0.0
-    remaining_val = max(0, REQUIRED_HOURS - total_val)
-    progress_val = min((total_val / REQUIRED_HOURS) * 100, 100)
+    # Process Logs & Group by Month
+    # We use a standard dict because Python 3.7+ preserves insertion order (and logs are already sorted)
+    grouped_logs = {} 
+    grand_total_minutes = 0
 
-    # Process logs for display
-    processed_logs = []
     for log in raw_logs:
         try:
+            # 1. Math Calculation
+            am_mins = get_minutes_diff(log.get('am_in'), log.get('am_out'))
+            pm_mins = get_minutes_diff(log.get('pm_in'), log.get('pm_out'))
+            daily_minutes = am_mins + pm_mins
+            grand_total_minutes += daily_minutes
+            
+            # 2. Formatting
             d = datetime.strptime(log['log_date'], '%Y-%m-%d')
             log['id'] = str(log['_id'])
             log['display_day'] = d.strftime('%d')
-            log['display_month'] = d.strftime('%b')
             log['display_weekday'] = d.strftime('%A')
             log['am_str'] = f"{log.get('am_in')} - {log.get('am_out')}" if log.get('am_in') else "-"
             log['pm_str'] = f"{log.get('pm_in')} - {log.get('pm_out')}" if log.get('pm_in') else "-"
+            log['hours_str'] = minutes_to_string(daily_minutes)
             
-            # Convert stored decimal to "Xh Ym" string
-            log['hours_str'] = format_hm(log.get('hours', 0))
+            # 3. Grouping by "Month Year" (e.g., "January 2026")
+            month_key = d.strftime('%B %Y')
+            if month_key not in grouped_logs:
+                grouped_logs[month_key] = []
+            grouped_logs[month_key].append(log)
             
-            processed_logs.append(log)
-        except: continue
+        except Exception as e:
+            continue
+
+    # Stats Calculation
+    required_minutes = REQUIRED_HOURS * 60
+    remaining_minutes = max(0, required_minutes - grand_total_minutes)
+    progress_val = min((grand_total_minutes / required_minutes) * 100, 100) if required_minutes > 0 else 0
 
     return await render_template("index.html", 
-                                 logs=processed_logs, 
-                                 
-                                 # Pass formatted strings for display
-                                 total_str=format_hm(total_val), 
-                                 remaining_str=format_hm(remaining_val),
-                                 required_str=format_hm(REQUIRED_HOURS),
-                                 
-                                 # Pass raw values for logic/progress bar
+                                 grouped_logs=grouped_logs, # Passing dictionary instead of flat list
+                                 total_str=minutes_to_string(grand_total_minutes), 
+                                 remaining_str=minutes_to_string(remaining_minutes),
+                                 required_str=f"{REQUIRED_HOURS}h 0m",
                                  progress=progress_val, 
                                  today=date.today().isoformat())
 

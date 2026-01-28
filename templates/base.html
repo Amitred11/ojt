@@ -12,6 +12,12 @@
         .card-glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .input-glass { background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); }
         input[type="time"], input[type="date"] { color-scheme: dark; }
+        
+        /* Smooth Details/Summary animation */
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] summary ~ * { animation: sweep .3s ease-in-out; }
+        @keyframes sweep { 0% {opacity: 0; transform: translateY(-10px)} 100% {opacity: 1; transform: translateY(0)} }
     </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -23,7 +29,8 @@
         <a href="{{ url_for('portfolio.list_reports') }}" class="flex flex-col items-center gap-1 text-xs font-bold {{ 'text-indigo-400' if 'portfolio' in request.endpoint else 'text-slate-500' }}">
             <i data-lucide="book-open" class="w-6 h-6"></i>
         </a>
-        <a href="{{ url_for('auth.logout') }}" class="flex flex-col items-center gap-1 text-xs font-bold text-slate-500">
+        <!-- UPDATED LOGOUT LINK -->
+        <a href="{{ url_for('auth.logout') }}" onclick="return confirm('Are you sure you want to log out?')" class="flex flex-col items-center gap-1 text-xs font-bold text-slate-500 hover:text-red-400 transition-colors">
             <i data-lucide="log-out" class="w-6 h-6"></i>
         </a>
     </nav>
