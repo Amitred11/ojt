@@ -41,29 +41,30 @@ async def register():
         form = await request.form
         username = form.get("username")
         password = form.get("password")
-        security_code = form.get("security_code") # <--- Get the input
+        security_code = form.get("security_code")
 
-        # 1. CHECK THE SECURITY CODE
-        required_code = current_app.config['REGISTRATION_KEY']
+        # --- SECURITY CHECK ---
+        # We use .get() here so it doesn't crash if config is missing
+        # Default is "2026" if not set in config.py
+        required_code = current_app.config.get('REGISTRATION_KEY', '8219')
         
         if security_code != required_code:
-            await flash("Invalid Security Access Key. Registration denied.", "error")
+            await flash("Invalid Master Access Key. Registration denied.", "error")
             return redirect(url_for('auth.register'))
 
-        # 2. Check if username exists
         existing_user = await users_col.find_one({"username": username})
         if existing_user:
             await flash("Username is already taken.", "error")
             return redirect(url_for('auth.register'))
 
-        # 3. Create Account
         hashed_pw = generate_password_hash(password)
         await users_col.insert_one({"username": username, "password": hashed_pw})
         
-        await flash("Access Granted! Account created successfully.", "success")
+        await flash("Access Granted! Account created.", "success")
         return redirect(url_for('auth.login'))
 
     return await render_template("register.html")
+
 @auth_bp.route("/logout")
 async def logout():
     session.clear()
