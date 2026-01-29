@@ -1,144 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="mb-6 flex justify-between items-center">
+<div class="flex justify-between items-center mb-8">
     <div>
-        <h1 class="text-2xl font-800 text-white">OJT Journal</h1>
-        <p class="text-slate-400 text-xs">Manage your portfolio sections</p>
+        <h1 class="text-3xl font-800 tracking-tightest">Portfolio</h1>
+        <p class="text-slate-500 text-sm font-semibold">Weekly Reports</p>
     </div>
-    <a href="{{ url_for('portfolio.print_view') }}" target="_blank" class="bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition-all">
-        <i data-lucide="printer"></i> Print PDF
+    <a href="{{ url_for('portfolio.new_report') }}" class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+        <i data-lucide="plus" class="w-6 h-6"></i>
     </a>
 </div>
 
-<!-- Tabs Navigation -->
-<div class="flex overflow-x-auto gap-2 mb-6 pb-2 no-scrollbar">
-    {% set tabs = [('1', 'Preliminary'), ('2', 'Profile'), ('3', 'Company'), ('4', 'Work Log'), ('5', 'Reflections'), ('6', 'Appendices')] %}
-    {% for id, label in tabs %}
-    <a href="{{ url_for('portfolio.index', section=id) }}" 
-       class="px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all {{ 'bg-indigo-500 text-white' if section == id else 'bg-white/5 text-slate-400 hover:bg-white/10' }}">
-        {{ id }}. {{ label }}
-    </a>
+<div class="space-y-6">
+    {% for r in reports %}
+    <div class="card-glass rounded-[2rem] p-6 border-t border-white/5">
+        <div class="flex justify-between items-center mb-4">
+            <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Week Ending {{ r.week_end_date }}</span>
+            <a href="{{ url_for('portfolio.delete_report', report_id=r._id) }}" class="text-slate-600 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></a>
+        </div>
+
+        {% if r.image_data %}
+        <div class="mb-5 rounded-2xl overflow-hidden border border-white/10 w-full">
+            <img src="data:image/jpeg;base64,{{ r.image_data }}" class="w-full object-cover">
+        </div>
+        {% endif %}
+
+        <div class="space-y-4">
+            <div><h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Activities</h3><p class="text-sm text-slate-300">{{ r.activities }}</p></div>
+            <div><h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Learnings</h3><p class="text-sm text-slate-300">{{ r.learnings }}</p></div>
+            <div><h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Reflections</h3><p class="text-sm italic text-indigo-200/80">"{{ r.reflections }}"</p></div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-20 text-slate-600"><p>No reports filed yet.</p></div>
     {% endfor %}
 </div>
-
-<!-- SECTION 1: PRELIMINARY -->
-{% if section == '1' %}
-<form action="{{ url_for('portfolio.save_static') }}" method="POST" class="card-glass p-6 rounded-3xl space-y-4">
-    <input type="hidden" name="active_section" value="1">
-    <h2 class="text-lg font-bold text-indigo-400 mb-4">1. Preliminary Pages</h2>
-    <input type="text" name="student_name" value="{{ journal.get('student_name', '') }}" placeholder="Full Student Name" class="input-glass w-full p-3 rounded-xl text-sm">
-    <input type="text" name="course" value="{{ journal.get('course', '') }}" placeholder="Course / Major" class="input-glass w-full p-3 rounded-xl text-sm">
-    <input type="text" name="hte_name" value="{{ journal.get('hte_name', '') }}" placeholder="Name of HTE (Company)" class="input-glass w-full p-3 rounded-xl text-sm">
-    <input type="text" name="duration" value="{{ journal.get('duration', '') }}" placeholder="Duration (e.g. 486 Hours)" class="input-glass w-full p-3 rounded-xl text-sm">
-    <textarea name="acknowledgement" rows="4" class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Acknowledgement...">{{ journal.get('acknowledgement', '') }}</textarea>
-    <button class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl">Save</button>
-</form>
-{% endif %}
-
-<!-- SECTION 2: PROFILE -->
-{% if section == '2' %}
-<form action="{{ url_for('portfolio.save_static') }}" method="POST" class="card-glass p-6 rounded-3xl space-y-4">
-    <input type="hidden" name="active_section" value="2">
-    <h2 class="text-lg font-bold text-indigo-400 mb-4">2. Student Profile</h2>
-    <input type="text" name="address" value="{{ journal.get('address', '') }}" placeholder="Full Address" class="input-glass w-full p-3 rounded-xl text-sm">
-    <input type="text" name="email" value="{{ journal.get('email', '') }}" placeholder="Email Address" class="input-glass w-full p-3 rounded-xl text-sm">
-    <input type="text" name="supervisor" value="{{ journal.get('supervisor', '') }}" placeholder="Direct Supervisor Name" class="input-glass w-full p-3 rounded-xl text-sm">
-    <textarea name="objectives" rows="4" class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Learning Objectives...">{{ journal.get('objectives', '') }}</textarea>
-    <button class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl">Save</button>
-</form>
-{% endif %}
-
-<!-- SECTION 3: COMPANY -->
-{% if section == '3' %}
-<div class="space-y-6">
-    <form action="{{ url_for('portfolio.save_static') }}" method="POST" class="card-glass p-6 rounded-3xl space-y-4">
-        <input type="hidden" name="active_section" value="3">
-        <h2 class="text-lg font-bold text-indigo-400 mb-4">3. Company Overview</h2>
-        <textarea name="company_history" rows="3" class="input-glass w-full p-3 rounded-xl text-sm" placeholder="History...">{{ journal.get('company_history', '') }}</textarea>
-        <textarea name="mission" rows="2" class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Mission...">{{ journal.get('mission', '') }}</textarea>
-        <textarea name="vision" rows="2" class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Vision...">{{ journal.get('vision', '') }}</textarea>
-        <textarea name="dept_desc" rows="3" class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Department Description...">{{ journal.get('dept_desc', '') }}</textarea>
-        <button class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl">Save Info</button>
-    </form>
-    <form action="{{ url_for('portfolio.upload_file') }}" method="POST" enctype="multipart/form-data" class="card-glass p-6 rounded-3xl">
-        <h3 class="text-sm font-bold text-slate-400 mb-2">Upload Organizational Chart</h3>
-        <input type="hidden" name="category" value="org_chart">
-        <input type="file" name="file" required class="w-full text-xs text-slate-400">
-        <button class="mt-2 w-full bg-indigo-600 text-white text-xs font-bold py-2 rounded-lg">Upload Chart</button>
-    </form>
-</div>
-{% endif %}
-
-<!-- SECTION 4: WORK LOG -->
-{% if section == '4' %}
-<div class="space-y-6">
-    <form action="{{ url_for('portfolio.add_entry') }}" method="POST" class="card-glass p-6 rounded-3xl space-y-4 border border-indigo-500/30">
-        <h2 class="text-lg font-bold text-indigo-400 mb-2">Add Work Log Entry</h2>
-        <div class="grid grid-cols-2 gap-4">
-            <input type="date" name="date" required class="input-glass w-full p-3 rounded-xl text-sm">
-            <input type="text" name="hours_worked" placeholder="Hours (e.g. 8:00 - 5:00)" class="input-glass w-full p-3 rounded-xl text-sm">
-        </div>
-        <textarea name="task_description" rows="3" required class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Task Description..."></textarea>
-        <textarea name="competencies" rows="2" required class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Competencies Applied..."></textarea>
-        <textarea name="new_knowledge" rows="2" required class="input-glass w-full p-3 rounded-xl text-sm" placeholder="New Knowledge Gained..."></textarea>
-        <button class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl">Add Entry</button>
-    </form>
-
-    <div class="space-y-4">
-        {% for entry in entries %}
-        <div class="card-glass p-5 rounded-2xl relative">
-            <a href="{{ url_for('portfolio.delete_entry', entry_id=entry._id) }}" class="absolute top-4 right-4 text-slate-600 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></a>
-            <div class="flex items-baseline gap-2 mb-2">
-                <span class="text-emerald-400 font-bold text-sm">{{ entry.date }}</span>
-                <span class="text-slate-500 text-xs">({{ entry.hours_worked }})</span>
-            </div>
-            <p class="text-xs text-slate-300">{{ entry.task_description }}</p>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-<!-- SECTION 5: REFLECTION -->
-{% if section == '5' %}
-<form action="{{ url_for('portfolio.save_static') }}" method="POST" class="card-glass p-6 rounded-3xl space-y-4">
-    <input type="hidden" name="active_section" value="5">
-    <h2 class="text-lg font-bold text-indigo-400 mb-4">5. Reflection & Evaluation</h2>
-    <textarea name="monthly_reflections" rows="6" class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Monthly Reflections...">{{ journal.get('monthly_reflections', '') }}</textarea>
-    <textarea name="self_evaluation" rows="4" class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Self Evaluation...">{{ journal.get('self_evaluation', '') }}</textarea>
-    <textarea name="feedback" rows="4" class="input-glass w-full p-3 rounded-xl text-sm" placeholder="Supervisory Feedback...">{{ journal.get('feedback', '') }}</textarea>
-    <button class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl">Save Reflections</button>
-</form>
-{% endif %}
-
-<!-- SECTION 6: APPENDICES -->
-{% if section == '6' %}
-<div class="space-y-6">
-    <form action="{{ url_for('portfolio.upload_file') }}" method="POST" enctype="multipart/form-data" class="card-glass p-6 rounded-3xl space-y-3">
-        <h2 class="text-lg font-bold text-indigo-400 mb-2">Add Documentation</h2>
-        <select name="category" class="input-glass w-full p-3 rounded-xl text-sm bg-slate-800">
-            <option value="photo">Photo Documentation</option>
-            <option value="sample">Sample of Work</option>
-            <option value="certificate">Certificate</option>
-        </select>
-        <input type="text" name="caption" placeholder="Caption" class="input-glass w-full p-3 rounded-xl text-sm">
-        <input type="file" name="file" required class="w-full text-xs text-slate-400">
-        <button class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl">Upload</button>
-    </form>
-
-    <div class="grid grid-cols-2 gap-4">
-        {% for file in uploads if file.category != 'org_chart' %}
-        <div class="card-glass p-3 rounded-xl">
-            <div class="aspect-square rounded-lg overflow-hidden mb-2 bg-black/20">
-                <img src="data:image/jpeg;base64,{{ file.image_data }}" class="w-full h-full object-cover">
-            </div>
-            <div class="flex justify-between items-start">
-                <span class="text-[10px] font-bold bg-white/10 px-2 rounded text-slate-300">{{ file.category }}</span>
-                <a href="{{ url_for('portfolio.delete_file', file_id=file._id) }}" class="text-red-400"><i data-lucide="trash-2" class="w-3 h-3"></i></a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
 {% endblock %}
