@@ -62,3 +62,34 @@ async def logout():
     session.clear()
     await flash("You have been logged out.", "info")
     return redirect(url_for('auth.login'))
+
+# --- NEW: POP-UP MIGRATION HANDLER ---
+@auth_bp.route("/fix-account", methods=["POST"])
+async def fix_account():
+    form = await request.form
+    username = form.get("username")
+    old_password = form.get("password")
+
+    user = await users_col.find_one({"username": username})
+
+    if user:
+        # Case 1: Password is PLAIN TEXT (Needs fixing)
+        if user['password'] == old_password:
+            hashed_pw = generate_password_hash(old_password)
+            await users_col.update_one(
+                {"_id": user['_id']},
+                {"$set": {"password": hashed_pw}}
+            )
+            await flash("Account repaired! You can now log in securely.", "success")
+        
+        # Case 2: Password is already HASHED (No fix needed)
+        elif check_password_hash(user['password'], old_password):
+            await flash("Your account is already secure. Just log in normally.", "info")
+        
+        # Case 3: Wrong password
+        else:
+            await flash("Incorrect old password. Cannot verify account.", "error")
+    else:
+        await flash("Username not found.", "error")
+
+    return redirect(url_for('auth.login'))

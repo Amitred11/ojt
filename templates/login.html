@@ -2,7 +2,7 @@
 {% block content %}
 
 <div class="h-[80vh] flex flex-col justify-center relative">
-    <!-- Decorative Background Glow -->
+    <!-- Decorative Background -->
     <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 bg-amber-500/20 rounded-full blur-[100px] -z-10"></div>
 
     <div class="text-center mb-8">
@@ -14,7 +14,8 @@
         <p class="text-slate-400 font-medium">Welcome back to the OJT Suite.</p>
     </div>
 
-    <form method="POST" class="space-y-4 card-glass p-8 rounded-[2.5rem] shadow-2xl shadow-amber-900/10 border-t border-white/10">
+    <!-- MAIN LOGIN FORM -->
+    <form method="POST" class="space-y-4 card-glass p-8 rounded-[2.5rem] shadow-2xl shadow-amber-900/10 border-t border-white/10 z-10">
         <div class="group">
             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-3 mb-1 block">Username</label>
             <div class="relative">
@@ -37,9 +38,58 @@
         </button>
     </form>
 
-    <div class="mt-8 text-center text-sm text-slate-500 font-semibold">
-        Don't have a premium account? <br>
-        <a href="{{ url_for('auth.register') }}" class="text-amber-400 hover:text-amber-300 underline underline-offset-4 decoration-amber-500/30">Create one now</a>
+    <!-- LINKS SECTION -->
+    <div class="mt-8 text-center text-sm text-slate-500 font-semibold space-y-4">
+        <div>
+            Don't have a premium account? <br>
+            <a href="{{ url_for('auth.register') }}" class="text-amber-400 hover:text-amber-300 underline underline-offset-4 decoration-amber-500/30">Create one now</a>
+        </div>
+
+        <!-- THE QUESTION LINK -->
+        <button onclick="toggleModal('fixerModal')" class="text-xs text-slate-600 hover:text-white transition-colors flex items-center justify-center gap-1 mx-auto">
+            <i data-lucide="help-circle" class="w-3 h-3"></i>
+            <span>Cannot login with old password?</span>
+        </button>
     </div>
 </div>
+
+<!-- ================= POP-UP MODAL (The Fixer) ================= -->
+<div id="fixerModal" class="fixed inset-0 z-50 hidden">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="toggleModal('fixerModal')"></div>
+    
+    <!-- Modal Content -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm px-4">
+        <form action="{{ url_for('auth.fix_account') }}" method="POST" class="card-glass bg-[#0f172a] p-8 rounded-[2.5rem] border border-red-500/30 shadow-2xl shadow-red-900/20">
+            
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-red-500/20">
+                    <i data-lucide="wrench" class="w-6 h-6 text-red-400"></i>
+                </div>
+                <h2 class="text-xl font-bold text-white">Account Repair</h2>
+                <p class="text-xs text-slate-400 mt-1">Update your old account to the new security system.</p>
+            </div>
+
+            <div class="space-y-3">
+                <input type="text" name="username" placeholder="Old Username" required class="w-full input-glass rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-red-500/50">
+                <input type="text" name="password" placeholder="Old Password" required class="w-full input-glass rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-red-500/50">
+            </div>
+
+            <button class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl mt-6 shadow-lg shadow-red-600/20">
+                Fix & Update
+            </button>
+
+            <button type="button" onclick="toggleModal('fixerModal')" class="w-full text-center text-xs text-slate-500 mt-4 hover:text-white">
+                Cancel
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleModal(modalID){
+        document.getElementById(modalID).classList.toggle("hidden");
+    }
+</script>
+
 {% endblock %}
