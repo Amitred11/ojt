@@ -7,5 +7,5 @@ db = client.get_database(Config.DB_NAME)
 # Collections
 users_col = db.users
 logs_col = db.logs
-reports_col = db.reports      # For Weekly Logs and Monthly Reflections
-profiles_col = db.profiles    # NEW: For Student & Company Info
+reports_col = db.reports
+profiles_col = db.profiles  # <--- MAKE SURE THIS LINE IS HERE
