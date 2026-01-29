@@ -6,7 +6,13 @@
         <p class="text-slate-500 text-sm font-semibold">Colegio de Montalban</p>
     </div>
     <div class="flex gap-2">
-        <a href="{{ url_for('portfolio.setup_profile') }}" class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center hover:bg-slate-700 transition-colors" title="Edit Profile">
+        <a href="{{ url_for('portfolio.print_journal') }}" target="_blank" class="flex items-center gap-2 bg-indigo-500/20 text-indigo-300 px-3 py-2 rounded-xl text-xs font-bold border border-indigo-500/30 hover:bg-indigo-500/30 transition-all">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Export PDF</span>
+        </a>
+
+        <!-- PROFILE SETTINGS BUTTON -->
+        <a href="{{ url_for('portfolio.setup_profile') }}" class="w-10 h-10 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center hover:bg-slate-700 transition-colors border border-white/5">
             <i data-lucide="settings" class="w-5 h-5"></i>
         </a>
     </div>
