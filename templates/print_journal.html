@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OJT Journal - {{ p.full_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+        
+        body { 
+            font-family: 'Times New Roman', serif; 
+            background: #525659; /* Grey background for preview */
+            margin: 0;
+            padding: 20px;
+            color: black;
+        }
+
+        .page {
+            background: white;
+            width: 8.5in;
+            min-height: 11in;
+            margin: 0 auto 20px auto;
+            padding: 1in;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* HEADER STYLE (Recreating CDM Header) */
+        .cdm-header {
+            text-align: center;
+            border-bottom: 2px solid #ea580c; /* Orange Line */
+            margin-bottom: 2rem;
+            padding-bottom: 10px;
+            position: relative;
+        }
+        .cdm-header::after {
+            content: '';
+            display: block;
+            height: 4px;
+            background: #000;
+            margin-top: 2px;
+        }
+        .header-logo {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            top: 0;
+        }
+        .logo-left { left: 10px; }
+        .logo-right { right: 10px; }
+
+        .title-text { font-family: 'Old English Text MT', serif; font-size: 24px; font-weight: bold; }
+        .sub-text { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+
+        h1 { font-size: 22px; font-weight: bold; margin-bottom: 20px; text-align: center; text-transform: uppercase; }
+        h2 { font-size: 16px; font-weight: bold; margin-top: 15px; margin-bottom: 5px; }
+        p { font-size: 12pt; line-height: 1.5; text-align: justify; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11pt; }
+        th, td { border: 1px solid black; padding: 8px; vertical-align: top; }
+        th { background: #f3f4f6; }
+
+        /* PRINT SETTINGS */
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            .page { margin: 0; box-shadow: none; width: 100%; page-break-after: always; min-height: 11in; }
+            .no-print { display: none !important; }
+            .page-break { page-break-before: always; }
+            
+            /* Ensure background colors print */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .signature-line {
+            border-top: 1px solid black;
+            width: 200px;
+            margin-top: 40px;
+            text-align: center;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Print Button -->
+    <div class="fixed top-5 right-5 no-print flex gap-2">
+        <button onclick="window.print()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded shadow-lg hover:bg-blue-700">PRINT / SAVE PDF</button>
+        <button onclick="window.close()" class="bg-gray-600 text-white font-bold py-2 px-6 rounded shadow-lg hover:bg-gray-700">CLOSE</button>
+    </div>
+
+    <!-- ================= PAGE 1: TITLE PAGE ================= -->
+    <div class="page flex flex-col justify-between">
+        <div class="cdm-header">
+            <!-- Placeholders for Logos -->
+            <div class="header-logo logo-left bg-gray-200 rounded-full flex items-center justify-center text-[8px]">LOGO</div>
+            <div class="header-logo logo-right bg-gray-200 rounded-full flex items-center justify-center text-[8px]">ICS</div>
+            
+            <div class="title-text">Colegio de Montalban</div>
+            <div class="sub-text">Institute of Computing Studies</div>
+        </div>
+
+        <div class="text-center mt-20">
+            <h1 style="font-size: 32px; margin-bottom: 40px;">On-the-Job Training (OJT)<br>Journal</h1>
+            
+            <div class="mt-32 space-y-4">
+                <p class="font-bold text-xl uppercase">{{ p.full_name or "(Student Name)" }}</p>
+                <p>Bachelor of Science in Information Technology</p>
+                
+                <p class="font-bold text-lg uppercase mt-10">{{ p.hte_name or "(Name of HTE)" }}</p>
+                <p>{{ p.duration or "(Duration)" }}</p>
+            </div>
+        </div>
+        
+        <div class="text-center text-sm mb-10">
+            Submitted to the Institute of Computing Studies
+        </div>
+    </div>
+
+    <!-- ================= PAGE 2: TABLE OF CONTENTS ================= -->
+    <div class="page">
+        <div class="cdm-header">
+            <div class="title-text">Colegio de Montalban</div>
+            <div class="sub-text">Institute of Computing Studies</div>
+        </div>
+        <h1>Table of Contents</h1>
+        <ul class="list-none space-y-4 mt-10 text-lg">
+            <li class="flex justify-between border-b border-dotted border-black pb-1"><span>1. Approval Sheet</span> <span>3</span></li>
+            <li class="flex justify-between border-b border-dotted border-black pb-1"><span>2. Acknowledgement</span> <span>4</span></li>
+            <li class="flex justify-between border-b border-dotted border-black pb-1"><span>3. Student Trainee Profile</span> <span>5</span></li>
+            <li class="flex justify-between border-b border-dotted border-black pb-1"><span>4. Company Overview</span> <span>8</span></li>
+            <li class="flex justify-between border-b border-dotted border-black pb-1"><span>5. Weekly Work Log</span> <span>11</span></li>
+            <li class="flex justify-between border-b border-dotted border-black pb-1"><span>6. Monthly Reflections</span> <span>15</span></li>
+            <li class="flex justify-between border-b border-dotted border-black pb-1"><span>7. Appendices (DTR & Photos)</span> <span>20</span></li>
+        </ul>
+    </div>
+
+    <!-- ================= PAGE 3-4: PRELIMINARIES ================= -->
+    <div class="page">
+        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
+        <h1>Approval Sheet</h1>
+        <p class="mt-10">This OJT Journal prepared and submitted by <strong>{{ p.full_name }}</strong> in partial fulfillment of the requirements for the degree of Bachelor of Science in Information Technology has been examined and is hereby recommended for approval.</p>
+        
+        <div class="flex justify-between mt-32">
+            <div>
+                <div class="signature-line">{{ p.supervisor or "Supervisor Name" }}</div>
+                <div class="text-center text-sm">HTE Supervisor</div>
+            </div>
+            <div>
+                <div class="signature-line">OJT Coordinator</div>
+                <div class="text-center text-sm">Colegio de Montalban</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PAGE 5: PERSONAL INFO ================= -->
+    <div class="page">
+        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
+        <h1>Student Trainee Profile</h1>
+
+        <h2>Personal Information</h2>
+        <table class="mb-8">
+            <tr><th width="30%">Name</th><td>{{ p.full_name }}</td></tr>
+            <tr><th>Course</th><td>{{ p.course }}</td></tr>
+            <tr><th>Duration</th><td>{{ p.duration }}</td></tr>
+        </table>
+
+        <h2>Training Details</h2>
+        <table class="mb-8">
+            <tr><th width="30%">Company (HTE)</th><td>{{ p.hte_name }}</td></tr>
+            <tr><th>Department</th><td>{{ p.dept_desc }}</td></tr>
+            <tr><th>Supervisor</th><td>{{ p.supervisor }}</td></tr>
+        </table>
+
+        <h2>Learning Objectives</h2>
+        <div class="border p-4 min-h-[150px] whitespace-pre-wrap">{{ p.objectives }}</div>
+    </div>
+
+    <!-- ================= PAGE 8: COMPANY PROFILE ================= -->
+    <div class="page">
+        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
+        <h1>Company Overview</h1>
+
+        <h2>Company Profile</h2>
+        <div class="border p-4 mb-6 min-h-[150px] whitespace-pre-wrap">{{ p.company_desc }}</div>
+
+        <h2>Organizational Structure</h2>
+        <div class="border p-4 mb-6 h-[200px] flex items-center justify-center text-gray-400 italic">
+            [Insert Org Chart Image Here]
+        </div>
+
+        <h2>Department Description</h2>
+        <div class="border p-4 min-h-[100px] whitespace-pre-wrap">{{ p.dept_desc }}</div>
+    </div>
+
+    <!-- ================= PAGE 11: WEEKLY WORK LOG ================= -->
+    <div class="page">
+        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
+        <h1>Weekly Work Log</h1>
+        
+        {% for log in weekly_logs %}
+        <div class="mb-8 break-inside-avoid">
+            <div class="bg-black text-white px-2 py-1 font-bold text-sm">Week Ending: {{ log.week_end_date }}</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="33%">Task Description</th>
+                        <th width="33%">Competencies Applied</th>
+                        <th width="33%">New Knowledge Gained</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="whitespace-pre-wrap">{{ log.tasks }}</td>
+                        <td class="whitespace-pre-wrap">{{ log.competencies }}</td>
+                        <td class="whitespace-pre-wrap">{{ log.knowledge }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center italic mt-10">No weekly logs recorded.</p>
+        {% endfor %}
+    </div>
+
+    <!-- ================= PAGE 12: REFLECTIONS ================= -->
+    <div class="page">
+        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
+        <h1>Reflection & Evaluation</h1>
+
+        {% for ref in reflections %}
+        <div class="mb-8 border-b-2 border-black pb-8 break-inside-avoid">
+            <h2 class="text-lg bg-gray-200 p-2">Month: {{ ref.month_date }}</h2>
+            
+            <h3 class="font-bold underline mt-4">Monthly Reflection</h3>
+            <p class="whitespace-pre-wrap mb-4">{{ ref.monthly_reflection }}</p>
+
+            <h3 class="font-bold underline mt-4">Self-Evaluation</h3>
+            <p class="whitespace-pre-wrap mb-4">{{ ref.self_evaluation }}</p>
+
+            <h3 class="font-bold underline mt-4">Supervisory Feedback</h3>
+            <p class="whitespace-pre-wrap italic text-gray-700">"{{ ref.feedback }}"</p>
+        </div>
+        {% else %}
+        <p class="text-center italic mt-10">No reflections recorded.</p>
+        {% endfor %}
+    </div>
+
+    <!-- ================= PAGE 15: DTR (APPENDICES) ================= -->
+     <div class="page">
+        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
+        <h1>Appendices: Daily Time Record</h1>
+
+        <!-- 1. Digital Summary (Optional, good for verification) -->
+        <div class="mb-8">
+            <h2 class="uppercase tracking-widest text-sm text-gray-500 mb-2">Digital Summary Calculation</h2>
+            <table class="text-sm">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Total Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in digital_logs %}
+                    <tr>
+                        <td>{{ log.log_date }}</td>
+                        <td class="text-center font-bold">{{ log.hours }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="bg-gray-200">
+                        <td class="text-right font-bold uppercase">Grand Total Hours</td>
+                        <td class="text-center font-bold text-lg">{{ total_hours }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <p class="text-center italic mt-10 text-sm">-- Scanned Documents Follow --</p>
+    </div>
+
+    <!-- 2. SCANNED DTR PHOTOS (Each image gets its own page or huge section) -->
+    {% for img in dtr_images %}
+    <div class="page">
+        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
+        <h1>DTR Document</h1>
+        <p class="text-center font-bold mb-4 uppercase">{{ img.description }}</p>
+        
+        <div class="border-2 border-black p-1 flex justify-center items-center h-[900px]">
+            <!-- Display Image Max Size -->
+            <img src="data:image/jpeg;base64,{{ img.image_data }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- ================= PAGE 16: PHOTO DOCUMENTATION ================= -->
+    <div class="page">
+        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
+        <h1>Photo Documentation</h1>
+        
+        <div class="grid grid-cols-2 gap-4 mt-8">
+            {% for log in weekly_logs %}
+                {% if log.image_data %}
+                <div class="border p-2 break-inside-avoid">
+                    <img src="data:image/jpeg;base64,{{ log.image_data }}" class="w-full h-48 object-cover mb-2">
+                    <p class="text-xs text-center font-bold">Week of {{ log.week_end_date }}</p>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+</body>
+</html>

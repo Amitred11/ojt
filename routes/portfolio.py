@@ -2,7 +2,7 @@ import base64
 from quart import Blueprint, render_template, request, redirect, url_for, session
 from bson.objectid import ObjectId
 from datetime import datetime
-from db import reports_col, profiles_col
+from db import reports_col, profiles_col, logs_col # <--- ADD logs_col
 
 # --- FIX: Use __name__ instead of name ---
 portfolio_bp = Blueprint('portfolio', __name__)
@@ -115,3 +115,77 @@ async def delete_report(report_id):
     if 'user_id' in session:
         await reports_col.delete_one({"_id": ObjectId(report_id), "user_id": session['user_id']})
     return redirect(url_for("portfolio.list_reports"))
+
+
+# --- NEW: Upload DTR Photos ---
+@portfolio_bp.route("/portfolio/dtr/upload", methods=["GET", "POST"])
+async def upload_dtr():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    user_id = session['user_id']
+
+    if request.method == "POST":
+        form = await request.form
+        files = await request.files
+        
+        # Get list of multiple files
+        uploaded_files = files.getlist("dtr_photos")
+        description = form.get("description") # e.g. "January 2026 DTR"
+
+        if not uploaded_files:
+            await flash("No files selected", "error")
+            return redirect(url_for("portfolio.upload_dtr"))
+
+        for file in uploaded_files:
+            if file.filename:
+                # Convert to Base64
+                file_content = file.read()
+                image_data = base64.b64encode(file_content).decode('utf-8')
+
+                dtr_entry = {
+                    "user_id": user_id,
+                    "type": "dtr_image",  # Specific type for DTRs
+                    "upload_date": datetime.now(),
+                    "description": description,
+                    "image_data": image_data
+                }
+                await reports_col.insert_one(dtr_entry)
+        
+        await flash(f"Uploaded {len(uploaded_files)} DTR documents.", "success")
+        return redirect(url_for("portfolio.list_reports"))
+
+    return await render_template("portfolio_form_dtr.html")
+
+# --- UPDATED: Print Journal to include DTR Photos ---
+@portfolio_bp.route("/portfolio/print_journal")
+async def print_journal():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    user_id = session['user_id']
+
+    # 1. Fetch Profile
+    profile = await profiles_col.find_one({"user_id": user_id}) or {}
+
+    # 2. Fetch Weekly Logs
+    cursor_logs = reports_col.find({"user_id": user_id, "type": "weekly"}).sort("week_end_date", 1)
+    weekly_logs = await cursor_logs.to_list(length=None)
+
+    # 3. Fetch Reflections
+    cursor_ref = reports_col.find({"user_id": user_id, "type": "monthly"}).sort("month_date", 1)
+    reflections = await cursor_ref.to_list(length=None)
+
+    # 4. Fetch Digital Logs (For Summary Table)
+    cursor_dtr_digital = logs_col.find({"user_id": user_id}).sort("log_date", 1)
+    digital_logs = await cursor_dtr_digital.to_list(length=None)
+    total_hours = sum([log.get('hours', 0) for log in digital_logs])
+
+    # 5. NEW: Fetch Uploaded DTR Images
+    cursor_dtr_imgs = reports_col.find({"user_id": user_id, "type": "dtr_image"}).sort("upload_date", 1)
+    dtr_images = await cursor_dtr_imgs.to_list(length=None)
+
+    return await render_template("print_journal.html", 
+                                 p=profile, 
+                                 weekly_logs=weekly_logs, 
+                                 reflections=reflections,
+                                 digital_logs=digital_logs,
+                                 total_hours=total_hours,
+                                 dtr_images=dtr_images, # Passed to template
+                                 date=datetime.now())
