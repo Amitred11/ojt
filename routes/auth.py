@@ -1,4 +1,4 @@
-from quart import Blueprint, render_template, request, redirect, url_for, session, flash
+from quart import Blueprint, render_template, request, redirect, url_for, session, flash, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import users_col
 
@@ -43,9 +43,6 @@ async def register():
         password = form.get("password")
         security_code = form.get("security_code")
 
-        # --- SECURITY CHECK ---
-        # We use .get() here so it doesn't crash if config is missing
-        # Default is "2026" if not set in config.py
         required_code = current_app.config.get('REGISTRATION_KEY', '8219')
         
         if security_code != required_code:
