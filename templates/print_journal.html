@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OJT Journal Print View</title>
+    <style>
+        body { font-family: "Times New Roman", serif; color: black; background: white; margin: 0; padding: 0; }
+        .page { width: 210mm; min-height: 297mm; padding: 20mm; margin: 10mm auto; border: 1px solid #ddd; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); page-break-after: always; position: relative; box-sizing: border-box; }
+        @media print {
+            body { background: none; }
+            .page { margin: 0; border: none; box-shadow: none; width: 100%; }
+            .no-print { display: none; }
+        }
+        
+        /* Header Graphics Placeholder */
+        .header-strip { height: 50px; border-top: 5px solid #d97706; border-bottom: 2px solid #d97706; margin-bottom: 40px; text-align: center; }
+        
+        h1, h2, h3 { text-align: center; margin-bottom: 20px; }
+        p { text-align: justify; line-height: 1.6; }
+        
+        /* Cover Page */
+        .cover-content { margin-top: 150px; text-align: center; }
+        .cover-title { font-size: 24pt; font-weight: bold; margin-bottom: 100px; }
+        .cover-student { font-size: 16pt; font-weight: bold; }
+        
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11pt; }
+        th, td { border: 1px solid black; padding: 8px; vertical-align: top; text-align: left; }
+        th { background: #f0f0f0; text-align: center; font-weight: bold; }
+        
+        .section-title { font-size: 18pt; margin-top: 50px; text-decoration: underline; }
+        
+        .img-container { text-align: center; margin: 20px 0; }
+        img { max-width: 100%; max-height: 400px; border: 1px solid #333; }
+        .caption { font-style: italic; font-size: 10pt; margin-top: 5px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="position: fixed; top: 10px; right: 10px; z-index: 100;">
+        <button onclick="window.print()" style="padding: 10px 20px; background: blue; color: white; font-weight: bold; cursor: pointer;">PRINT / SAVE PDF</button>
+    </div>
+
+    <!-- PAGE 1: COVER -->
+    <div class="page">
+        <div class="header-strip">
+            <h3>Colegio de Montalban - Institute of Computing Studies</h3>
+        </div>
+        <div class="cover-content">
+            <div class="cover-title">On-the-Job Training (OJT)<br>Journal</div>
+            <div class="cover-student">
+                <p>{{ j.get('student_name', '[Student Name]') }}</p>
+                <p>{{ j.get('course', 'Bachelor of Science in Information Technology') }}</p>
+                <p>{{ j.get('hte_name', '[Name of HTE]') }}</p>
+                <p>{{ j.get('duration', '[Duration]') }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 2: TABLE OF CONTENTS -->
+    <div class="page">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li>Approval Sheet</li>
+            <li>Acknowledgement</li>
+            <li>Student Trainee Profile</li>
+            <li>Company Overview</li>
+            <li>Daily/Weekly Work Log</li>
+            <li>Monthly Reflection</li>
+            <li>Appendices & Documentation</li>
+        </ul>
+    </div>
+
+    <!-- PAGE 3: ACKNOWLEDGEMENT -->
+    <div class="page">
+        <h2>Acknowledgement</h2>
+        <p>{{ j.get('acknowledgement', 'No acknowledgement text provided.') }}</p>
+    </div>
+
+    <!-- PAGE 4: PROFILE -->
+    <div class="page">
+        <h2>Student Trainee Profile</h2>
+        <table style="border: none;">
+            <tr><td style="border:none; width: 150px;"><strong>Name:</strong></td><td style="border:none;">{{ j.get('student_name') }}</td></tr>
+            <tr><td style="border:none;"><strong>Address:</strong></td><td style="border:none;">{{ j.get('address') }}</td></tr>
+            <tr><td style="border:none;"><strong>Email:</strong></td><td style="border:none;">{{ j.get('email') }}</td></tr>
+            <tr><td style="border:none;"><strong>Supervisor:</strong></td><td style="border:none;">{{ j.get('supervisor') }}</td></tr>
+        </table>
+        
+        <h3>Learning Objectives</h3>
+        <p>{{ j.get('objectives', 'No objectives listed.') }}</p>
+    </div>
+
+    <!-- PAGE 5: COMPANY -->
+    <div class="page">
+        <h2>Company Overview</h2>
+        
+        <h3>Company Profile</h3>
+        <p><strong>History:</strong> {{ j.get('company_history') }}</p>
+        <p><strong>Mission:</strong> {{ j.get('mission') }}</p>
+        <p><strong>Vision:</strong> {{ j.get('vision') }}</p>
+        
+        <h3>Organizational Structure</h3>
+        {% if docs['org_chart'] %}
+            <div class="img-container">
+                <img src="data:image/jpeg;base64,{{ docs['org_chart']['image_data'] }}">
+            </div>
+        {% else %}
+            <p style="text-align:center;">[No Org Chart Uploaded]</p>
+        {% endif %}
+
+        <h3>Department Description</h3>
+        <p>{{ j.get('dept_desc') }}</p>
+    </div>
+
+    <!-- PAGE 6: WORK LOG -->
+    <div class="page">
+        <h2>Daily/Weekly Work Log</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Date / Time</th>
+                    <th style="width: 35%;">Task Description</th>
+                    <th style="width: 25%;">Competencies Applied</th>
+                    <th style="width: 25%;">New Knowledge Gained</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>
+                        <strong>{{ entry.date }}</strong><br>
+                        {{ entry.hours_worked }}
+                    </td>
+                    <td>{{ entry.task_description }}</td>
+                    <td>{{ entry.competencies }}</td>
+                    <td>{{ entry.new_knowledge }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGE 7: REFLECTIONS -->
+    <div class="page">
+        <h2>Reflection & Evaluation</h2>
+        <h3>Monthly Reflections</h3>
+        <p>{{ j.get('monthly_reflections') }}</p>
+        
+        <h3>Self-Evaluation</h3>
+        <p>{{ j.get('self_evaluation') }}</p>
+        
+        <h3>Supervisory Feedback</h3>
+        <p>{{ j.get('feedback') }}</p>
+    </div>
+
+    <!-- PAGE 8: APPENDICES - DTR -->
+    <div class="page">
+        <h2>Appendix: Daily Time Record (DTR)</h2>
+        <table>
+            <thead>
+                <tr><th>Date</th><th>AM In</th><th>AM Out</th><th>PM In</th><th>PM Out</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                {% for log in dtr %}
+                <tr>
+                    <td>{{ log.log_date }}</td>
+                    <td>{{ log.am_in }}</td><td>{{ log.am_out }}</td>
+                    <td>{{ log.pm_in }}</td><td>{{ log.pm_out }}</td>
+                    <td>{{ log.hours }} hrs</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGE 9: APPENDICES - PHOTOS -->
+    <div class="page">
+        <h2>Appendix: Photo Documentation</h2>
+        {% for file in docs['photos'] %}
+        <div class="img-container">
+            <img src="data:image/jpeg;base64,{{ file.image_data }}">
+            <div class="caption">{{ file.caption }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- PAGE 10: SAMPLES -->
+    <div class="page">
+        <h2>Appendix: Samples of Work</h2>
+        {% for file in docs['samples'] %}
+        <div class="img-container">
+            <img src="data:image/jpeg;base64,{{ file.image_data }}">
+            <div class="caption">{{ file.caption }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+</body>
+</html>
