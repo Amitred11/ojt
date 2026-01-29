@@ -1,18 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="h-[80vh] flex flex-col justify-center">
-    <h1 class="text-4xl font-800 mb-2 text-white">Register</h1>
-    <p class="text-slate-400 mb-8">Create your account</p>
-    {% if error %}
-    <div class="bg-red-500/10 text-red-400 p-3 rounded-xl text-sm font-bold mb-4 text-center">{{ error }}</div>
-    {% endif %}
-    <form method="POST" class="space-y-4">
-        <input type="text" name="username" placeholder="Choose Username" required class="w-full input-glass rounded-2xl px-5 py-4 outline-none focus:border-indigo-500 transition-all font-semibold">
-        <input type="password" name="password" placeholder="Choose Password" required class="w-full input-glass rounded-2xl px-5 py-4 outline-none focus:border-indigo-500 transition-all font-semibold">
-        <button class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-800 py-4 rounded-2xl mt-4 shadow-lg shadow-cyan-600/20">Register</button>
+<div class="h-[80vh] flex flex-col justify-center relative">
+    
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-900 tracking-tighter text-white mb-2">Join Premium</h1>
+        <p class="text-slate-400 font-medium">Start tracking your OJT journey.</p>
+    </div>
+
+    <form method="POST" class="space-y-4 card-glass p-8 rounded-[2.5rem] shadow-2xl border-t border-white/10 relative overflow-hidden">
+        <!-- Shine effect on card -->
+        <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+
+        <div class="group">
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-3 mb-1 block">Choose Username</label>
+            <div class="relative">
+                <i data-lucide="user-plus" class="absolute left-4 top-4 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors"></i>
+                <input type="text" name="username" placeholder="username" required class="w-full input-glass rounded-2xl pl-12 pr-5 py-4 outline-none focus:border-indigo-500/50 transition-all font-bold text-white placeholder-slate-600">
+            </div>
+        </div>
+        
+        <div class="group">
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-3 mb-1 block">Set Password</label>
+            <div class="relative">
+                <i data-lucide="key" class="absolute left-4 top-4 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors"></i>
+                <input type="password" name="password" placeholder="••••••••" required class="w-full input-glass rounded-2xl pl-12 pr-5 py-4 outline-none focus:border-indigo-500/50 transition-all font-bold text-white placeholder-slate-600">
+            </div>
+        </div>
+
+        <button class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-900 py-4 rounded-2xl mt-4 shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all">
+            Create Account
+        </button>
     </form>
-    <div class="mt-6 text-center text-sm text-slate-500 font-semibold">
-        <a href="{{ url_for('auth.login') }}" class="text-indigo-400">Back to Login</a>
+
+    <div class="mt-8 text-center text-sm text-slate-500 font-semibold">
+        Already a member? <br>
+        <a href="{{ url_for('auth.login') }}" class="text-indigo-400 hover:text-indigo-300 underline underline-offset-4 decoration-indigo-500/30">Login here</a>
     </div>
 </div>
 {% endblock %}

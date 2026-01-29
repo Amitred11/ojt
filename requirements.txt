@@ -1,3 +1,5 @@
 quart
 motor
 dnspython
+werkzeug
+blinker
