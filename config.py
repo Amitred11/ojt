@@ -7,5 +7,5 @@ class Config:
     
     DB_NAME = "OJT"
     SECRET_KEY = os.environ.get("SECRET_KEY", "local_secret_key")
-    REGISTRATION_KEY = "2026"
+    REGISTRATION_KEY = "8219"
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
