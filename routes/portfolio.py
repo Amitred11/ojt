@@ -1,191 +1,179 @@
-import base64
-from quart import Blueprint, render_template, request, redirect, url_for, session
-from bson.objectid import ObjectId
+from quart import Blueprint, render_template, request, redirect, url_for, session, flash, current_app
+from db import get_db
 from datetime import datetime
-from db import reports_col, profiles_col, logs_col # <--- ADD logs_col
+import base64
+from bson.objectid import ObjectId
 
-# --- FIX: Use __name__ instead of name ---
-portfolio_bp = Blueprint('portfolio', __name__)
+portfolio_bp = Blueprint('portfolio', __name__, url_prefix='/portfolio')
 
-@portfolio_bp.route("/portfolio")
+# Helper to process image to Base64
+def process_image(file_storage):
+    if not file_storage:
+        return None
+    return base64.b64encode(file_storage.read()).decode('utf-8')
+
+@portfolio_bp.route('/')
 async def list_reports():
-    if 'user_id' not in session: return redirect(url_for('auth.login'))
-    user_id = session['user_id']
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    # Fetch Profile
+    profile = await db.profiles.find_one({'user_id': session['user_id']})
+    
+    # Fetch Logs (Sorted by date)
+    weekly_logs = await db.weekly_logs.find({'user_id': session['user_id']}).sort('week_end_date', -1).to_list(length=100)
+    
+    # Fetch Reflections
+    reflections = await db.reflections.find({'user_id': session['user_id']}).sort('month_date', -1).to_list(length=100)
 
-    # 1. Fetch Profile Data
-    profile = await profiles_col.find_one({"user_id": user_id})
+    return await render_template('portfolio.html', profile=profile, weekly_logs=weekly_logs, reflections=reflections)
 
-    # 2. Fetch Weekly Logs
-    cursor_logs = reports_col.find({"user_id": user_id, "type": "weekly"}).sort("week_end_date", -1)
-    weekly_logs = await cursor_logs.to_list(length=None)
-    for r in weekly_logs: r['_id'] = str(r['_id'])
-
-    # 3. Fetch Monthly Reflections
-    cursor_ref = reports_col.find({"user_id": user_id, "type": "monthly"}).sort("month_date", -1)
-    reflections = await cursor_ref.to_list(length=None)
-    for r in reflections: r['_id'] = str(r['_id'])
-
-    return await render_template("portfolio.html", 
-                                 profile=profile, 
-                                 weekly_logs=weekly_logs, 
-                                 reflections=reflections)
-
-@portfolio_bp.route("/portfolio/setup", methods=["GET", "POST"])
+@portfolio_bp.route('/setup', methods=['GET', 'POST'])
 async def setup_profile():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
-    user_id = session['user_id']
-
-    if request.method == "POST":
+    db = get_db()
+    
+    if request.method == 'POST':
         form = await request.form
-        profile_data = {
-            "user_id": user_id,
-            "full_name": form.get("full_name"),
-            "course": form.get("course"),
-            "hte_name": form.get("hte_name"),
-            "duration": form.get("duration"),
-            "supervisor": form.get("supervisor"),
-            "objectives": form.get("objectives"),
-            "company_desc": form.get("company_desc"),
-            "dept_desc": form.get("dept_desc"),
+        data = {
+            'user_id': session['user_id'],
+            'full_name': form.get('full_name'),
+            'course': form.get('course'),
+            'duration': form.get('duration'),
+            'objectives': form.get('objectives'),
+            'hte_name': form.get('hte_name'),
+            'supervisor': form.get('supervisor'),
+            'company_desc': form.get('company_desc'),
+            'dept_desc': form.get('dept_desc'),
+            'updated_at': datetime.utcnow()
         }
-        
-        await profiles_col.update_one(
-            {"user_id": user_id}, 
-            {"$set": profile_data}, 
-            upsert=True
-        )
-        return redirect(url_for("portfolio.list_reports"))
+        await db.profiles.update_one({'user_id': session['user_id']}, {'$set': data}, upsert=True)
+        return redirect(url_for('portfolio.list_reports'))
 
-    profile = await profiles_col.find_one({"user_id": user_id})
-    return await render_template("portfolio_setup.html", p=profile or {})
+    p = await db.profiles.find_one({'user_id': session['user_id']}) or {}
+    return await render_template('portfolio_setup.html', p=p)
 
-@portfolio_bp.route("/portfolio/log/new", methods=["GET", "POST"])
+# --- WEEKLY LOGS (Fixed for Multiple Photos) ---
+@portfolio_bp.route('/log/new', methods=['GET', 'POST'])
 async def new_log():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
-
-    if request.method == "POST":
+    
+    if request.method == 'POST':
+        db = get_db()
         form = await request.form
         files = await request.files
+        uploaded_photos = files.getlist('photos') # Get list of files
         
-        image_data = None
-        if 'photo' in files:
-            file = files['photo']
-            if file.filename:
-                file_content = file.read()
-                image_data = base64.b64encode(file_content).decode('utf-8')
+        # Process multiple images
+        images_list = []
+        for photo in uploaded_photos:
+            if photo.filename:
+                b64_img = process_image(photo)
+                if b64_img:
+                    images_list.append(b64_img)
 
-        report_data = {
-            "user_id": session['user_id'],
-            "type": "weekly",
-            "week_end_date": form.get("week_end_date"),
-            "tasks": form.get("tasks"),
-            "competencies": form.get("competencies"),
-            "knowledge": form.get("knowledge"),
-            "image_data": image_data
+        entry = {
+            'user_id': session['user_id'],
+            'week_end_date': form.get('week_end_date'),
+            'tasks': form.get('tasks'),
+            'competencies': form.get('competencies'),
+            'knowledge': form.get('knowledge'),
+            'images': images_list, # Store list of base64 strings
+            'created_at': datetime.utcnow()
         }
-        
-        await reports_col.insert_one(report_data)
-        return redirect(url_for("portfolio.list_reports"))
+        await db.weekly_logs.insert_one(entry)
+        return redirect(url_for('portfolio.list_reports'))
 
-    return await render_template("portfolio_form_log.html", today=datetime.today().strftime('%Y-%m-%d'))
+    return await render_template('portfolio_form_log.html', today=datetime.today().strftime('%Y-%m-%d'))
 
-@portfolio_bp.route("/portfolio/reflection/new", methods=["GET", "POST"])
+# --- MONTHLY REFLECTIONS ---
+@portfolio_bp.route('/reflection/new', methods=['GET', 'POST'])
 async def new_reflection():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
-
-    if request.method == "POST":
+    
+    if request.method == 'POST':
+        db = get_db()
         form = await request.form
-        
-        reflection_data = {
-            "user_id": session['user_id'],
-            "type": "monthly",
-            "month_date": form.get("month_date"),
-            "monthly_reflection": form.get("monthly_reflection"),
-            "self_evaluation": form.get("self_evaluation"),
-            "feedback": form.get("feedback")
+        entry = {
+            'user_id': session['user_id'],
+            'month_date': form.get('month_date'),
+            'monthly_reflection': form.get('monthly_reflection'),
+            'self_evaluation': form.get('self_evaluation'),
+            'feedback': form.get('feedback'),
+            'created_at': datetime.utcnow()
         }
-        
-        await reports_col.insert_one(reflection_data)
-        return redirect(url_for("portfolio.list_reports"))
+        await db.reflections.insert_one(entry)
+        return redirect(url_for('portfolio.list_reports'))
 
-    return await render_template("portfolio_form_reflection.html", today=datetime.today().strftime('%Y-%m-%d'))
+    return await render_template('portfolio_form_reflection.html', today=datetime.today().strftime('%Y-%m-%d'))
 
-@portfolio_bp.route("/portfolio/delete/<report_id>")
-async def delete_report(report_id):
-    if 'user_id' in session:
-        await reports_col.delete_one({"_id": ObjectId(report_id), "user_id": session['user_id']})
-    return redirect(url_for("portfolio.list_reports"))
-
-
-# --- NEW: Upload DTR Photos ---
-@portfolio_bp.route("/portfolio/dtr/upload", methods=["GET", "POST"])
+# --- DTR UPLOAD (Fixed for Multiple Pages) ---
+@portfolio_bp.route('/dtr/upload', methods=['GET', 'POST'])
 async def upload_dtr():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
-    user_id = session['user_id']
-
-    if request.method == "POST":
+    
+    if request.method == 'POST':
+        db = get_db()
         form = await request.form
         files = await request.files
+        dtr_photos = files.getlist('dtr_photos')
         
-        # Get list of multiple files
-        uploaded_files = files.getlist("dtr_photos")
-        description = form.get("description") # e.g. "January 2026 DTR"
-
-        if not uploaded_files:
-            await flash("No files selected", "error")
-            return redirect(url_for("portfolio.upload_dtr"))
-
-        for file in uploaded_files:
-            if file.filename:
-                # Convert to Base64
-                file_content = file.read()
-                image_data = base64.b64encode(file_content).decode('utf-8')
-
-                dtr_entry = {
-                    "user_id": user_id,
-                    "type": "dtr_image",  # Specific type for DTRs
-                    "upload_date": datetime.now(),
-                    "description": description,
-                    "image_data": image_data
-                }
-                await reports_col.insert_one(dtr_entry)
+        processed_images = []
+        for photo in dtr_photos:
+            if photo.filename:
+                b64 = process_image(photo)
+                processed_images.append(b64)
         
-        await flash(f"Uploaded {len(uploaded_files)} DTR documents.", "success")
-        return redirect(url_for("portfolio.list_reports"))
+        # If user uploaded images, save them
+        if processed_images:
+            entry = {
+                'user_id': session['user_id'],
+                'description': form.get('description'),
+                'images': processed_images, # Store list of images
+                'uploaded_at': datetime.utcnow()
+            }
+            await db.dtr_uploads.insert_one(entry)
+            
+        return redirect(url_for('portfolio.list_reports'))
 
-    return await render_template("portfolio_form_dtr.html")
+    return await render_template('portfolio_form_dtr.html')
 
-# --- UPDATED: Print Journal to include DTR Photos ---
-@portfolio_bp.route("/portfolio/print_journal")
+@portfolio_bp.route('/delete/<report_id>')
+async def delete_report(report_id):
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    db = get_db()
+    # Try deleting from all collections (simple approach)
+    await db.weekly_logs.delete_one({'_id': ObjectId(report_id), 'user_id': session['user_id']})
+    await db.reflections.delete_one({'_id': ObjectId(report_id), 'user_id': session['user_id']})
+    await db.dtr_uploads.delete_one({'_id': ObjectId(report_id), 'user_id': session['user_id']})
+    return redirect(url_for('portfolio.list_reports'))
+
+# --- PRINT JOURNAL (The Fix for Disappearing Data) ---
+@portfolio_bp.route('/print')
 async def print_journal():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
-    user_id = session['user_id']
-
+    db = get_db()
+    
     # 1. Fetch Profile
-    profile = await profiles_col.find_one({"user_id": user_id}) or {}
+    p = await db.profiles.find_one({'user_id': session['user_id']}) or {}
+    
+    # 2. Fetch ALL Weekly Logs (Sort ensures they appear in order)
+    weekly_logs = await db.weekly_logs.find({'user_id': session['user_id']}).sort('week_end_date', 1).to_list(length=200)
+    
+    # 3. Fetch ALL Reflections
+    reflections = await db.reflections.find({'user_id': session['user_id']}).sort('month_date', 1).to_list(length=100)
+    
+    # 4. Fetch DTR Uploads (Use this instead of tracker data)
+    dtr_uploads = await db.dtr_uploads.find({'user_id': session['user_id']}).sort('uploaded_at', 1).to_list(length=50)
 
-    # 2. Fetch Weekly Logs
-    cursor_logs = reports_col.find({"user_id": user_id, "type": "weekly"}).sort("week_end_date", 1)
-    weekly_logs = await cursor_logs.to_list(length=None)
-
-    # 3. Fetch Reflections
-    cursor_ref = reports_col.find({"user_id": user_id, "type": "monthly"}).sort("month_date", 1)
-    reflections = await cursor_ref.to_list(length=None)
-
-    # 4. Fetch Digital Logs (For Summary Table)
-    cursor_dtr_digital = logs_col.find({"user_id": user_id}).sort("log_date", 1)
-    digital_logs = await cursor_dtr_digital.to_list(length=None)
-    total_hours = sum([log.get('hours', 0) for log in digital_logs])
-
-    # 5. NEW: Fetch Uploaded DTR Images
-    cursor_dtr_imgs = reports_col.find({"user_id": user_id, "type": "dtr_image"}).sort("upload_date", 1)
-    dtr_images = await cursor_dtr_imgs.to_list(length=None)
-
-    return await render_template("print_journal.html", 
-                                 p=profile, 
+    # Calculate total hours for summary (optional, from tracker)
+    tracker_logs = await db.logs.find({'user_id': session['user_id']}).to_list(length=1000)
+    total_hours = sum([log.get('hours', 0) for log in tracker_logs])
+    
+    return await render_template('print_journal.html', 
+                                 p=p, 
                                  weekly_logs=weekly_logs, 
                                  reflections=reflections,
-                                 digital_logs=digital_logs,
-                                 total_hours=total_hours,
-                                 dtr_images=dtr_images, # Passed to template
-                                 date=datetime.now())
+                                 dtr_uploads=dtr_uploads,
+                                 total_hours=total_hours)

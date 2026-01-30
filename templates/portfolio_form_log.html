@@ -13,28 +13,26 @@
         <input type="date" name="week_end_date" value="{{ today }}" required class="w-full input-glass rounded-xl px-4 py-3 outline-none focus:border-indigo-500 transition-all text-sm font-semibold">
     </div>
     
-    <!-- Specific Fields from PDF -->
     <div>
         <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Task Description</label>
-        <p class="text-[10px] text-slate-400 mb-2">Bullet points of specific duties performed (e.g., filing, data entry).</p>
-        <textarea name="tasks" rows="4" class="w-full input-glass rounded-xl px-4 py-3 outline-none focus:border-indigo-500 text-sm bg-transparent" placeholder="- Created API endpoints...&#10;- Attended standup meeting..."></textarea>
+        <textarea name="tasks" rows="4" class="w-full input-glass rounded-xl px-4 py-3 outline-none focus:border-indigo-500 text-sm bg-transparent" placeholder="- Created API endpoints..."></textarea>
     </div>
     
     <div>
         <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Competencies Applied</label>
-        <p class="text-[10px] text-slate-400 mb-2">Academic knowledge or classroom theories used.</p>
-        <textarea name="competencies" rows="3" class="w-full input-glass rounded-xl px-4 py-3 outline-none focus:border-indigo-500 text-sm bg-transparent" placeholder="Applied Python knowledge from Data Structures class..."></textarea>
+        <textarea name="competencies" rows="3" class="w-full input-glass rounded-xl px-4 py-3 outline-none focus:border-indigo-500 text-sm bg-transparent" placeholder="Applied Python knowledge..."></textarea>
     </div>
 
     <div>
         <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">New Knowledge Gained</label>
-        <p class="text-[10px] text-slate-400 mb-2">Soft or technical skills learned this week.</p>
-        <textarea name="knowledge" rows="3" class="w-full input-glass rounded-xl px-4 py-3 outline-none focus:border-indigo-500 text-sm bg-transparent" placeholder="Learned how to use MongoDB Aggregation pipelines..."></textarea>
+        <textarea name="knowledge" rows="3" class="w-full input-glass rounded-xl px-4 py-3 outline-none focus:border-indigo-500 text-sm bg-transparent" placeholder="Learned Mongo Aggregation..."></textarea>
     </div>
 
     <div>
         <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Photo Documentation</label>
-        <input type="file" name="photo" accept="image/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/10 file:text-indigo-400">
+        <!-- ADDED MULTIPLE ATTRIBUTE AND CHANGED NAME TO PHOTOS -->
+        <input type="file" name="photos" multiple accept="image/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/10 file:text-indigo-400">
+        <p class="text-[10px] text-slate-500 mt-2">You can select multiple images.</p>
     </div>
 
     <button class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-800 py-4 rounded-2xl shadow-lg mt-4">Save Entry</button>
