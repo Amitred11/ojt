@@ -1,45 +1,40 @@
-from quart import Blueprint, render_template, request, redirect, url_for, session, flash
+from quart import Blueprint, render_template, request, redirect, url_for, session
 from db import get_db
 from datetime import datetime
 import base64
 
-# Try to import ObjectId. If it fails, the user needs to install motor/pymongo.
+# Import ObjectId safely
 try:
     from bson.objectid import ObjectId
 except ImportError:
-    print("ERROR: 'bson' module not found. Please ensure 'motor' or 'pymongo' is installed in requirements.txt")
-    ObjectId = None
+    # Fallback if bson is missing, though motor usually includes it
+    from bson import ObjectId
 
 portfolio_bp = Blueprint('portfolio', __name__, url_prefix='/portfolio')
 
-# Helper to process image to Base64
+# --- HELPER ---
 def process_image(file_storage):
-    """Reads a FileStorage object and returns a base64 string."""
     if not file_storage:
         return None
     try:
-        # Check if the file has a read method
         if hasattr(file_storage, 'read'):
-            file_data = file_storage.read()
-            return base64.b64encode(file_data).decode('utf-8')
+            return base64.b64encode(file_storage.read()).decode('utf-8')
     except Exception as e:
-        print(f"Error processing image: {e}")
+        print(f"Image Error: {e}")
     return None
+
+# --- ROUTES ---
 
 @portfolio_bp.route('/')
 async def list_reports():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
     
     db = get_db()
-    # Fetch Profile
-    profile = await db.profiles.find_one({'user_id': session['user_id']})
+    user_id = session['user_id']
     
-    # Fetch Logs (Sorted by date)
-    weekly_logs = await db.weekly_logs.find({'user_id': session['user_id']}).sort('week_end_date', -1).to_list(length=100)
-    
-    # Fetch Reflections
-    reflections = await db.reflections.find({'user_id': session['user_id']}).sort('month_date', -1).to_list(length=100)
+    profile = await db.profiles.find_one({'user_id': user_id})
+    weekly_logs = await db.weekly_logs.find({'user_id': user_id}).sort('week_end_date', -1).to_list(length=100)
+    reflections = await db.reflections.find({'user_id': user_id}).sort('month_date', -1).to_list(length=100)
 
     return await render_template('portfolio.html', profile=profile, weekly_logs=weekly_logs, reflections=reflections)
 
@@ -76,16 +71,13 @@ async def new_log():
         db = get_db()
         form = await request.form
         files = await request.files
-        
-        # 'photos' matches the name attribute in the HTML form
         uploaded_photos = files.getlist('photos')
         
         images_list = []
         for photo in uploaded_photos:
             if photo.filename:
-                b64_img = process_image(photo)
-                if b64_img:
-                    images_list.append(b64_img)
+                b64 = process_image(photo)
+                if b64: images_list.append(b64)
 
         entry = {
             'user_id': session['user_id'],
@@ -135,8 +127,7 @@ async def upload_dtr():
         for photo in dtr_photos:
             if photo.filename:
                 b64 = process_image(photo)
-                if b64:
-                    processed_images.append(b64)
+                if b64: processed_images.append(b64)
         
         if processed_images:
             entry = {
@@ -155,18 +146,15 @@ async def upload_dtr():
 async def delete_report(report_id):
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     
-    if not ObjectId:
-        return "ObjectId not available", 500
-
     try:
-        oid = ObjectId(report_id)
         db = get_db()
-        # Attempt to delete from all collections
+        oid = ObjectId(report_id)
+        # Attempt delete on all portfolio collections
         await db.weekly_logs.delete_one({'_id': oid, 'user_id': session['user_id']})
         await db.reflections.delete_one({'_id': oid, 'user_id': session['user_id']})
         await db.dtr_uploads.delete_one({'_id': oid, 'user_id': session['user_id']})
     except Exception as e:
-        print(f"Error deleting report: {e}")
+        print(f"Delete Error: {e}")
         
     return redirect(url_for('portfolio.list_reports'))
 
@@ -174,21 +162,15 @@ async def delete_report(report_id):
 async def print_journal():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     db = get_db()
+    user_id = session['user_id']
     
-    # 1. Fetch Profile
-    p = await db.profiles.find_one({'user_id': session['user_id']}) or {}
+    p = await db.profiles.find_one({'user_id': user_id}) or {}
+    weekly_logs = await db.weekly_logs.find({'user_id': user_id}).sort('week_end_date', 1).to_list(None)
+    reflections = await db.reflections.find({'user_id': user_id}).sort('month_date', 1).to_list(None)
+    dtr_uploads = await db.dtr_uploads.find({'user_id': user_id}).sort('uploaded_at', 1).to_list(None)
     
-    # 2. Fetch ALL Weekly Logs
-    weekly_logs = await db.weekly_logs.find({'user_id': session['user_id']}).sort('week_end_date', 1).to_list(length=200)
-    
-    # 3. Fetch ALL Reflections
-    reflections = await db.reflections.find({'user_id': session['user_id']}).sort('month_date', 1).to_list(length=100)
-    
-    # 4. Fetch DTR Uploads
-    dtr_uploads = await db.dtr_uploads.find({'user_id': session['user_id']}).sort('uploaded_at', 1).to_list(length=50)
-
-    # 5. Calculate Total Hours (Optional summary)
-    tracker_logs = await db.logs.find({'user_id': session['user_id']}).to_list(length=1000)
+    # Optional Tracker Summary
+    tracker_logs = await db.logs.find({'user_id': user_id}).to_list(None)
     total_hours = sum([log.get('hours', 0) for log in tracker_logs])
     
     return await render_template('print_journal.html', 
