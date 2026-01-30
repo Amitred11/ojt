@@ -56,31 +56,30 @@
     <div class="space-y-6">
         {% for r in weekly_logs %}
         <div class="card-glass rounded-[2rem] p-6 border-t border-white/5 group">
-    <!-- Header -->
-    <div class="flex justify-between items-start mb-4">
-        <span class="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-emerald-500/20">
-            Week Ending {{ r.week_end_date }}
-        </span>
-        <a href="{{ url_for('portfolio.delete_report', report_id=r._id) }}" class="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-        </a>
-    </div>
+            <!-- Header -->
+            <div class="flex justify-between items-start mb-4">
+                <span class="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-emerald-500/20">
+                    Week Ending {{ r.week_end_date }}
+                </span>
+                <a href="{{ url_for('portfolio.delete_report', report_id=r._id) }}" class="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </a>
+            </div>
 
-    <!-- IMAGES SECTION (Updated for Multiple) -->
-    {% if r.images and r.images|length > 0 %}
-    <div class="mb-5 flex gap-2 overflow-x-auto pb-2 snap-x">
-        {% for img in r.images %}
-        <div class="min-w-[150px] w-[30%] h-32 rounded-xl overflow-hidden border border-white/10 relative snap-center flex-shrink-0">
-            <img src="data:image/jpeg;base64,{{ img }}" class="w-full h-full object-cover">
-        </div>
-        {% endfor %}
-    </div>
-    {% elif r.image_data %}
-    <!-- Fallback for old single images -->
-    <div class="mb-5 rounded-2xl overflow-hidden border border-white/10 w-full h-48 relative">
-        <img src="data:image/jpeg;base64,{{ r.image_data }}" class="w-full h-full object-cover">
-    </div>
-    {% endif %}
+            <!-- IMAGES SECTION -->
+            {% if r.images and r.images|length > 0 %}
+            <div class="mb-5 flex gap-2 overflow-x-auto pb-2 snap-x">
+                {% for img in r.images %}
+                <div class="min-w-[150px] w-[30%] h-32 rounded-xl overflow-hidden border border-white/10 relative snap-center flex-shrink-0">
+                    <img src="data:image/jpeg;base64,{{ img }}" class="w-full h-full object-cover">
+                </div>
+                {% endfor %}
+            </div>
+            {% elif r.image_data %}
+            <div class="mb-5 rounded-2xl overflow-hidden border border-white/10 w-full h-48 relative">
+                <img src="data:image/jpeg;base64,{{ r.image_data }}" class="w-full h-full object-cover">
+            </div>
+            {% endif %}
 
             <div class="space-y-4 relative">
                 <!-- Connected Dots Line -->
@@ -109,7 +108,48 @@
     </div>
 </div>
 
-<!-- 3. REFLECTIONS SECTION -->
+<!-- 3. SIGNED DTRs SECTION (NEW) -->
+<div class="mb-8">
+    <div class="flex justify-between items-center mb-4 px-2">
+        <h2 class="text-sm font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+            <i data-lucide="file-check" class="w-4 h-4"></i> Signed DTRs
+        </h2>
+        <a href="{{ url_for('portfolio.upload_dtr') }}" class="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20 hover:bg-orange-500/20 transition-colors">
+            + UPLOAD DTR
+        </a>
+    </div>
+
+    <div class="space-y-4">
+        {% for dtr in dtr_uploads %}
+        <div class="card-glass rounded-[2rem] p-6 border-l-4 border-l-orange-500 relative group">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white">{{ dtr.description }}</h3>
+                <a href="{{ url_for('portfolio.delete_report', report_id=dtr._id) }}" class="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </a>
+            </div>
+            
+            {% if dtr.images %}
+            <div class="flex gap-2 overflow-x-auto pb-2 snap-x">
+                {% for img in dtr.images %}
+                <div class="min-w-[120px] w-[30%] h-32 rounded-xl overflow-hidden border border-white/10 relative snap-center flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('data:image/jpeg;base64,{{ img }}')">
+                    <img src="data:image/jpeg;base64,{{ img }}" class="w-full h-full object-cover">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <p class="text-[10px] text-slate-500 mt-3 font-semibold uppercase tracking-wider">
+                Uploaded: {{ dtr.uploaded_at.strftime('%Y-%m-%d') if dtr.uploaded_at else 'N/A' }}
+            </p>
+        </div>
+        {% else %}
+        <div class="text-center py-10 text-slate-600 italic text-sm">No signed DTRs uploaded.</div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 4. REFLECTIONS SECTION -->
 <div class="mb-8">
     <div class="flex justify-between items-center mb-4 px-2">
         <h2 class="text-sm font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">

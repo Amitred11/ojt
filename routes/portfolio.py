@@ -35,8 +35,9 @@ async def list_reports():
     profile = await db.profiles.find_one({'user_id': user_id})
     weekly_logs = await db.weekly_logs.find({'user_id': user_id}).sort('week_end_date', -1).to_list(length=100)
     reflections = await db.reflections.find({'user_id': user_id}).sort('month_date', -1).to_list(length=100)
+    dtr_uploads = await db.dtr_uploads.find({'user_id': user_id}).sort('uploaded_at', -1).to_list(length=50)
 
-    return await render_template('portfolio.html', profile=profile, weekly_logs=weekly_logs, reflections=reflections)
+    return await render_template('portfolio.html', profile=profile, weekly_logs=weekly_logs, reflections=reflections, dtr_uploads=dtr_uploads)
 
 @portfolio_bp.route('/setup', methods=['GET', 'POST'])
 async def setup_profile():
