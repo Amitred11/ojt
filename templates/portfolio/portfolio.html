@@ -71,7 +71,7 @@
                 {% if r.images %}
                 <div class="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x">
                     {% for img in r.images %}
-                    <img src="data:image/jpeg;base64,{{ img }}" class="w-24 h-24 rounded-2xl object-cover border border-white/10 snap-center">
+                    <img src="data:image/webp;base64,{{ img }}" class="w-24 h-24 rounded-2xl object-cover border border-white/10 snap-center">
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -123,7 +123,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="window.open('data:image/jpeg;base64,{{ dtr.images[0] if dtr.images else '' }}')" class="text-slate-500 hover:text-white p-2">
+            <button onclick="window.open('data:image/webp;base64,{{ dtr.images[0] if dtr.images else '' }}')" class="text-slate-500"><i data-lucide="eye" class="w-5 h-5"></i></button>
                     <i data-lucide="eye" class="w-5 h-5"></i>
                 </button>
                 <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=dtr._id) }}')" class="text-slate-600 hover:text-red-400 p-2">
