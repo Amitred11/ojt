@@ -2,18 +2,19 @@ from quart import Blueprint, render_template, session, redirect, url_for
 from db import logs_col, profiles_col
 from bson import ObjectId
 
+# 1. INITIALIZE THE BLUEPRINT FIRST (This fixes the NameError)
 leaderboard_bp = Blueprint('leaderboard', __name__)
+
 REQUIRED_HOURS = 486
 
 @leaderboard_bp.route("/leaderboard")
 async def index():
-    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    if 'user_id' not in session: 
+        return redirect(url_for('auth.login'))
+    
     curr_user_id = session['user_id']
 
-    # This pipeline calculates the total for each user by:
-    # 1. Checking if 'total_minutes' exists.
-    # 2. If not, converting 'hours' to minutes (hours * 60).
-    # 3. Summing them all together before joining with profiles.
+    # Aggregation pipeline to calculate totals per user
     pipeline = [
         {
             "$project": {
@@ -46,13 +47,18 @@ async def index():
     ]
     
     leaders_raw = await logs_col.aggregate(pipeline).to_list(length=None)
-    leaderboard_data = []
     
+    leaderboard_data = []
+    total_collective_minutes = 0
+    finishers_count = 0
+
     for rank, entry in enumerate(leaders_raw, 1):
         total_m = entry.get('grand_total_minutes', 0)
+        total_collective_minutes += total_m
         
-        # Convert total minutes back to hours for display (e.g., 114.88)
         hours_display = round(total_m / 60, 2)
+        if hours_display >= REQUIRED_HOURS: 
+            finishers_count += 1
         
         profile = entry.get('user_profile', {})
         display_name = profile.get('full_name', 'Anonymous Student')
@@ -62,8 +68,15 @@ async def index():
             "name": display_name,
             "hours": hours_display,
             "progress": min(int((total_m / (REQUIRED_HOURS * 60)) * 100), 100),
-            "is_current_user": entry['_id'] == curr_user_id,
+            "is_current_user": str(entry['_id']) == str(curr_user_id),
             "avatar_char": display_name[0].upper() if display_name else "?"
         })
 
-    return await render_template("main/leaderboard.html", leaders=leaderboard_data)
+    # Stats for the top dashboard
+    stats = {
+        "total_hours": round(total_collective_minutes / 60, 1),
+        "finishers": finishers_count,
+        "total_students": len(leaderboard_data)
+    }
+
+    return await render_template("main/leaderboard.html", leaders=leaderboard_data, stats=stats)

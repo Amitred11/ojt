@@ -103,32 +103,55 @@
     <div class="flex items-center justify-between mb-6 px-2">
         <div class="flex items-center gap-3">
             <div class="w-2 h-6 bg-orange-500 rounded-full"></div>
-            <h2 class="text-xs font-black uppercase tracking-widest text-slate-200">Official Documents</h2>
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-200">Official Monthly DTR</h2>
         </div>
         <a href="{{ url_for('portfolio.upload_dtr') }}" class="text-[10px] font-black text-orange-400 bg-orange-400/10 px-4 py-2 rounded-full border border-orange-400/20 active:scale-95 transition-all">
             + UPLOAD DTR
         </a>
     </div>
 
-    <div class="grid grid-cols-1 gap-4">
+    <div class="grid grid-cols-1 gap-6">
         {% for dtr in dtr_uploads %}
-        <div class="card-glass rounded-3xl p-5 border border-white/5 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                    <i data-lucide="file-text" class="text-orange-400 w-6 h-6"></i>
-                </div>
+        <div class="card-glass rounded-[2rem] p-6 border border-white/5">
+            <div class="flex justify-between items-start mb-4">
                 <div>
                     <h4 class="text-sm font-bold text-white">{{ dtr.description }}</h4>
-                    <p class="text-[9px] text-slate-500 uppercase font-black">{{ dtr.uploaded_at.strftime('%B %d, %Y') if dtr.uploaded_at else 'Verified' }}</p>
+                    <p class="text-[9px] text-slate-500 uppercase font-black">
+                        Logged {{ dtr.uploaded_at.strftime('%b %d, %Y') if dtr.uploaded_at else '' }}
+                    </p>
                 </div>
-            </div>
-            <div class="flex items-center gap-2">
-            <button onclick="window.open('data:image/webp;base64,{{ dtr.images[0] if dtr.images else '' }}')" class="text-slate-500"><i data-lucide="eye" class="w-5 h-5"></i></button>
-                    <i data-lucide="eye" class="w-5 h-5"></i>
-                </button>
-                <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=dtr._id) }}')" class="text-slate-600 hover:text-red-400 p-2">
+                <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=dtr._id) }}')" 
+                        class="text-slate-600 hover:text-red-400 transition-colors">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <!-- Front Photo -->
+                <div class="space-y-2">
+                    <p class="text-[8px] font-black text-slate-500 uppercase text-center">Front View</p>
+                    {% if dtr.image_front %}
+                    <img src="data:image/webp;base64,{{ dtr.image_front }}" onclick="window.open(this.src)"
+                         class="w-full aspect-[3/4] rounded-xl object-cover border border-white/10 cursor-zoom-in hover:border-orange-500/50 transition-all">
+                    {% else %}
+                    <div class="w-full aspect-[3/4] rounded-xl bg-white/5 border border-dashed border-white/10 flex items-center justify-center">
+                        <span class="text-[8px] text-slate-600 uppercase">Missing</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Back Photo -->
+                <div class="space-y-2">
+                    <p class="text-[8px] font-black text-slate-500 uppercase text-center">Back View</p>
+                    {% if dtr.image_back %}
+                    <img src="data:image/webp;base64,{{ dtr.image_back }}" onclick="window.open(this.src)"
+                         class="w-full aspect-[3/4] rounded-xl object-cover border border-white/10 cursor-zoom-in hover:border-orange-500/50 transition-all">
+                    {% else %}
+                    <div class="w-full aspect-[3/4] rounded-xl bg-white/5 border border-dashed border-white/10 flex items-center justify-center">
+                        <span class="text-[8px] text-slate-600 uppercase">No Back Photo</span>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
         {% endfor %}
@@ -140,29 +163,57 @@
     <div class="flex items-center justify-between mb-6 px-2">
         <div class="flex items-center gap-3">
             <div class="w-2 h-6 bg-purple-500 rounded-full"></div>
-            <h2 class="text-xs font-black uppercase tracking-widest text-slate-200">Reflections</h2>
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-200">Monthly Reflections</h2>
         </div>
-        <a href="{{ url_for('portfolio.new_reflection') }}" class="text-[10px] font-black text-purple-400 bg-purple-400/10 px-4 py-2 rounded-full border border-purple-400/20">
+        <a href="{{ url_for('portfolio.new_reflection') }}" class="text-[10px] font-black text-purple-400 bg-purple-400/10 px-4 py-2 rounded-full border border-purple-400/20 transition-all active:scale-95">
             + NEW INSIGHT
         </a>
     </div>
 
-    <div class="space-y-4">
+    <div class="space-y-6">
         {% for r in reflections %}
-        <div class="card-glass rounded-[2.5rem] p-8 border border-white/5">
-            <div class="flex justify-between items-center mb-6">
-                <span class="text-xs font-black text-purple-400 bg-purple-500/10 px-4 py-1.5 rounded-full">{{ r.month_date }}</span>
-                <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=r._id) }}')" class="text-slate-700 hover:text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            </div>
-            <p class="text-sm text-slate-200 italic leading-relaxed mb-6">"{{ r.monthly_reflection }}"</p>
-            <div class="pt-6 border-t border-white/5 grid grid-cols-2 gap-4">
-                <div>
-                    <p class="text-[8px] font-black text-slate-500 uppercase mb-2">Self-Assessment</p>
-                    <p class="text-[10px] text-slate-400 leading-tight">{{ r.self_evaluation[:80] }}...</p>
+        <div class="card-glass rounded-[2rem] overflow-hidden border border-white/5 relative">
+            <!-- Decorative Glow -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/10 blur-[50px] pointer-events-none"></div>
+            
+            <div class="p-7">
+                <div class="flex justify-between items-center mb-5">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
+                        </div>
+                        <span class="text-[11px] font-black text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full uppercase tracking-tighter">{{ r.month_date }}</span>
+                    </div>
+                    <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=r._id) }}')" class="text-slate-600 hover:text-red-400 transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
                 </div>
-                <div>
-                    <p class="text-[8px] font-black text-slate-500 uppercase mb-2">Mentorship</p>
-                    <p class="text-[10px] text-slate-400 leading-tight">{{ r.feedback[:80] }}...</p>
+
+                <!-- Main Reflection -->
+                <div class="relative mb-6">
+                    <i data-lucide="quote" class="absolute -top-2 -left-2 w-8 h-8 text-white/5"></i>
+                    <p class="text-sm text-slate-200 italic leading-relaxed pl-4 relative z-10">
+                        {{ r.monthly_reflection }}
+                    </p>
+                </div>
+
+                <!-- Assessment Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/5">
+                    <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="user" class="w-3 h-3 text-slate-500"></i>
+                            <p class="text-[8px] font-black text-slate-500 uppercase tracking-widest">Self-Assessment</p>
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-normal">{{ r.self_evaluation }}</p>
+                    </div>
+                    
+                    <div class="bg-indigo-500/5 rounded-2xl p-4 border border-indigo-500/10">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="message-square" class="w-3 h-3 text-indigo-400"></i>
+                            <p class="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Supervisor Feedback</p>
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-normal">{{ r.feedback }}</p>
+                    </div>
                 </div>
             </div>
         </div>

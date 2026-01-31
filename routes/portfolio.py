@@ -63,26 +63,58 @@ async def new_log():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     
     if request.method == 'POST':
-        db = get_db()
-        form = await request.form
-        files = (await request.files).getlist('photos')
-        
-        # Process and compress images using the helper in utils.py
-        images = await process_multiple_images(files)
+        try:
+            db = get_db()
+            form = await request.form
+            files = (await request.files).getlist('photos')
+            
+            # Process images with the new robust utility
+            images = await process_multiple_images(files)
 
-        entry = {
-            'user_id': session['user_id'],
-            'week_end_date': form.get('week_end_date'),
-            'tasks': form.get('tasks'),
-            'competencies': form.get('competencies'),
-            'knowledge': form.get('knowledge'),
-            'images': images,
-            'created_at': datetime.utcnow()
-        }
-        await db.weekly_logs.insert_one(entry)
-        return redirect(url_for('portfolio.list_reports'))
+            await db.weekly_logs.insert_one({
+                'user_id': session['user_id'],
+                'week_end_date': form.get('week_end_date'),
+                'tasks': form.get('tasks'),
+                'competencies': form.get('competencies'),
+                'knowledge': form.get('knowledge'),
+                'images': images,
+                'created_at': datetime.utcnow()
+            })
+            return redirect(url_for('portfolio.list_reports'))
+        except Exception as e:
+            print(f"Route Error (new_log): {e}")
+            return "Internal Error: Image upload failed. Try smaller files.", 500
 
     return await render_template('portfolio/portfolio_form_log.html', today=datetime.today().strftime('%Y-%m-%d'))
+
+@portfolio_bp.route('/dtr/upload', methods=['GET', 'POST'])
+async def upload_dtr():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    
+    if request.method == 'POST':
+        try:
+            db = get_db()
+            form = await request.form
+            files_data = await request.files
+            
+            # Process Front and Back separately
+            front_img = await process_multiple_images(files_data.getlist('dtr_front'))
+            back_img = await process_multiple_images(files_data.getlist('dtr_back'))
+            
+            if front_img:
+                await db.dtr_uploads.insert_one({
+                    'user_id': session['user_id'],
+                    'description': form.get('description'), # e.g., "January 2026"
+                    'image_front': front_img[0] if front_img else None,
+                    'image_back': back_img[0] if back_img else None,
+                    'uploaded_at': datetime.utcnow()
+                })
+            return redirect(url_for('portfolio.list_reports'))
+        except Exception as e:
+            print(f"DTR Error: {e}")
+            return "Upload Failed", 500
+
+    return await render_template('portfolio/portfolio_form_dtr.html')
 
 @portfolio_bp.route('/reflection/new', methods=['GET', 'POST'])
 async def new_reflection():
@@ -103,29 +135,6 @@ async def new_reflection():
         return redirect(url_for('portfolio.list_reports'))
 
     return await render_template('portfolio/portfolio_form_reflection.html', today=datetime.today().strftime('%Y-%m-%d'))
-
-@portfolio_bp.route('/dtr/upload', methods=['GET', 'POST'])
-async def upload_dtr():
-    if 'user_id' not in session: return redirect(url_for('auth.login'))
-    
-    if request.method == 'POST':
-        db = get_db()
-        form = await request.form
-        files = (await request.files).getlist('dtr_photos')
-        
-        images = await process_multiple_images(files)
-        
-        if images:
-            await db.dtr_uploads.insert_one({
-                'user_id': session['user_id'],
-                'description': form.get('description'),
-                'images': images,
-                'uploaded_at': datetime.utcnow()
-            })
-            
-        return redirect(url_for('portfolio.list_reports'))
-
-    return await render_template('portfolio/portfolio_form_dtr.html')
 
 @portfolio_bp.route('/delete/<report_id>')
 async def delete_report(report_id):

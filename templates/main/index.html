@@ -1,193 +1,214 @@
 {% extends "main/base.html" %}
 {% block content %}
 
-<!-- Header Section -->
-<div class="flex justify-between items-center mb-10 px-1">
-    <div>
-        <h1 class="text-4xl font-900 tracking-tightest bg-gradient-to-br from-white to-slate-500 bg-clip-text text-transparent">
-            Activity
-        </h1>
-        <div class="flex items-center gap-2 mt-1">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <p class="text-slate-400 text-xs font-bold uppercase tracking-tighter">Live Tracker</p>
-        </div>
-    </div>
-    <div class="relative group">
-        <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
-        <div class="relative w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center border border-white/10">
-            <i data-lucide="layout-grid" class="text-indigo-400 w-5 h-5"></i>
-        </div>
-    </div>
-</div>
-
-<!-- Progress Card -->
-<div class="relative overflow-hidden card-glass rounded-[2.5rem] p-8 mb-10 border border-white/10 shadow-2xl">
-    <!-- Subtle Background Glow -->
-    <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 blur-[80px] rounded-full"></div>
+<!-- Single Centered Column Layout -->
+<div class="max-w-2xl mx-auto px-4 sm:px-6 pt-8 pb-24">
     
-    <div class="flex justify-between items-start mb-8 relative z-10">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-10">
         <div>
-            <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Completion Status</p>
-            <div class="flex items-baseline gap-1">
-                <span class="text-5xl font-900 tracking-tighter text-white">{{ total_str.split('h')[0] }}</span>
-                <span class="text-xl font-800 text-slate-500">h</span>
-                <span class="text-3xl font-800 tracking-tighter text-white ml-2">{{ total_str.split(' ')[1] if ' ' in total_str else '0m' }}</span>
+            <h1 class="text-4xl lg:text-5xl font-900 tracking-tightest bg-gradient-to-br from-white to-slate-500 bg-clip-text text-transparent">
+                Activity
+            </h1>
+            <div class="flex items-center gap-2 mt-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Live Tracker</p>
             </div>
         </div>
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-3 backdrop-blur-md">
-            <span class="block text-xl font-900 text-indigo-400 leading-none">{{ progress|round|int }}%</span>
+        <div class="relative group">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-2xl blur opacity-30"></div>
+            <div class="relative w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center border border-white/10">
+                <i data-lucide="layout-grid" class="text-indigo-400 w-5 h-5"></i>
+            </div>
         </div>
     </div>
 
-    <!-- Progress Bar Stack -->
-    <div class="relative h-5 w-full bg-slate-950 rounded-full p-1 border border-white/5 mb-8">
-        <div class="absolute inset-y-1 left-1 bg-gradient-to-r from-indigo-600 via-indigo-400 to-cyan-400 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all duration-1000 ease-out" 
-             style="width: calc({{ progress }}% - 8px)">
-        </div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-4 relative z-10">
-        <div class="bg-gradient-to-b from-white/5 to-transparent rounded-3xl p-5 border border-white/5">
-            <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Remaining</p>
-            <p class="text-lg font-bold text-slate-200 tracking-tight">{{ remaining_str }}</p>
-        </div>
-        <div class="bg-gradient-to-b from-white/5 to-transparent rounded-3xl p-5 border border-white/5">
-            <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Target Goal</p>
-            <p class="text-lg font-bold text-slate-200 tracking-tight">{{ required_str }}</p>
-        </div>
-    </div>
-</div>
-
-<!-- Log Form Section -->
-<div class="mb-10" id="log-section">
-    <div class="flex justify-between items-center mb-5 px-3">
-        <h2 id="form-title" class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Log Entry</h2>
-        <div class="flex gap-2">
-            <button onclick="resetForm()" id="cancel-edit" class="hidden text-[10px] font-black text-slate-400 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hover:bg-white/10 transition-all">CANCEL</button>
-            <button onclick="quickFill()" class="text-[10px] font-black text-white bg-indigo-600 px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/20 active:scale-90 transition-all">⚡ QUICK 8-5</button>
-        </div>
-    </div>
-    
-    <form method="POST" id="log-form" class="card-glass rounded-[2.5rem] p-7 border border-white/10 space-y-6">
-        <input type="hidden" name="log_id" id="log_id">
+    <!-- Progress Card -->
+    <div class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-10 border border-white/10 shadow-2xl">
+        <!-- Subtle Background Glow -->
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 blur-[80px] rounded-full"></div>
         
-        <div class="relative">
-            <i data-lucide="calendar" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
-            <input type="date" name="log_date" id="log_date" value="{{ today }}" required 
-                   class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-14 pr-6 py-5 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-white appearance-none">
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-3">
-                <div class="flex items-center gap-2 px-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                    <label class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Morning</label>
-                </div>
-                <div class="space-y-2">
-                    <input type="time" name="am_in" id="am_in" placeholder="In" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
-                    <input type="time" name="am_out" id="am_out" placeholder="Out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
+        <div class="flex justify-between items-start mb-8 relative z-10">
+            <div>
+                <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Completion Status</p>
+                <div class="flex items-baseline gap-1">
+                    <span class="text-5xl font-900 tracking-tighter text-white">{{ total_str.split('h')[0] }}</span>
+                    <span class="text-xl font-800 text-slate-500">h</span>
+                    <span class="text-3xl font-800 tracking-tighter text-white ml-2">{{ total_str.split(' ')[1] if ' ' in total_str else '0m' }}</span>
                 </div>
             </div>
-            <div class="space-y-3">
-                <div class="flex items-center gap-2 px-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
-                    <label class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Afternoon</label>
-                </div>
-                <div class="space-y-2">
-                    <input type="time" name="pm_in" id="pm_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
-                    <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
-                </div>
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-3 backdrop-blur-md">
+                <span class="block text-xl font-900 text-indigo-400 leading-none">{{ progress|round|int }}%</span>
             </div>
         </div>
 
-        <button type="submit" id="submit-btn" class="w-full relative group overflow-hidden bg-white text-slate-950 font-900 py-5 rounded-2xl transition-all active:scale-[0.97]">
-            <span class="relative z-10 flex items-center justify-center gap-2">
-                Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i>
-            </span>
-        </button>
-    </form>
-</div>
-
-<!-- History Section Header -->
-<div class="flex items-center justify-between mb-8 px-4">
-    <div class="flex items-center gap-3">
-        <div class="w-8 h-[1px] bg-indigo-500/50"></div>
-        <h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Logs Archive</h2>
-    </div>
-    <div class="relative group">
-        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-indigo-400 transition-colors"></i>
-        <input type="text" id="logSearch" placeholder="Filter..." 
-               class="bg-slate-950/50 border border-white/10 rounded-full py-2 pl-9 pr-4 text-[10px] font-bold text-white focus:outline-none focus:border-indigo-500/50 focus:w-40 transition-all w-24">
-    </div>
-</div>
-
-<!-- History Folders -->
-<div class="space-y-4 pb-28" id="history-container">
-    {% for month, data in grouped_logs.items() %}
-    <details {% if loop.first %}open{% endif %} class="group month-folder">
-        <summary class="flex items-center gap-4 mb-3 px-4 select-none outline-none cursor-pointer list-none">
-            <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-open:bg-indigo-500/10 group-open:border-indigo-500/20 transition-all">
-                <i data-lucide="folder" class="w-4 h-4 text-slate-500 group-open:hidden"></i>
-                <i data-lucide="folder-open" class="w-4 h-4 hidden group-open:block text-indigo-400"></i>
+        <!-- Progress Bar -->
+        <div class="relative h-4 w-full bg-slate-950 rounded-full p-1 border border-white/5 mb-8">
+            <div class="absolute inset-y-1 left-1 bg-gradient-to-r from-indigo-600 via-indigo-400 to-cyan-400 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all duration-1000 ease-out" 
+                 style="width: calc({{ progress }}% - 8px)">
             </div>
-            <div class="flex-grow">
-                <h2 class="text-sm font-black text-slate-300 group-open:text-white transition-colors">{{ month }}</h2>
-                <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{{ data.month_total_str }} logged</p>
-            </div>
-            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 transition-transform group-open:rotate-180"></i>
-        </summary>
+        </div>
 
-        <div class="space-y-3 mt-4">
-            {% for log in data.logs %}
-            <div class="mx-2 card-glass rounded-3xl p-4 flex items-center justify-between hover:bg-white/[0.07] transition-all log-item border border-white/[0.03]" 
-                 data-date="{{ log.log_date }}" data-day="{{ log.display_weekday }}">
-                <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 rounded-2xl bg-slate-950 flex flex-col items-center justify-center border border-white/5">
-                        <span class="text-xs font-black text-slate-500 leading-none mb-0.5">{{ log.display_weekday[:3].upper() }}</span>
-                        <span class="text-sm font-black text-white leading-none">{{ log.display_day }}</span>
+        <div class="grid grid-cols-2 gap-4 relative z-10">
+            <div class="bg-gradient-to-b from-white/5 to-transparent rounded-3xl p-5 border border-white/5">
+                <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Remaining</p>
+                <p class="text-lg font-bold text-slate-200 tracking-tight">{{ remaining_str }}</p>
+            </div>
+            <div class="bg-gradient-to-b from-white/5 to-transparent rounded-3xl p-5 border border-white/5">
+                <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Target Goal</p>
+                <p class="text-lg font-bold text-slate-200 tracking-tight">{{ required_str }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Form Section -->
+    <div class="mb-12" id="log-section">
+        <div class="flex justify-between items-center mb-5 px-4">
+            <h2 id="form-title" class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Log Entry</h2>
+            <div class="flex gap-2">
+                <button onclick="resetForm()" id="cancel-edit" class="hidden text-[10px] font-black text-slate-400 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hover:bg-white/10">CANCEL</button>
+                <button onclick="quickFill()" class="text-[10px] font-black text-indigo-400 hover:text-white transition-all">⚡ QUICK 8-5</button>
+            </div>
+        </div>
+        
+        <form method="POST" id="log-form" class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-7 border border-white/10 space-y-6">
+            <input type="hidden" name="log_id" id="log_id">
+            
+            <div class="relative">
+                <i data-lucide="calendar" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
+                <input type="date" name="log_date" id="log_date" value="{{ today }}" required 
+                       class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-14 pr-6 py-5 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-white appearance-none">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-3">
+                    <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Morning</label>
+                    <div class="space-y-2">
+                        <input type="time" name="am_in" id="am_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
+                        <input type="time" name="am_out" id="am_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
                     </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <p class="text-[10px] font-black text-white uppercase tracking-tighter leading-none">{{ log.am_str }}</p>
-                            <span class="text-slate-700">/</span>
-                            <p class="text-[10px] font-black text-white uppercase tracking-tighter leading-none">{{ log.pm_str }}</p>
+                </div>
+                <div class="space-y-3">
+                    <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Afternoon</label>
+                    <div class="space-y-2">
+                        <input type="time" name="pm_in" id="pm_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
+                        <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" id="submit-btn" class="w-full relative group overflow-hidden bg-white text-slate-950 font-900 py-5 rounded-2xl transition-all active:scale-[0.97]">
+                <span class="relative z-10 flex items-center justify-center gap-2">
+                    Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </span>
+            </button>
+        </form>
+    </div>
+
+    <!-- History Archive Section -->
+    <div class="mb-8 px-4">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">History Archive</h2>
+                <p id="search-count" class="text-[10px] text-indigo-400/60 font-bold mt-1 hidden">Found 0 matches</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Master Toggle -->
+                <button onclick="toggleAllFolders()" id="master-toggle" class="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all" title="Toggle All">
+                    <i data-lucide="chevrons-up-down" class="w-4 h-4"></i>
+                </button>
+                <!-- Search -->
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600"></i>
+                    <input type="text" id="logSearch" placeholder="Search logs..." 
+                           class="bg-slate-950 border border-white/10 rounded-2xl py-2.5 pl-9 pr-4 text-[11px] font-bold text-white focus:w-48 transition-all w-32 outline-none focus:border-indigo-500/50">
+                </div>
+            </div>
+        </div>
+
+        <!-- History Container -->
+        <div class="space-y-4" id="history-container">
+            {% for month, data in grouped_logs.items() %}
+            <details {% if loop.first %}open{% endif %} class="group month-folder transition-all duration-300">
+                <summary class="sticky top-4 z-20 flex items-center gap-4 mb-3 px-4 py-2 select-none outline-none cursor-pointer list-none bg-slate-950/80 backdrop-blur-md rounded-2xl border border-white/5">
+                    <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-open:bg-indigo-500/10 group-open:border-indigo-500/20 transition-all">
+                        <i data-lucide="folder" class="w-4 h-4 text-slate-500 group-open:hidden"></i>
+                        <i data-lucide="folder-open" class="w-4 h-4 hidden group-open:block text-indigo-400"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <h2 class="text-sm font-black text-slate-300 group-open:text-white transition-colors">{{ month }}</h2>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{{ data.logs|length }} entries • {{ data.month_total_str }}</p>
+                    </div>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 transition-transform group-open:rotate-180"></i>
+                </summary>
+
+                <div class="space-y-3 mt-4 px-2">
+                    {% for log in data.logs %}
+                    <div class="log-item bg-slate-900/30 border border-white/[0.03] rounded-3xl p-4 flex items-center justify-between hover:bg-white/[0.05] hover:border-white/10 transition-all group/item" 
+                         data-date="{{ log.log_date }}" data-day="{{ log.display_weekday }}">
+                        
+                        <div class="flex items-center gap-4">
+                            <!-- Date Icon -->
+                            <div class="w-11 h-11 rounded-2xl bg-slate-950 flex flex-col items-center justify-center border border-white/5 group-hover/item:border-indigo-500/30 transition-colors">
+                                <span class="text-[9px] font-black text-slate-500 leading-none mb-0.5">{{ log.display_weekday[:3].upper() }}</span>
+                                <span class="text-sm font-black text-white leading-none">{{ log.display_day }}</span>
+                            </div>
+
+                            <!-- Info -->
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <p class="text-[10px] font-black text-white uppercase tracking-tighter">{{ log.am_str }}</p>
+                                    <span class="text-slate-700 text-[8px]">•</span>
+                                    <p class="text-[10px] font-black text-white uppercase tracking-tighter">{{ log.pm_str }}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">{{ log.hours_str }}</span>
+                                    <!-- Dynamic Badge: Assuming 8h is a full day -->
+                                    {% if '8h' in log.hours_str %}
+                                    <span class="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[7px] font-black uppercase tracking-tighter">Full Session</span>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                        <p class="text-[9px] font-bold text-slate-500 mt-1 uppercase tracking-widest">{{ log.hours_str }} total duration</p>
+                        
+                        <!-- Actions -->
+                        <div class="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                            <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}')" 
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all">
+                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="confirmDelete(event, '{{ url_for('tracker.delete_log', log_id=log.id) }}')" 
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-all">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
-                
-                <div class="flex items-center gap-1">
-                    <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}')" 
-                            class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all">
-                        <i data-lucide="pencil-line" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="confirmDelete(event, '{{ url_for('tracker.delete_log', log_id=log.id) }}')" 
-                       class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-all">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
+            </details>
             {% endfor %}
+            
+            <!-- Empty Search State -->
+            <div id="no-results" class="hidden py-20 text-center">
+                <div class="w-16 h-16 bg-slate-900 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-white/5">
+                    <i data-lucide="search-x" class="text-slate-600 w-8 h-8"></i>
+                </div>
+                <p class="text-slate-500 font-bold text-sm">No logs match your search</p>
+                <button onclick="clearSearch()" class="mt-4 text-xs font-black text-indigo-400 uppercase tracking-widest">Clear Filter</button>
+            </div>
         </div>
-    </details>
-    {% endfor %}
-</div>
+    </div>
 
 <style>
-    /* Custom removal of default arrows for Details/Summary */
     summary::-webkit-details-marker { display: none; }
-    
-    /* Time input appearance fix */
-    input[type="time"]::-webkit-calendar-picker-indicator {
-        filter: invert(1);
-        opacity: 0.3;
-    }
+    input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.3; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.3; }
 </style>
 
 <script>
-    // Re-triggering Lucide icons for dynamically loaded elements if needed
     lucide.createIcons();
 
+    // --- Form Controls ---
     function quickFill() {
         document.getElementById('am_in').value = "08:00"; 
         document.getElementById('am_out').value = "12:00";
@@ -204,9 +225,10 @@
         document.getElementById('pm_out').value = pmOut;
         
         document.getElementById('form-title').innerText = "Edit Session";
-        document.getElementById('submit-btn').innerHTML = `<span class="relative z-10 flex items-center justify-center gap-2">Update Session <i data-lucide="refresh-cw" class="w-4 h-4"></i></span>`;
-        document.getElementById('submit-btn').classList.replace('bg-white', 'bg-emerald-500');
-        document.getElementById('submit-btn').classList.replace('text-slate-950', 'text-white');
+        const btn = document.getElementById('submit-btn');
+        btn.innerHTML = `<span class="relative z-10 flex items-center justify-center gap-2">Update Session <i data-lucide="refresh-cw" class="w-4 h-4"></i></span>`;
+        btn.classList.remove('bg-white', 'text-slate-950');
+        btn.classList.add('bg-emerald-500', 'text-white');
         document.getElementById('cancel-edit').classList.remove('hidden');
         lucide.createIcons();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -214,29 +236,81 @@
 
     function resetForm() {
         document.getElementById('log_id').value = "";
-        document.getElementById('log_form').reset();
+        document.getElementById('log-form').reset();
+        document.getElementById('log_date').value = "{{ today }}";
         document.getElementById('form-title').innerText = "Log Entry";
-        document.getElementById('submit-btn').innerHTML = `<span class="relative z-10 flex items-center justify-center gap-2">Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i></span>`;
-        document.getElementById('submit-btn').classList.replace('bg-emerald-500', 'bg-white');
-        document.getElementById('submit-btn').classList.replace('text-white', 'text-slate-950');
+        const btn = document.getElementById('submit-btn');
+        btn.innerHTML = `<span class="relative z-10 flex items-center justify-center gap-2">Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i></span>`;
+        btn.classList.remove('bg-emerald-500', 'text-white');
+        btn.classList.add('bg-white', 'text-slate-950');
         document.getElementById('cancel-edit').classList.add('hidden');
         lucide.createIcons();
     }
 
-    document.getElementById('logSearch').addEventListener('input', function(e) {
+    // --- Advanced Archive Controls ---
+    const searchInput = document.getElementById('logSearch');
+    const noResults = document.getElementById('no-results');
+    const searchCount = document.getElementById('search-count');
+
+    searchInput.addEventListener('input', function(e) {
         const term = e.target.value.toLowerCase();
-        const logs = document.querySelectorAll('.log-item');
-        
-        logs.forEach(log => {
-            const dateText = log.getAttribute('data-date').toLowerCase();
-            const dayText = log.getAttribute('data-day').toLowerCase();
-            log.style.display = (dateText.includes(term) || dayText.includes(term)) ? 'flex' : 'none';
-        });
+        let totalVisible = 0;
 
         document.querySelectorAll('.month-folder').forEach(folder => {
-            const visibleLogs = folder.querySelectorAll('.log-item[style="display: flex;"]');
-            folder.style.display = (visibleLogs.length === 0 && term !== "") ? 'none' : 'block';
+            let folderHasMatch = false;
+            const logs = folder.querySelectorAll('.log-item');
+            
+            logs.forEach(item => {
+                const dateText = item.getAttribute('data-date').toLowerCase();
+                const dayText = item.getAttribute('data-day').toLowerCase();
+                const isMatch = dateText.includes(term) || dayText.includes(term);
+                
+                item.style.display = isMatch ? 'flex' : 'none';
+                if(isMatch) {
+                    folderHasMatch = true;
+                    totalVisible++;
+                }
+            });
+
+            // Show/Hide folder and auto-expand if searching
+            folder.style.display = folderHasMatch ? 'block' : 'none';
+            if (term !== "" && folderHasMatch) {
+                folder.setAttribute('open', '');
+            }
         });
+
+        // Update UI states
+        noResults.style.display = (totalVisible === 0 && term !== "") ? 'block' : 'none';
+        if (term !== "") {
+            searchCount.classList.remove('hidden');
+            searchCount.innerText = `Found ${totalVisible} matches`;
+        } else {
+            searchCount.classList.add('hidden');
+        }
     });
+
+    function clearSearch() {
+        searchInput.value = "";
+        searchInput.dispatchEvent(new Event('input'));
+    }
+
+    let allExpanded = true; 
+    function toggleAllFolders() {
+        const folders = document.querySelectorAll('.month-folder');
+        allExpanded = !allExpanded;
+        folders.forEach(f => {
+            if (allExpanded) f.setAttribute('open', '');
+            else f.removeAttribute('open');
+        });
+        
+        // Update the icon dynamically
+        const icon = document.querySelector('#master-toggle i');
+        icon.setAttribute('data-lucide', allExpanded ? 'chevrons-up-down' : 'chevrons-down-up');
+        lucide.createIcons();
+    }
+
+    function confirmDelete(e, url) {
+        if(confirm("Permanently delete this log?")) window.location.href = url;
+    }
 </script>
 {% endblock %}
