@@ -1,0 +1,48 @@
+{% extends "main/base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{{ url_for('portfolio.list_reports') }}" class="w-11 h-11 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <h1 class="text-3xl font-black tracking-tight text-white">Reflection</h1>
+    </div>
+
+    <form method="POST" class="space-y-6 pb-12">
+        <div class="card-glass rounded-[2.5rem] p-8 border border-white/10 bg-slate-900/40 backdrop-blur-xl space-y-8">
+            <div class="w-full md:w-1/2 space-y-2">
+                <label class="text-[11px] font-black text-purple-400 uppercase tracking-widest ml-1">Month of Reflection</label>
+                <input type="date" name="month_date" value="{{ today }}" required class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-sm text-white focus:ring-2 focus:ring-purple-500/50 transition-all [color-scheme:dark]">
+            </div>
+            
+            <div class="space-y-3">
+                <div class="flex flex-col">
+                    <label class="text-[11px] font-black text-purple-400 uppercase tracking-widest ml-1">Monthly Reflection</label>
+                    <span class="text-[10px] text-slate-500 ml-1 mb-2 italic">Summarize major challenges and successes.</span>
+                </div>
+                <textarea name="monthly_reflection" rows="5" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:ring-2 focus:ring-purple-500/50 transition-all"></textarea>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="flex flex-col">
+                    <label class="text-[11px] font-black text-purple-400 uppercase tracking-widest ml-1">Self-Evaluation</label>
+                    <span class="text-[10px] text-slate-500 ml-1 mb-2 italic">Honesty about your performance and areas for improvement.</span>
+                </div>
+                <textarea name="self_evaluation" rows="4" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:ring-2 focus:ring-purple-500/50 transition-all"></textarea>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex flex-col">
+                    <label class="text-[11px] font-black text-purple-400 uppercase tracking-widest ml-1">Supervisory Feedback</label>
+                    <span class="text-[10px] text-slate-500 ml-1 mb-2 italic">Summarize critiques or feedback received from your mentor.</span>
+                </div>
+                <textarea name="feedback" rows="3" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:ring-2 focus:ring-purple-500/50 transition-all"></textarea>
+            </div>
+
+            <button class="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-purple-900/20 transition-all active:scale-[0.99] mt-4">
+                Save Reflection
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

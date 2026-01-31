@@ -1,0 +1,38 @@
+{% extends "main/base.html" %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{{ url_for('portfolio.list_reports') }}" class="w-11 h-11 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <h1 class="text-3xl font-black tracking-tight text-white">Upload Signed DTR</h1>
+    </div>
+
+    <div class="card-glass rounded-[2.5rem] p-8 border border-white/10 bg-slate-900/40 backdrop-blur-xl relative overflow-hidden">
+        <form action="{{ url_for('portfolio.upload_dtr') }}" method="POST" enctype="multipart/form-data" class="space-y-8" onsubmit="showUploading()">
+            <div class="space-y-2">
+                <label class="text-[11px] font-black text-indigo-400 uppercase tracking-widest ml-1">Description / Period</label>
+                <input type="text" name="description" placeholder="e.g. January 1-15, 2026" required class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white/10 transition-all">
+            </div>
+
+            <div class="space-y-4">
+                <label class="text-[11px] font-black text-indigo-400 uppercase tracking-widest ml-1">DTR Images</label>
+                <div class="relative group cursor-pointer">
+                    <div class="absolute -inset-1 bg-dashed border-2 border-white/10 rounded-2xl group-hover:border-indigo-500/50 transition-all"></div>
+                    <input type="file" name="dtr_photos" multiple accept="image/*" class="relative z-10 w-full opacity-0 py-12 cursor-pointer">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <i data-lucide="image-plus" class="w-8 h-8 text-slate-500 group-hover:text-indigo-400 transition-colors mb-2"></i>
+                        <span class="text-xs text-slate-400 font-medium">Click to select multiple images</span>
+                        <span class="text-[10px] text-slate-600 mt-1 uppercase tracking-tighter">Supported: JPG, PNG</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                <span>Upload Documents</span>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,100 +1,136 @@
-from quart import Blueprint, render_template, request, redirect, url_for, session, flash, current_app
+from quart import Blueprint, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import users_col
+from bson import ObjectId
 
-# Fix: Use __name__
 auth_bp = Blueprint('auth', __name__)
+
+# Constants
+ADMIN_ID = "6979fc7f59b791fd5fcbf90f"
+
+# Helper to check if user is the specific admin
+def is_admin():
+    return session.get('user_id') == ADMIN_ID
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 async def login():
-    # If already logged in, go to home
     if 'user_id' in session:
         return redirect(url_for('tracker.index'))
 
     if request.method == "POST":
         form = await request.form
-        username = form.get("username")
+        username = form.get("username").lower().strip()
+        password = form.get("password")
+        user = await users_col.find_one({"username": username})
+
+        if user and check_password_hash(user['password'], password):
+            # CHECK STATUS (Only allow login if approved or if it's the specific admin)
+            user_id_str = str(user['_id'])
+            if user.get('status') == 'pending' and user_id_str != ADMIN_ID:
+                await flash("Your account is awaiting Admin approval.", "info")
+                return redirect(url_for('auth.login'))
+            
+            session['user_id'] = user_id_str
+            session['username'] = user['username']
+            session['is_admin'] = (user_id_str == ADMIN_ID) 
+            
+            await flash(f"Access Granted. Welcome, {user['username']}.", "success")
+            return redirect(url_for('tracker.index'))
+        
+        await flash("Invalid credentials or unauthorized access.", "error")
+    return await render_template("auth/login.html")
+
+@auth_bp.route("/register", methods=["GET", "POST"])
+async def register():
+    if request.method == "POST":
+        form = await request.form
+        username = form.get("username").lower().strip()
+        password = form.get("password")
+        # Note: security_code is ignored in the logic but kept in the design
+        
+        existing_user = await users_col.find_one({"username": username})
+        if existing_user:
+            await flash("Identity already exists in database.", "error")
+            return redirect(url_for('auth.register'))
+
+        hashed_pw = generate_password_hash(password)
+        
+        # All new registrations are 'pending'
+        await users_col.insert_one({
+            "username": username, 
+            "password": hashed_pw,
+            "status": "pending" 
+        })
+        
+        await flash("Request sent! Please wait for Admin approval.", "success")
+        return redirect(url_for('auth.login'))
+
+    return await render_template("auth/register.html")
+
+@auth_bp.route("/fix-account", methods=["GET", "POST"])
+async def fix_account():
+    if request.method == "POST":
+        form = await request.form
+        username = form.get("username").lower().strip()
         password = form.get("password")
 
         user = await users_col.find_one({"username": username})
 
-        # Secure password check
-        if user and check_password_hash(user['password'], password):
-            session['user_id'] = str(user['_id'])
-            session['username'] = user['username']
-            # Success Alert
-            await flash(f"Welcome back, {user['username']}!", "success")
-            return redirect(url_for('tracker.index'))
-        
-        # Error Alert
-        await flash("Invalid Username or Password.", "error")
-        return redirect(url_for('auth.login'))
-
-    return await render_template("login.html")
-
-@auth_bp.route("/register", methods=["GET", "POST"])
-async def register():
-    if 'user_id' in session:
-        return redirect(url_for('tracker.index'))
-
-    if request.method == "POST":
-        form = await request.form
-        username = form.get("username")
-        password = form.get("password")
-        security_code = form.get("security_code")
-
-        required_code = current_app.config.get('REGISTRATION_KEY', '8219')
-        
-        if security_code != required_code:
-            await flash("Invalid Master Access Key. Registration denied.", "error")
-            return redirect(url_for('auth.register'))
-
-        existing_user = await users_col.find_one({"username": username})
-        if existing_user:
-            await flash("Username is already taken.", "error")
-            return redirect(url_for('auth.register'))
-
-        hashed_pw = generate_password_hash(password)
-        await users_col.insert_one({"username": username, "password": hashed_pw})
-        
-        await flash("Access Granted! Account created.", "success")
-        return redirect(url_for('auth.login'))
-
-    return await render_template("register.html")
+        if user:
+            # Check if the password matches the plain text in the DB
+            # (Old system used plain text, new system uses check_password_hash)
+            # This logic assumes you are converting from plain text to hash
+            if user['password'] == password:
+                hashed_pw = generate_password_hash(password)
+                await users_col.update_one(
+                    {"_id": user['_id']},
+                    {"$set": {"password": hashed_pw}}
+                )
+                await flash("Account security updated! You can now login.", "success")
+                return redirect(url_for('auth.login'))
+            else:
+                await flash("Old credentials do not match our records.", "error")
+        else:
+            await flash("Username not found.", "error")
+            
+    return await render_template("auth/migration_tool.html")
 
 @auth_bp.route("/logout")
 async def logout():
-    session.clear()
-    await flash("You have been logged out.", "info")
+    session.clear() # This wipes the user's session data
+    await flash("Signed out successfully.", "info")
     return redirect(url_for('auth.login'))
 
-# --- NEW: POP-UP MIGRATION HANDLER ---
-@auth_bp.route("/fix-account", methods=["POST"])
-async def fix_account():
-    form = await request.form
-    username = form.get("username")
-    old_password = form.get("password")
+# --- ADMIN PANEL ROUTES ---
 
-    user = await users_col.find_one({"username": username})
+@auth_bp.route("/admin/users")
+async def manage_users():
+    if not is_admin():
+        await flash("Access Denied: Admin privileges required.", "error")
+        return redirect(url_for('tracker.index'))
+    
+    pending_users = await users_col.find({"status": "pending"}).to_list(length=100)
+    # Active personnel: any approved user (excluding the admin themselves from the list if preferred)
+    active_users = await users_col.find({"status": "approved"}).to_list(length=100)
+    
+    return await render_template("auth/admin_users.html", pending=pending_users, active=active_users)
 
-    if user:
-        # Case 1: Password is PLAIN TEXT (Needs fixing)
-        if user['password'] == old_password:
-            hashed_pw = generate_password_hash(old_password)
-            await users_col.update_one(
-                {"_id": user['_id']},
-                {"$set": {"password": hashed_pw}}
-            )
-            await flash("Account repaired! You can now log in securely.", "success")
-        
-        # Case 2: Password is already HASHED (No fix needed)
-        elif check_password_hash(user['password'], old_password):
-            await flash("Your account is already secure. Just log in normally.", "info")
-        
-        # Case 3: Wrong password
-        else:
-            await flash("Incorrect old password. Cannot verify account.", "error")
-    else:
-        await flash("Username not found.", "error")
+@auth_bp.route("/admin/approve/<user_id>")
+async def approve_user(user_id):
+    if not is_admin(): return "Unauthorized", 403
+    await users_col.update_one({"_id": ObjectId(user_id)}, {"$set": {"status": "approved"}})
+    await flash("User Approved.", "success")
+    return redirect(url_for('auth.manage_users'))
 
-    return redirect(url_for('auth.login'))
+@auth_bp.route("/admin/delete/<user_id>")
+async def delete_user(user_id):
+    if not is_admin(): return "Unauthorized", 403
+    
+    # Prevent the admin from deleting themselves
+    if user_id == ADMIN_ID:
+        await flash("Cannot delete the master admin account.", "error")
+        return redirect(url_for('auth.manage_users'))
+
+    await users_col.delete_one({"_id": ObjectId(user_id)})
+    await flash("User Removed.", "error")
+    return redirect(url_for('auth.manage_users'))

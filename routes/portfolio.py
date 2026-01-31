@@ -1,43 +1,37 @@
+import asyncio
 from quart import Blueprint, render_template, request, redirect, url_for, session
 from db import get_db
 from datetime import datetime
-import base64
-
-# Import ObjectId safely
-try:
-    from bson.objectid import ObjectId
-except ImportError:
-    # Fallback if bson is missing, though motor usually includes it
-    from bson import ObjectId
+from utils import process_multiple_images
+from bson import ObjectId
 
 portfolio_bp = Blueprint('portfolio', __name__, url_prefix='/portfolio')
 
-# --- HELPER ---
-def process_image(file_storage):
-    if not file_storage:
-        return None
-    try:
-        if hasattr(file_storage, 'read'):
-            return base64.b64encode(file_storage.read()).decode('utf-8')
-    except Exception as e:
-        print(f"Image Error: {e}")
-    return None
-
-# --- ROUTES ---
-
 @portfolio_bp.route('/')
 async def list_reports():
-    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    if 'user_id' not in session: 
+        return redirect(url_for('auth.login'))
     
     db = get_db()
-    user_id = session['user_id']
+    uid = session['user_id']
     
-    profile = await db.profiles.find_one({'user_id': user_id})
-    weekly_logs = await db.weekly_logs.find({'user_id': user_id}).sort('week_end_date', -1).to_list(length=100)
-    reflections = await db.reflections.find({'user_id': user_id}).sort('month_date', -1).to_list(length=100)
-    dtr_uploads = await db.dtr_uploads.find({'user_id': user_id}).sort('uploaded_at', -1).to_list(length=50)
+    # Run all database queries at once for maximum speed
+    p_task = db.profiles.find_one({'user_id': uid})
+    w_task = db.weekly_logs.find({'user_id': uid}).sort('week_end_date', -1).to_list(50)
+    r_task = db.reflections.find({'user_id': uid}).sort('month_date', -1).to_list(50)
+    d_task = db.dtr_uploads.find({'user_id': uid}).sort('uploaded_at', -1).to_list(20)
 
-    return await render_template('portfolio.html', profile=profile, weekly_logs=weekly_logs, reflections=reflections, dtr_uploads=dtr_uploads)
+    profile, weekly_logs, reflections, dtr_uploads = await asyncio.gather(
+        p_task, w_task, r_task, d_task
+    )
+
+    return await render_template(
+        'portfolio/portfolio.html', 
+        profile=profile, 
+        weekly_logs=weekly_logs, 
+        reflections=reflections, 
+        dtr_uploads=dtr_uploads
+    )
 
 @portfolio_bp.route('/setup', methods=['GET', 'POST'])
 async def setup_profile():
@@ -62,7 +56,7 @@ async def setup_profile():
         return redirect(url_for('portfolio.list_reports'))
 
     p = await db.profiles.find_one({'user_id': session['user_id']}) or {}
-    return await render_template('portfolio_setup.html', p=p)
+    return await render_template('portfolio/portfolio_setup.html', p=p)
 
 @portfolio_bp.route('/log/new', methods=['GET', 'POST'])
 async def new_log():
@@ -71,14 +65,10 @@ async def new_log():
     if request.method == 'POST':
         db = get_db()
         form = await request.form
-        files = await request.files
-        uploaded_photos = files.getlist('photos')
+        files = (await request.files).getlist('photos')
         
-        images_list = []
-        for photo in uploaded_photos:
-            if photo.filename:
-                b64 = process_image(photo)
-                if b64: images_list.append(b64)
+        # Process and compress images using the helper in utils.py
+        images = await process_multiple_images(files)
 
         entry = {
             'user_id': session['user_id'],
@@ -86,13 +76,13 @@ async def new_log():
             'tasks': form.get('tasks'),
             'competencies': form.get('competencies'),
             'knowledge': form.get('knowledge'),
-            'images': images_list,
+            'images': images,
             'created_at': datetime.utcnow()
         }
         await db.weekly_logs.insert_one(entry)
         return redirect(url_for('portfolio.list_reports'))
 
-    return await render_template('portfolio_form_log.html', today=datetime.today().strftime('%Y-%m-%d'))
+    return await render_template('portfolio/portfolio_form_log.html', today=datetime.today().strftime('%Y-%m-%d'))
 
 @portfolio_bp.route('/reflection/new', methods=['GET', 'POST'])
 async def new_reflection():
@@ -112,7 +102,7 @@ async def new_reflection():
         await db.reflections.insert_one(entry)
         return redirect(url_for('portfolio.list_reports'))
 
-    return await render_template('portfolio_form_reflection.html', today=datetime.today().strftime('%Y-%m-%d'))
+    return await render_template('portfolio/portfolio_form_reflection.html', today=datetime.today().strftime('%Y-%m-%d'))
 
 @portfolio_bp.route('/dtr/upload', methods=['GET', 'POST'])
 async def upload_dtr():
@@ -121,27 +111,21 @@ async def upload_dtr():
     if request.method == 'POST':
         db = get_db()
         form = await request.form
-        files = await request.files
-        dtr_photos = files.getlist('dtr_photos')
+        files = (await request.files).getlist('dtr_photos')
         
-        processed_images = []
-        for photo in dtr_photos:
-            if photo.filename:
-                b64 = process_image(photo)
-                if b64: processed_images.append(b64)
+        images = await process_multiple_images(files)
         
-        if processed_images:
-            entry = {
+        if images:
+            await db.dtr_uploads.insert_one({
                 'user_id': session['user_id'],
                 'description': form.get('description'),
-                'images': processed_images,
+                'images': images,
                 'uploaded_at': datetime.utcnow()
-            }
-            await db.dtr_uploads.insert_one(entry)
+            })
             
         return redirect(url_for('portfolio.list_reports'))
 
-    return await render_template('portfolio_form_dtr.html')
+    return await render_template('portfolio/portfolio_form_dtr.html')
 
 @portfolio_bp.route('/delete/<report_id>')
 async def delete_report(report_id):
@@ -150,10 +134,12 @@ async def delete_report(report_id):
     try:
         db = get_db()
         oid = ObjectId(report_id)
-        # Attempt delete on all portfolio collections
-        await db.weekly_logs.delete_one({'_id': oid, 'user_id': session['user_id']})
-        await db.reflections.delete_one({'_id': oid, 'user_id': session['user_id']})
-        await db.dtr_uploads.delete_one({'_id': oid, 'user_id': session['user_id']})
+        uid = session['user_id']
+        await asyncio.gather(
+            db.weekly_logs.delete_one({'_id': oid, 'user_id': uid}),
+            db.reflections.delete_one({'_id': oid, 'user_id': uid}),
+            db.dtr_uploads.delete_one({'_id': oid, 'user_id': uid})
+        )
     except Exception as e:
         print(f"Delete Error: {e}")
         
@@ -163,20 +149,25 @@ async def delete_report(report_id):
 async def print_journal():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     db = get_db()
-    user_id = session['user_id']
+    uid = session['user_id']
     
-    p = await db.profiles.find_one({'user_id': user_id}) or {}
-    weekly_logs = await db.weekly_logs.find({'user_id': user_id}).sort('week_end_date', 1).to_list(None)
-    reflections = await db.reflections.find({'user_id': user_id}).sort('month_date', 1).to_list(None)
-    dtr_uploads = await db.dtr_uploads.find({'user_id': user_id}).sort('uploaded_at', 1).to_list(None)
+    p_task = db.profiles.find_one({'user_id': uid})
+    w_task = db.weekly_logs.find({'user_id': uid}).sort('week_end_date', 1).to_list(None)
+    r_task = db.reflections.find({'user_id': uid}).sort('month_date', 1).to_list(None)
+    d_task = db.dtr_uploads.find({'user_id': uid}).sort('uploaded_at', 1).to_list(None)
+    t_task = db.logs.find({'user_id': uid}).to_list(None)
     
-    # Optional Tracker Summary
-    tracker_logs = await db.logs.find({'user_id': user_id}).to_list(None)
+    p, weekly_logs, reflections, dtr_uploads, tracker_logs = await asyncio.gather(
+        p_task, w_task, r_task, d_task, t_task
+    )
+    
     total_hours = sum([log.get('hours', 0) for log in tracker_logs])
     
-    return await render_template('print_journal.html', 
-                                 p=p, 
-                                 weekly_logs=weekly_logs, 
-                                 reflections=reflections,
-                                 dtr_uploads=dtr_uploads,
-                                 total_hours=total_hours)
+    return await render_template(
+        'portfolio/print_journal.html', 
+        p=p or {}, 
+        weekly_logs=weekly_logs, 
+        reflections=reflections,
+        dtr_uploads=dtr_uploads,
+        total_hours=total_hours
+    )
