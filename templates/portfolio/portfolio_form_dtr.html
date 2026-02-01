@@ -8,7 +8,8 @@
         <h1 class="text-3xl font-black text-white">Monthly DTR</h1>
     </div>
 
-    <form action="{{ url_for('portfolio.upload_dtr') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    <!-- Added ID "dtrForm" for JS targeting -->
+    <form id="dtrForm" action="{{ url_for('portfolio.upload_dtr') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         <div class="card-glass rounded-[2.5rem] p-8 border border-white/10 bg-slate-900/40">
             <!-- Period Input -->
             <div class="space-y-2 mb-8">
@@ -22,7 +23,8 @@
                 <div class="space-y-3">
                     <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center block">Front Side</label>
                     <div class="relative aspect-[3/4] rounded-2xl border-2 border-dashed border-white/10 hover:border-orange-500/50 transition-all overflow-hidden bg-white/5">
-                        <input type="file" name="dtr_front" accept="image/*" required class="absolute inset-0 opacity-0 z-20 cursor-pointer" onchange="preview(this, 'p-front')">
+                        <!-- Added id="input-front" -->
+                        <input type="file" id="input-front" name="dtr_front" accept="image/*" required class="absolute inset-0 opacity-0 z-20 cursor-pointer" onchange="preview(this, 'p-front')">
                         <div id="p-front" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <i data-lucide="image" class="w-8 h-8 text-slate-600 mb-2"></i>
                             <span class="text-[9px] text-slate-500 font-bold uppercase">Upload Front</span>
@@ -34,7 +36,8 @@
                 <div class="space-y-3">
                     <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center block">Back Side</label>
                     <div class="relative aspect-[3/4] rounded-2xl border-2 border-dashed border-white/10 hover:border-orange-500/50 transition-all overflow-hidden bg-white/5">
-                        <input type="file" name="dtr_back" accept="image/*" class="absolute inset-0 opacity-0 z-20 cursor-pointer" onchange="preview(this, 'p-back')">
+                        <!-- Added id="input-back" -->
+                        <input type="file" id="input-back" name="dtr_back" accept="image/*" class="absolute inset-0 opacity-0 z-20 cursor-pointer" onchange="preview(this, 'p-back')">
                         <div id="p-back" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <i data-lucide="image" class="w-8 h-8 text-slate-600 mb-2"></i>
                             <span class="text-[9px] text-slate-500 font-bold uppercase">Upload Back</span>
@@ -43,15 +46,17 @@
                 </div>
             </div>
 
-            <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-2xl mt-8 transition-all flex items-center justify-center gap-3">
+            <!-- Submit Button with Loading State -->
+            <button type="submit" id="submitBtn" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-2xl mt-8 transition-all flex items-center justify-center gap-3">
                 <i data-lucide="upload-cloud" class="w-5 h-5"></i>
-                <span>Submit DTR</span>
+                <span id="btnText">Submit DTR</span>
             </button>
         </div>
     </form>
 </div>
 
 <script>
+// 1. Preview Logic
 function preview(input, targetId) {
     const container = document.getElementById(targetId);
     if (input.files && input.files[0]) {
@@ -61,6 +66,96 @@ function preview(input, targetId) {
         }
         reader.readAsDataURL(input.files[0]);
     }
+}
+
+// 2. Client-Side Compression Logic
+document.getElementById('dtrForm').addEventListener('submit', async function(e) {
+    e.preventDefault(); // Stop normal upload immediately
+    
+    const btn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const origText = btnText.innerText;
+    
+    // UI Feedback
+    btn.disabled = true;
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
+    btnText.innerText = "Compressing & Uploading...";
+
+    try {
+        const frontInput = document.getElementById('input-front');
+        const backInput = document.getElementById('input-back');
+
+        // Compress Front
+        if(frontInput.files[0]) {
+            const compressedFront = await compressImage(frontInput.files[0]);
+            // Replace the file input value with the compressed file
+            replaceFileInput(frontInput, compressedFront);
+        }
+
+        // Compress Back
+        if(backInput.files[0]) {
+            const compressedBack = await compressImage(backInput.files[0]);
+            replaceFileInput(backInput, compressedBack);
+        }
+
+        // Now submit the form with the smaller files
+        this.submit();
+
+    } catch (err) {
+        console.error("Compression Error:", err);
+        alert("Error processing images. Please try again.");
+        btn.disabled = false;
+        btnText.innerText = origText;
+    }
+});
+
+// Helper: Compress Image to < 1000px and JPEG 0.7 quality
+function compressImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxWidth = 1000; // Resize to max 1000px width
+                const scale = maxWidth / img.width;
+                
+                // Calculate new dimensions
+                if (scale < 1) {
+                    canvas.width = maxWidth;
+                    canvas.height = img.height * scale;
+                } else {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                }
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Convert to Blob (JPEG 70% quality)
+                canvas.toBlob((blob) => {
+                    if (!blob) return reject(new Error('Compression failed'));
+                    // Create a new File object
+                    const newFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now(),
+                    });
+                    resolve(newFile);
+                }, 'image/jpeg', 0.7);
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+}
+
+// Helper: Replace file input content using DataTransfer
+function replaceFileInput(inputElement, newFile) {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(newFile);
+    inputElement.files = dataTransfer.files;
 }
 </script>
 {% endblock %}
