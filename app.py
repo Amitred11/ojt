@@ -21,14 +21,11 @@ app.register_blueprint(leaderboard_bp)
 
 @app.before_serving
 async def startup():
-    # Pre-warm the database connection
     await create_indexes()
 
 @app.route("/")
 async def home():
-    # Redirect immediately
     return redirect(url_for("tracker.index"))
 
 if __name__ == "__main__":
-    # 'use_reloader' helps in dev, but turn off in prod
     app.run(debug=True, use_reloader=True)
