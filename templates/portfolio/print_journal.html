@@ -5,192 +5,413 @@
     <title>OJT Journal - {{ p.full_name }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
-        
-        body { 
-            font-family: 'Times New Roman', serif; 
-            background: #525659; 
-            margin: 0; padding: 20px;
+        /* FONTS */
+        @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap'); /* Closest free Google Font to Old English */
+        @import url('https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400&display=swap'); /* Tinos is a great Times New Roman alternative */
+
+        body {
+            background: #525659;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Tinos', 'Times New Roman', serif;
         }
 
+        /* PAGE SETUP (Letter Size) */
         .page {
             background: white;
             width: 8.5in;
-            min-height: 11in;
+            height: 11in;
             margin: 0 auto 20px auto;
-            padding: 1in;
             position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             overflow: hidden;
+            page-break-after: always;
+        }
+
+        /* HEADER DESIGN (CSS Only - No Images Needed) */
+        .header-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 120px;
+            background: black;
+            overflow: hidden;
+        }
+        /* The Orange Swoosh */
+        .header-swoosh {
+            position: absolute;
+            bottom: -50%;
+            left: -10%;
+            width: 120%;
+            height: 100%;
+            background: white;
+            border-top: 15px solid #ea580c; /* Orange */
+            border-radius: 50%;
+        }
+        
+        /* HEADER TEXT */
+        .header-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding-top: 15px;
+            color: white;
+        }
+        .school-name {
+            font-family: 'UnifrakturMaguntia', cursive; /* Old English Style */
+            font-size: 32px;
+            letter-spacing: 1px;
+        }
+        .dept-name {
+            font-family: 'Tinos', serif;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+        }
+        /* LOGO PLACEHOLDERS */
+        .logo-left, .logo-right {
+            position: absolute;
+            top: 10px;
+            width: 70px;
+            height: 70px;
+            background: white; /* Placeholder for actual logo */
+            border-radius: 50%;
+            border: 2px solid #ea580c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: black;
+            text-align: center;
+            font-weight: bold;
+        }
+        .logo-left { left: 40px; }
+        .logo-right { right: 40px; }
+
+        /* FOOTER DESIGN */
+        .footer-bg {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 50px;
+            background: black;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding-left: 40px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        /* Orange Swoosh for Footer */
+        .footer-swoosh {
+            position: absolute;
+            top: -20px;
+            left: -10%;
+            width: 120%;
+            height: 50px;
+            background: white;
+            border-bottom: 8px solid #ea580c;
+            border-radius: 50%;
+            z-index: 5;
+        }
+
+        /* CONTENT AREA */
+        .content {
+            padding: 140px 60px 60px 60px; /* Top padding clears header */
+            height: 100%;
             box-sizing: border-box;
         }
 
-        /* HEADER STYLE */
-        .cdm-header {
+        /* TYPOGRAPHY */
+        h1.page-title {
             text-align: center;
-            border-bottom: 2px solid #ea580c; 
-            margin-bottom: 2rem;
-            padding-bottom: 10px;
+            font-size: 28px;
+            margin-top: 40px;
+            margin-bottom: 40px;
+            color: black;
         }
-        .cdm-header::after { content: ''; display: block; height: 4px; background: #000; margin-top: 2px; }
-        .title-text { font-family: 'Old English Text MT', serif; font-size: 24px; font-weight: bold; }
-        .sub-text { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
 
-        h1 { font-size: 22px; font-weight: bold; margin-bottom: 20px; text-align: center; text-transform: uppercase; }
-        h2 { font-size: 16px; font-weight: bold; margin-top: 15px; margin-bottom: 5px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11pt; }
-        th, td { border: 1px solid black; padding: 8px; vertical-align: top; }
+        h2.section-header {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
 
+        /* TABLES */
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { border: 1px solid black; background: #f3f4f6; padding: 8px; font-weight: bold; text-align: left; }
+        td { border: 1px solid black; padding: 8px; vertical-align: top; }
+
+        /* PRINT SETTINGS */
         @media print {
-            body { background: white; margin: 0; padding: 0; }
-            .page { margin: 0; box-shadow: none; width: 100%; page-break-after: always; min-height: 11in; }
+            body { background: white; padding: 0; }
+            .page { margin: 0; box-shadow: none; border: none; }
             .no-print { display: none !important; }
-            .page-break-inside-avoid { break-inside: avoid; }
+            /* Ensure background graphics print */
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
 </head>
 <body>
 
-    <div class="fixed top-5 right-5 no-print flex gap-2">
-        <button onclick="window.print()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded shadow-lg">PRINT PDF</button>
+    <!-- PRINT BUTTON -->
+    <div class="fixed top-6 right-6 z-50 no-print flex gap-2">
+        <button onclick="window.print()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl shadow-xl flex items-center gap-2 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            Print to PDF
+        </button>
     </div>
 
-    <!-- PAGE 1: TITLE PAGE (Standard) -->
-    <div class="page flex flex-col justify-between">
-        <div class="cdm-header">
-            <div class="title-text">Colegio de Montalban</div>
-            <div class="sub-text">Institute of Computing Studies</div>
+    <!-- MACRO: HEADER TEMPLATE -->
+    {% macro header() %}
+    <div class="header-bg">
+        <div class="logo-left">CDM Logo</div> <!-- Replace with <img> if you have url -->
+        <div class="header-content">
+            <div class="school-name">Colegio de Montalban</div>
+            <div class="dept-name">Institute of Computing Studies</div>
         </div>
-        <div class="text-center mt-20">
-            <h1 style="font-size: 32px;">On-the-Job Training Journal</h1>
-            <div class="mt-32 space-y-4">
-                <p class="font-bold text-xl uppercase">{{ p.full_name }}</p>
-                <p>BS Information Technology</p>
-                <p class="font-bold text-lg uppercase mt-10">{{ p.hte_name }}</p>
+        <div class="logo-right">ICS Logo</div> <!-- Replace with <img> if you have url -->
+        <div class="header-swoosh"></div>
+    </div>
+    {% endmacro %}
+
+    <!-- MACRO: FOOTER TEMPLATE -->
+    {% macro footer() %}
+    <div class="footer-swoosh"></div>
+    <div class="footer-bg">
+        On-the-Job Training (OJT) Journal
+    </div>
+    {% endmacro %}
+
+    <!-- PAGE 1: TITLE PAGE -->
+    <div class="page">
+        {{ header() }}
+        <div class="content flex flex-col items-center justify-center text-center">
+            <h1 class="font-bold text-3xl mb-20 uppercase mt-10">On-the-Job Training (OJT)<br>Journal</h1>
+
+            <div class="mt-10 mb-20 w-full">
+                <p class="font-bold text-2xl uppercase border-b border-black inline-block px-10 mb-2">{{ p.full_name }}</p>
+                <p class="text-lg">(Student's Name)</p>
+            </div>
+
+            <div class="mb-20">
+                <p class="font-bold text-xl">Bachelor of Science in Information Technology</p>
+            </div>
+
+            <div class="mb-10 w-full">
+                <p class="font-bold text-xl uppercase border-b border-black inline-block px-10 mb-2">{{ p.hte_name }}</p>
+                <p class="text-lg">(Name of HTE)</p>
+            </div>
+
+            <div class="w-full">
+                <p class="font-bold text-xl uppercase border-b border-black inline-block px-10 mb-2">{{ p.duration }}</p>
+                <p class="text-lg">(Duration)</p>
             </div>
         </div>
-        <div class="text-center text-sm mb-10">Submitted to the Institute of Computing Studies</div>
+        {{ footer() }}
     </div>
 
-    <!-- PAGE 2: PROFILE & COMPANY (Combined for brevity) -->
+    <!-- PAGE 2: TABLE OF CONTENTS (Placeholder) -->
     <div class="page">
-        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
-        <h1>Student & Company Profile</h1>
-        
-        <h2>Student Information</h2>
-        <table>
-            <tr><th width="30%">Name</th><td>{{ p.full_name }}</td></tr>
-            <tr><th>Course</th><td>{{ p.course }}</td></tr>
-            <tr><th>Duration</th><td>{{ p.duration }}</td></tr>
-        </table>
-
-        <h2>Company Details</h2>
-        <table>
-            <tr><th width="30%">Company</th><td>{{ p.hte_name }}</td></tr>
-            <tr><th>Supervisor</th><td>{{ p.supervisor }}</td></tr>
-            <tr><th>Address/Dept</th><td>{{ p.dept_desc }}</td></tr>
-        </table>
-        
-        <h2 class="mt-8">Objectives</h2>
-        <p class="text-sm italic border p-2">{{ p.objectives }}</p>
+        {{ header() }}
+        <div class="content">
+            <h1 class="page-title">Table of Contents</h1>
+            <ul class="list-none space-y-4 text-lg">
+                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Approval Sheet</span> <span>i</span></li>
+                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Acknowledgement</span> <span>ii</span></li>
+                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Personal Information</span> <span>1</span></li>
+                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Training Details</span> <span>2</span></li>
+                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Company Profile</span> <span>3</span></li>
+                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Weekly Work Log</span> <span>4</span></li>
+                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Monthly Reflection</span> <span>10</span></li>
+                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Appendices</span> <span>15</span></li>
+            </ul>
+        </div>
+        {{ footer() }}
     </div>
 
-    <!-- PAGE 3: WEEKLY LOGS -->
+    <!-- PAGE 3: PERSONAL INFORMATION -->
     <div class="page">
-        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
-        <h1>Weekly Work Log</h1>
-        
-        {% for log in weekly_logs %}
-        <div class="mb-6 page-break-inside-avoid border-b pb-4">
-            <div class="bg-black text-white px-2 py-1 font-bold text-sm">Week Ending: {{ log.week_end_date }}</div>
-            <table class="mt-2">
-                <thead><tr><th width="33%">Tasks</th><th width="33%">Competencies</th><th width="33%">Knowledge</th></tr></thead>
-                <tbody>
-                    <tr>
-                        <td class="whitespace-pre-wrap text-sm">{{ log.tasks }}</td>
-                        <td class="whitespace-pre-wrap text-sm">{{ log.competencies }}</td>
-                        <td class="whitespace-pre-wrap text-sm">{{ log.knowledge }}</td>
-                    </tr>
-                </tbody>
+        {{ header() }}
+        <div class="content">
+            <h1 class="page-title">Personal Information</h1>
+            <table class="mb-8">
+                <tr>
+                    <td width="30%" class="font-bold bg-gray-100">Full Name</td>
+                    <td>{{ p.full_name }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold bg-gray-100">Program/Course</td>
+                    <td>{{ p.course }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold bg-gray-100">OJT Duration</td>
+                    <td>{{ p.duration }} Hours</td>
+                </tr>
             </table>
-        </div>
-        {% else %}
-        <p class="text-center italic text-red-500">No weekly logs found. Please add logs in the app.</p>
-        {% endfor %}
-    </div>
 
-    <!-- PAGE 4: REFLECTIONS -->
-    <div class="page">
-        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
-        <h1>Monthly Reflections</h1>
+            <h1 class="page-title" style="margin-top: 60px;">Training Details</h1>
+            <table>
+                <tr>
+                    <td width="30%" class="font-bold bg-gray-100">Host Training Establishment</td>
+                    <td>{{ p.hte_name }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold bg-gray-100">Department Assigned</td>
+                    <td>{{ p.dept_desc }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold bg-gray-100">Direct Supervisor</td>
+                    <td>{{ p.supervisor }}</td>
+                </tr>
+            </table>
 
-        {% for ref in reflections %}
-        <div class="mb-8 page-break-inside-avoid">
-            <h2 class="text-lg border-b-2 border-black inline-block">{{ ref.month_date }}</h2>
-            
-            <h3 class="font-bold text-sm mt-2">Reflection</h3>
-            <p class="whitespace-pre-wrap text-sm mb-2">{{ ref.monthly_reflection }}</p>
-
-            <h3 class="font-bold text-sm mt-2">Self-Evaluation</h3>
-            <p class="whitespace-pre-wrap text-sm mb-2">{{ ref.self_evaluation }}</p>
-
-            <h3 class="font-bold text-sm mt-2">Feedback</h3>
-            <p class="whitespace-pre-wrap text-sm italic">"{{ ref.feedback }}"</p>
-        </div>
-        {% else %}
-        <p class="text-center italic text-red-500">No reflections found.</p>
-        {% endfor %}
-    </div>
-
-    <!-- PAGE 5: DTR (SCANNED IMAGES) -->
-    <!-- Loop through uploaded DTR entries -->
-    {% for upload in dtr_uploads %}
-        {% for img in upload.images %}
-        <div class="page">
-            <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
-            <h1>Daily Time Record</h1>
-            <p class="text-center mb-4 font-bold">{{ upload.description }} (Page {{ loop.index }})</p>
-            
-            <div class="flex justify-center items-center h-[800px] border">
-                <img src="data:image/webp;base64,{{ img }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            <h1 class="page-title" style="margin-top: 60px;">Learning Objectives</h1>
+            <div class="border border-black p-4 min-h-[150px] text-sm whitespace-pre-line text-justify">
+                {{ p.objectives }}
             </div>
         </div>
-        {% endfor %}
-    {% else %}
+        {{ footer() }}
+    </div>
+
+    <!-- PAGE 4: COMPANY PROFILE -->
     <div class="page">
-        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
-        <h1>Daily Time Record</h1>
-        <p class="text-center italic mt-20">No Signed DTR photos uploaded yet.</p>
+        {{ header() }}
+        <div class="content">
+            <h1 class="page-title">Company Profile</h1>
+            <div class="text-justify text-sm leading-relaxed whitespace-pre-line">
+                {{ p.company_desc }}
+            </div>
+        </div>
+        {{ footer() }}
+    </div>
+
+    <!-- PAGE 5: WEEKLY WORK LOG -->
+    <!-- We create a scrolling page here, usually you might split this if very long -->
+    <div class="page">
+        {{ header() }}
+        <div class="content">
+            <h1 class="page-title">Weekly Work Log</h1>
+            
+            {% for log in weekly_logs %}
+            <div class="mb-6 break-inside-avoid">
+                <div class="bg-black text-white px-4 py-2 font-bold text-sm flex justify-between">
+                    <span>Week Ending: {{ log.week_end_date }}</span>
+                    <span>Verified</span>
+                </div>
+                <table class="mt-2">
+                    <thead>
+                        <tr>
+                            <th width="33%">Task Description</th>
+                            <th width="33%">Competencies Applied</th>
+                            <th width="33%">Knowledge Gained</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="whitespace-pre-line">{{ log.tasks }}</td>
+                            <td class="whitespace-pre-line">{{ log.competencies }}</td>
+                            <td class="whitespace-pre-line">{{ log.knowledge }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center italic text-gray-500">No logs recorded yet.</p>
+            {% endfor %}
+        </div>
+        {{ footer() }}
+    </div>
+
+    <!-- PAGE 6: MONTHLY REFLECTIONS -->
+    <div class="page">
+        {{ header() }}
+        <div class="content">
+            <h1 class="page-title">Monthly Reflection</h1>
+            
+            {% for ref in reflections %}
+            <div class="mb-10 break-inside-avoid border-b-2 border-dashed border-gray-300 pb-6">
+                <h2 class="text-xl font-bold mb-4 uppercase text-center border-b border-black inline-block">{{ ref.month_date }}</h2>
+                
+                <h3 class="font-bold text-sm mt-4 text-orange-700">Reflection</h3>
+                <p class="text-sm text-justify whitespace-pre-line mb-3">{{ ref.monthly_reflection }}</p>
+
+                <h3 class="font-bold text-sm mt-4 text-orange-700">Self-Evaluation</h3>
+                <p class="text-sm text-justify whitespace-pre-line mb-3">{{ ref.self_evaluation }}</p>
+
+                <h3 class="font-bold text-sm mt-4 text-orange-700">Supervisory Feedback</h3>
+                <div class="bg-gray-100 p-3 border-l-4 border-orange-500 text-sm italic">
+                    "{{ ref.feedback }}"
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {{ footer() }}
+    </div>
+
+    <!-- SEPARATOR: APPENDICES -->
+    <div class="page flex items-center justify-center">
+        {{ header() }}
+        <div class="content flex items-center justify-center w-full">
+            <h1 class="font-bold text-4xl uppercase tracking-widest text-center">Appendices &<br>Documentation</h1>
+        </div>
+        {{ footer() }}
+    </div>
+
+    <!-- PAGE 7: DTR IMAGES -->
+    {% for dtr in dtr_uploads %}
+    <div class="page">
+        {{ header() }}
+        <div class="content">
+            <h1 class="page-title">Daily Time Record (DTR)</h1>
+            <p class="text-center font-bold mb-4 uppercase">{{ dtr.description }}</p>
+            
+            <div class="grid grid-cols-2 gap-4 h-[800px]">
+                <!-- Front Side -->
+                <div class="border border-black flex flex-col items-center p-2">
+                    <p class="text-xs font-bold mb-2 uppercase">Front Side</p>
+                    {% if dtr.image_front %}
+                    <img src="data:image/webp;base64,{{ dtr.image_front }}" class="max-h-[90%] object-contain">
+                    {% else %}
+                    <div class="flex-1 flex items-center justify-center text-gray-400">Missing</div>
+                    {% endif %}
+                </div>
+                <!-- Back Side -->
+                <div class="border border-black flex flex-col items-center p-2">
+                    <p class="text-xs font-bold mb-2 uppercase">Back Side</p>
+                    {% if dtr.image_back %}
+                    <img src="data:image/webp;base64,{{ dtr.image_back }}" class="max-h-[90%] object-contain">
+                    {% else %}
+                    <div class="flex-1 flex items-center justify-center text-gray-400">Missing</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {{ footer() }}
     </div>
     {% endfor %}
 
-    <!-- PAGE 6: PHOTO DOCUMENTATION (Multiple Per Week) -->
+    <!-- PAGE 8: PHOTO DOCUMENTATION -->
     <div class="page">
-        <div class="cdm-header"><div class="title-text">Colegio de Montalban</div></div>
-        <h1>Photo Documentation</h1>
-        
-        <div class="grid grid-cols-2 gap-4 mt-8">
-            {% for log in weekly_logs %}
-                <!-- Support legacy single image 'image_data' OR new list 'images' -->
-                {% if log.images %}
-                    {% for img in log.images %}
-                    <div class="break-inside-avoid mb-4">
-                        <div class="border p-1 h-60 flex items-center justify-center bg-gray-100 overflow-hidden">
-                            <img src="data:image/webp;base64,{{ img }}" class="max-h-full">
+        {{ header() }}
+        <div class="content">
+            <h1 class="page-title">Photo Documentation</h1>
+            
+            <div class="grid grid-cols-2 gap-6">
+                {% for log in weekly_logs %}
+                    {% if log.images %}
+                        {% for img in log.images %}
+                        <div class="break-inside-avoid mb-4">
+                            <div class="border-2 border-black p-1 h-64 flex items-center justify-center bg-gray-50 overflow-hidden">
+                                <img src="data:image/webp;base64,{{ img }}" class="w-full h-full object-cover">
+                            </div>
+                            <p class="text-center font-bold text-xs mt-2 uppercase">Week Ending: {{ log.week_end_date }}</p>
                         </div>
-                        <p class="text-xs text-center font-bold mt-1">Week Ending: {{ log.week_end_date }}</p>
-                    </div>
-                    {% endfor %}
-                {% elif log.image_data %}
-                    <div class="break-inside-avoid mb-4">
-                        <div class="border p-1 h-60 flex items-center justify-center bg-gray-100 overflow-hidden">
-                            <img src="data:image/webp;base64,{{ image_data_from_db }}" alt="Log Photo" class="w-full h-full object-cover">
-                        </div>
-                        <p class="text-xs text-center font-bold mt-1">Week Ending: {{ log.week_end_date }}</p>
-                    </div>
-                {% endif %}
-            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </div>
         </div>
+        {{ footer() }}
     </div>
 
 </body>

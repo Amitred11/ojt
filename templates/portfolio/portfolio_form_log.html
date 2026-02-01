@@ -8,7 +8,8 @@
         <h1 class="text-3xl font-black tracking-tight text-white">Weekly Log</h1>
     </div>
 
-    <form method="POST" enctype="multipart/form-data" class="space-y-5 pb-12" onsubmit="showUploading()">
+    <!-- Added ID "logForm" -->
+    <form id="logForm" method="POST" enctype="multipart/form-data" class="space-y-5 pb-12">
         <div class="card-glass rounded-[2.5rem] p-8 border border-white/10 bg-slate-900/40 backdrop-blur-xl space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-2">
@@ -18,7 +19,8 @@
                 
                 <div class="space-y-2">
                     <label class="text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-1">Documentation</label>
-                    <input type="file" name="photos" multiple accept="image/*" class="w-full text-[10px] text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 cursor-pointer">
+                    <!-- Added ID "photoInput" -->
+                    <input type="file" id="photoInput" name="photos" multiple accept="image/*" class="w-full text-[10px] text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 cursor-pointer">
                 </div>
             </div>
 
@@ -37,28 +39,100 @@
                 <textarea name="knowledge" rows="3" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-600 focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="Learned Mongo Aggregation..."></textarea>
             </div>
 
-            <button class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-[0.99] mt-4">
-                Save Entry
+            <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-[0.99] mt-4 flex items-center justify-center gap-2">
+                <span id="btnText">Save Entry</span>
             </button>
         </div>
     </form>
 </div>
 
 <script>
-function showUploading(event) {
-    const btn = event.submitter;
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = `
-            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Compressing Images...</span>
-        `;
+document.getElementById('logForm').addEventListener('submit', async function(e) {
+    e.preventDefault(); // Stop immediate submission
+
+    const btn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const input = document.getElementById('photoInput');
+    const originalText = btnText.innerText;
+
+    // UI Feedback
+    btn.disabled = true;
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
+    btnText.innerHTML = `
+        <svg class="animate-spin h-5 w-5 text-white inline mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Compressing Images...
+    `;
+
+    try {
+        // Only process if files are selected
+        if (input.files.length > 0) {
+            const dataTransfer = new DataTransfer();
+            
+            // Convert FileList to Array and map to compression promises
+            const filePromises = Array.from(input.files).map(file => compressImage(file));
+            
+            // Wait for ALL images to compress
+            const compressedFiles = await Promise.all(filePromises);
+            
+            // Add compressed files to DataTransfer object
+            compressedFiles.forEach(file => dataTransfer.items.add(file));
+            
+            // Replace the input files with compressed ones
+            input.files = dataTransfer.files;
+        }
+
+        // Submit the form
+        this.submit();
+
+    } catch (error) {
+        console.error("Compression failed:", error);
+        alert("An error occurred while processing images. Please try again.");
+        btn.disabled = false;
+        btnText.innerText = originalText;
     }
+});
+
+// Reusable Compression Function
+function compressImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxWidth = 1000; // Resize to max 1000px width
+                const scale = maxWidth / img.width;
+                
+                if (scale < 1) {
+                    canvas.width = maxWidth;
+                    canvas.height = img.height * scale;
+                } else {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                }
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Convert to Blob (JPEG 70% quality)
+                canvas.toBlob((blob) => {
+                    if (!blob) return reject(new Error('Compression failed'));
+                    const newFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now(),
+                    });
+                    resolve(newFile);
+                }, 'image/jpeg', 0.7);
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
 }
-// Attach to form
-document.querySelector('form').onsubmit = showUploading;
 </script>
 {% endblock %}
