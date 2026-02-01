@@ -1,5 +1,6 @@
 from quart import Quart, redirect, url_for
 from config import Config
+import asyncio
 
 # Import Blueprints
 from routes.auth import auth_bp
@@ -19,13 +20,19 @@ app.register_blueprint(tracker_bp)
 app.register_blueprint(portfolio_bp)
 app.register_blueprint(leaderboard_bp)
 
-@app.before_serving
+# Serverless approach: 
+# Instead of before_serving, we run this once at the module level 
+# OR call it inside a route with a check.
+@app.before_request
 async def startup():
-    await create_indexes()
+    # This is a simple way to ensure indexes are created once per cold start
+    if not hasattr(app, 'indexes_created'):
+        await create_indexes()
+        app.indexes_created = True
 
 @app.route("/")
 async def home():
     return redirect(url_for("tracker.index"))
 
-if __name__ == "__main__":
-    app.run(debug=True, use_reloader=True)
+# IMPORTANT: Do not use app.run() for Vercel. 
+# Vercel handles the execution.
