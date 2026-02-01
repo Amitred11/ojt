@@ -5,42 +5,61 @@
         <a href="{{ url_for('portfolio.list_reports') }}" class="w-11 h-11 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all">
             <i data-lucide="arrow-left" class="w-5 h-5"></i>
         </a>
-        <h1 class="text-3xl font-black tracking-tight text-white">Weekly Log</h1>
+        <!-- Dynamic Title -->
+        <h1 class="text-3xl font-black tracking-tight text-white">
+            {% if log %}Edit Entry{% else %}Weekly Log{% endif %}
+        </h1>
     </div>
 
-    <!-- Added ID "logForm" -->
-    <form id="logForm" method="POST" enctype="multipart/form-data" class="space-y-5 pb-12">
+    <!-- Dynamic Action URL -->
+    <form id="logForm" 
+          action="{{ url_for('portfolio.edit_log', log_id=log._id) if log else url_for('portfolio.new_log') }}" 
+          method="POST" enctype="multipart/form-data" class="space-y-5 pb-12">
+        
         <div class="card-glass rounded-[2.5rem] p-8 border border-white/10 bg-slate-900/40 backdrop-blur-xl space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-2">
                     <label class="text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-1">Week Ending</label>
-                    <input type="date" name="week_end_date" value="{{ today }}" required class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-sm text-white focus:ring-2 focus:ring-emerald-500/50 transition-all [color-scheme:dark]">
+                    <!-- Value Pre-fill -->
+                    <input type="date" name="week_end_date" value="{{ log.week_end_date if log else today }}" required class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-sm text-white focus:ring-2 focus:ring-emerald-500/50 transition-all [color-scheme:dark]">
                 </div>
                 
                 <div class="space-y-2">
-                    <label class="text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-1">Documentation</label>
-                    <!-- Added ID "photoInput" -->
+                    <label class="text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-1">
+                        Documentation {% if log %}(Upload to Replace){% endif %}
+                    </label>
                     <input type="file" id="photoInput" name="photos" multiple accept="image/*" class="w-full text-[10px] text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 cursor-pointer">
+                    
+                    <!-- Preview Existing Images if Editing -->
+                    {% if log and log.images %}
+                    <div class="flex gap-2 mt-2 overflow-x-auto pb-2">
+                        {% for img in log.images %}
+                        <img src="data:image/jpeg;base64,{{ img }}" class="w-10 h-10 rounded-lg object-cover border border-white/10">
+                        {% endfor %}
+                        <span class="text-[9px] text-slate-500 self-center whitespace-nowrap">Current Images</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
             <div class="space-y-2">
                 <label class="text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-1">Task Description</label>
-                <textarea name="tasks" rows="4" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-600 focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="- Created API endpoints..."></textarea>
+                <!-- Textarea Pre-fill -->
+                <textarea name="tasks" rows="4" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-600 focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="- Created API endpoints...">{{ log.tasks if log else '' }}</textarea>
             </div>
 
             <div class="space-y-2">
                 <label class="text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-1">Competencies Applied</label>
-                <textarea name="competencies" rows="3" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-600 focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="Applied Python knowledge..."></textarea>
+                <textarea name="competencies" rows="3" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-600 focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="Applied Python knowledge...">{{ log.competencies if log else '' }}</textarea>
             </div>
 
             <div class="space-y-2">
                 <label class="text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-1">New Knowledge Gained</label>
-                <textarea name="knowledge" rows="3" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-600 focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="Learned Mongo Aggregation..."></textarea>
+                <textarea name="knowledge" rows="3" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-600 focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="Learned Mongo Aggregation...">{{ log.knowledge if log else '' }}</textarea>
             </div>
 
             <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-[0.99] mt-4 flex items-center justify-center gap-2">
-                <span id="btnText">Save Entry</span>
+                <span id="btnText">{% if log %}Update Entry{% else %}Save Entry{% endif %}</span>
             </button>
         </div>
     </form>

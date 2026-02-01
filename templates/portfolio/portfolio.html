@@ -47,12 +47,10 @@
     </div>
 
     <div class="space-y-8 relative">
-        <!-- Vertical Timeline Line -->
         <div class="absolute left-6 top-0 bottom-0 w-[1px] bg-gradient-to-b from-emerald-500/50 via-slate-800 to-transparent"></div>
 
         {% for r in weekly_logs %}
         <div class="relative pl-14 group">
-            <!-- Timeline Dot -->
             <div class="absolute left-[1.15rem] top-2 w-2.5 h-2.5 rounded-full bg-slate-900 border-2 border-emerald-500 z-10"></div>
             
             <div class="card-glass rounded-[2rem] p-6 border border-white/5 group-hover:border-emerald-500/30 transition-all">
@@ -61,17 +59,21 @@
                         <p class="text-[10px] font-black text-emerald-500 uppercase tracking-tighter">Week Period</p>
                         <h3 class="text-sm font-bold text-white">Ending {{ r.week_end_date }}</h3>
                     </div>
-                    <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=r._id) }}')" 
-                            class="p-2 text-slate-600 hover:text-red-400 transition-colors">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
+                    <div class="flex gap-1">
+                        <!-- Edit Log -->
+                        <a href="{{ url_for('portfolio.edit_log', log_id=r._id) }}" class="p-2 text-slate-600 hover:text-emerald-400 transition-colors">
+                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                        </a>
+                        <!-- Delete Log -->
+                        <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=r._id) }}')" class="p-2 text-slate-600 hover:text-red-400 transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Horizontal Image Gallery (UPDATED) -->
                 {% if r.images %}
                 <div class="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x">
                     {% for img in r.images %}
-                    <!-- Added onclick and cursor-zoom-in -->
                     <img src="data:image/webp;base64,{{ img }}" 
                          onclick="openModal(this.src)"
                          class="w-24 h-24 rounded-2xl object-cover border border-white/10 snap-center cursor-zoom-in hover:opacity-80 transition-opacity">
@@ -123,34 +125,33 @@
                         Logged {{ dtr.uploaded_at.strftime('%b %d, %Y') if dtr.uploaded_at else '' }}
                     </p>
                 </div>
-                <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=dtr._id) }}')" 
-                        class="text-slate-600 hover:text-red-400 transition-colors">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
+                <div class="flex gap-1">
+                    <!-- Edit DTR -->
+                    <a href="{{ url_for('portfolio.edit_dtr', dtr_id=dtr._id) }}" class="p-2 text-slate-600 hover:text-orange-400 transition-colors">
+                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                    </a>
+                    <!-- Delete DTR -->
+                    <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=dtr._id) }}')" class="text-slate-600 hover:text-red-400 transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-                <!-- Front Photo (UPDATED) -->
                 <div class="space-y-2">
                     <p class="text-[8px] font-black text-slate-500 uppercase text-center">Front View</p>
                     {% if dtr.image_front %}
-                    <img src="data:image/webp;base64,{{ dtr.image_front }}" 
-                         onclick="openModal(this.src)"
-                         class="w-full aspect-[3/4] rounded-xl object-cover border border-white/10 cursor-zoom-in hover:border-orange-500/50 transition-all">
+                    <img src="data:image/webp;base64,{{ dtr.image_front }}" onclick="openModal(this.src)" class="w-full aspect-[3/4] rounded-xl object-cover border border-white/10 cursor-zoom-in hover:border-orange-500/50 transition-all">
                     {% else %}
                     <div class="w-full aspect-[3/4] rounded-xl bg-white/5 border border-dashed border-white/10 flex items-center justify-center">
                         <span class="text-[8px] text-slate-600 uppercase">Missing</span>
                     </div>
                     {% endif %}
                 </div>
-
-                <!-- Back Photo (UPDATED) -->
                 <div class="space-y-2">
                     <p class="text-[8px] font-black text-slate-500 uppercase text-center">Back View</p>
                     {% if dtr.image_back %}
-                    <img src="data:image/webp;base64,{{ dtr.image_back }}" 
-                         onclick="openModal(this.src)"
-                         class="w-full aspect-[3/4] rounded-xl object-cover border border-white/10 cursor-zoom-in hover:border-orange-500/50 transition-all">
+                    <img src="data:image/webp;base64,{{ dtr.image_back }}" onclick="openModal(this.src)" class="w-full aspect-[3/4] rounded-xl object-cover border border-white/10 cursor-zoom-in hover:border-orange-500/50 transition-all">
                     {% else %}
                     <div class="w-full aspect-[3/4] rounded-xl bg-white/5 border border-dashed border-white/10 flex items-center justify-center">
                         <span class="text-[8px] text-slate-600 uppercase">No Back Photo</span>
@@ -187,9 +188,16 @@
                         </div>
                         <span class="text-[11px] font-black text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full uppercase tracking-tighter">{{ r.month_date }}</span>
                     </div>
-                    <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=r._id) }}')" class="text-slate-600 hover:text-red-400 transition-colors">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
+                    <div class="flex gap-1">
+                        <!-- Edit Reflection -->
+                        <a href="{{ url_for('portfolio.edit_reflection', r_id=r._id) }}" class="p-2 text-slate-600 hover:text-purple-400 transition-colors">
+                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                        </a>
+                        <!-- Delete Reflection -->
+                        <button onclick="confirmDelete(event, '{{ url_for('portfolio.delete_report', report_id=r._id) }}')" class="text-slate-600 hover:text-red-400 transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="relative mb-6">
                     <i data-lucide="quote" class="absolute -top-2 -left-2 w-8 h-8 text-white/5"></i>
@@ -219,63 +227,31 @@
     </div>
 </div>
 
-<!-- IMAGE LIGHTBOX / MODAL (New Feature) -->
-<div id="imageModal" onclick="closeModal()" 
-     class="fixed inset-0 z-[100] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300 opacity-0">
-    
-    <!-- Close Button -->
+<div id="imageModal" onclick="closeModal()" class="fixed inset-0 z-[100] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300 opacity-0">
     <button onclick="closeModal()" class="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all z-[110]">
         <i data-lucide="x" class="w-6 h-6"></i>
     </button>
-
-    <!-- Image Container -->
     <img id="modalImg" src="" class="max-w-full max-h-screen object-contain rounded-xl shadow-2xl scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
 </div>
 
 <script>
-    // Lightbox Logic
     function openModal(src) {
         const modal = document.getElementById('imageModal');
         const img = document.getElementById('modalImg');
-        
         img.src = src;
         modal.classList.remove('hidden');
-        
-        // Slight delay to allow display:block to apply before changing opacity for transition
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            img.classList.remove('scale-95');
-            img.classList.add('scale-100');
-        }, 10);
+        setTimeout(() => { modal.classList.remove('opacity-0'); img.classList.remove('scale-95'); img.classList.add('scale-100'); }, 10);
     }
-
     function closeModal() {
         const modal = document.getElementById('imageModal');
         const img = document.getElementById('modalImg');
-        
-        modal.classList.add('opacity-0');
-        img.classList.remove('scale-100');
-        img.classList.add('scale-95');
-
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            img.src = '';
-        }, 300); // Wait for transition to finish
+        modal.classList.add('opacity-0'); img.classList.remove('scale-100'); img.classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); img.src = ''; }, 300);
     }
-
-    // Close on Escape key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === "Escape") {
-            closeModal();
-        }
-    });
-
-    // Existing Delete Confirmation
+    document.addEventListener('keydown', function(event) { if (event.key === "Escape") closeModal(); });
     function confirmDelete(e, url) {
         e.preventDefault();
-        if(confirm("Are you sure you want to delete this entry?")) {
-            window.location.href = url;
-        }
+        if(confirm("Are you sure you want to delete this entry?")) { window.location.href = url; }
     }
 </script>
 {% endblock %}
