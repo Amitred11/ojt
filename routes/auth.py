@@ -1,6 +1,6 @@
 from quart import Blueprint, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from db import users_col
+from db import users_col, get_db
 from bson import ObjectId
 
 auth_bp = Blueprint('auth', __name__)
@@ -109,11 +109,40 @@ async def manage_users():
         await flash("Access Denied: Admin privileges required.", "error")
         return redirect(url_for('tracker.index'))
     
-    pending_users = await users_col.find({"status": "pending"}).to_list(length=100)
-    # Active personnel: any approved user (excluding the admin themselves from the list if preferred)
-    active_users = await users_col.find({"status": "approved"}).to_list(length=100)
+    db = get_db()
     
-    return await render_template("auth/admin_users.html", pending=pending_users, active=active_users)
+    # Aggregation to get users and their sum of hours from the logs collection
+    pipeline = [
+        {
+            "$lookup": {
+                "from": "logs",
+                "localField": "_id",
+                "foreignField": "user_id",
+                "as": "user_logs"
+            }
+        },
+        {
+            "$project": {
+                "username": 1,
+                "status": 1,
+                "total_hours": { "$sum": "$user_logs.hours" }
+            }
+        },
+        { "$sort": {"username": 1} }
+    ]
+    
+    all_users = await users_col.aggregate(pipeline).to_list(length=500)
+    
+    # Filter lists for the template
+    pending = [u for u in all_users if u.get('status') == 'pending']
+    active = [u for u in all_users if u.get('status') == 'approved']
+    
+    return await render_template(
+        "auth/admin_users.html", 
+        pending=pending, 
+        active=active, 
+        admin_id=ADMIN_ID
+    )
 
 @auth_bp.route("/admin/approve/<user_id>")
 async def approve_user(user_id):

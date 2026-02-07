@@ -11,8 +11,19 @@
     </div>
 </div>
 
+<!-- NEW FEATURE: CLASS MILESTONE -->
+<div class="mb-6 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-3">
+    <div class="flex justify-between items-center mb-1.5 px-1">
+        <p class="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">Collective Class Goal</p>
+        <span class="text-[10px] font-black text-white">{{ stats.class_progress }}%</span>
+    </div>
+    <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden p-0.5 border border-white/5">
+        <div class="h-full bg-gradient-to-r from-indigo-600 to-cyan-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.4)] transition-all duration-1000" style="width: {{ stats.class_progress }}%"></div>
+    </div>
+</div>
+
 <!-- FEATURE: GLOBAL STATS SUMMARY -->
-<div class="grid grid-cols-3 gap-2 mb-6">
+<div class="grid grid-cols-4 gap-2 mb-6">
     <div class="bg-white/5 rounded-xl p-2 border border-white/5 text-center">
         <p class="text-[8px] text-slate-500 uppercase font-bold">Class Hours</p>
         <p class="text-sm font-black text-amber-500">{{ stats.total_hours }}</p>
@@ -25,6 +36,10 @@
         <p class="text-[8px] text-slate-500 uppercase font-bold">Students</p>
         <p class="text-sm font-black text-indigo-400">{{ stats.total_students }}</p>
     </div>
+    <div class="bg-white/5 rounded-xl p-2 border border-white/5 text-center">
+        <p class="text-[8px] text-slate-500 uppercase font-bold">Avg/User</p>
+        <p class="text-sm font-black text-cyan-400">{{ stats.velocity }}h</p>
+    </div>
 </div>
 
 <!-- FEATURE: QUICK FILTERS -->
@@ -34,7 +49,7 @@
     <button onclick="scrollToMe()" class="px-4 py-1.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase border border-indigo-500/30 whitespace-nowrap">Find Me</button>
 </div>
 
-<!-- PODIUM (Kept original) -->
+<!-- PODIUM -->
 <div class="flex items-end justify-center gap-2 mb-10 pt-8 px-2">
     {% set top3 = leaders[:3] %}
     {% if top3|length >= 2 %}
@@ -88,18 +103,30 @@
          data-rank="{{ student.rank }}"
          {% if student.is_current_user %} id="currentUserCard" {% endif %}>
         
-        <div class="card-glass rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden 
-            {% if student.is_current_user %} border-indigo-500/50 bg-indigo-500/10 shadow-[0_0_15px_rgba(99,102,241,0.1)] {% endif %}">
+        <!-- GAP INDICATOR -->
+        {% if student.rank > 1 and student.gap > 0 %}
+        <div class="flex justify-center mb-1">
+            <div class="text-[8px] font-black text-slate-600 uppercase bg-slate-950/50 px-2 py-0.5 rounded-full border border-white/5 backdrop-blur-sm">
+                Catch up in <span class="text-amber-500">{{ student.gap }}h</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- REMOVED overflow-hidden HERE so tooltips can pop out -->
+        <div class="card-glass rounded-2xl p-4 flex items-center gap-4 relative 
+            {% if student.is_current_user %} border-indigo-500/50 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.15)] {% endif %}">
             
+            <!-- RANK NUMBER -->
             <div class="w-8 text-center font-black text-xs {{ 'text-amber-400' if student.rank <= 3 else 'text-slate-600' }}">
                 #{{ student.rank }}
             </div>
 
-            <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-bold text-sm
-                {% if student.rank == 1 %} bg-amber-400 text-amber-900
+            <!-- AVATAR BOX -->
+            <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-black text-sm relative overflow-hidden
+                {% if student.rank == 1 %} bg-gradient-to-br from-amber-300 to-amber-600 text-white shadow-[0_0_10px_rgba(251,191,36,0.3)]
                 {% elif student.rank == 2 %} bg-slate-300 text-slate-900
                 {% elif student.rank == 3 %} bg-orange-500 text-white
-                {% else %} bg-white/5 text-slate-400 {% endif %}">
+                {% else %} bg-white/5 text-slate-400 border border-white/5 {% endif %}">
                 {{ student.avatar_char }}
             </div>
 
@@ -107,21 +134,55 @@
                 <div class="flex justify-between items-center mb-1.5">
                     <h3 class="font-bold text-xs truncate pr-2 {{ 'text-indigo-300' if student.is_current_user else 'text-slate-200' }}">
                         {{ student.name }}
-                        {% if student.progress >= 100 %}<i data-lucide="award" class="inline w-3 h-3 text-amber-400 ml-1"></i>{% endif %}
-                        {% if student.is_current_user %} <span class="ml-1 text-[8px] bg-indigo-500 text-white px-1.5 py-0.5 rounded-full uppercase">You</span> {% endif %}
+                        {% if student.progress >= 100 %}
+                        <i data-lucide="check-circle-2" class="inline w-3 h-3 text-emerald-400 ml-1"></i>
+                        {% endif %}
                     </h3>
-                    <span class="text-xs font-black text-white">{{ student.hours }}<span class="text-[8px] text-slate-500 ml-0.5">HRS</span></span>
+                    <span class="text-xs font-black text-white tracking-tighter">
+                        {{ student.hours }}<span class="text-[8px] text-slate-500 ml-0.5 uppercase tracking-normal">Hrs</span>
+                    </span>
+                </div>
+
+                <!-- ACHIEVEMENTS WITH Z-INDEX FIX -->
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for ach in student.achievements %}
+                        <div class="group/tooltip relative">
+                            <span class="inline-flex items-center gap-1 text-[7px] font-black bg-{{ ach.color }}-500/10 text-{{ ach.color }}-400 px-2 py-0.5 rounded border border-{{ ach.color }}-500/20 uppercase tracking-tighter cursor-help transition-all hover:bg-{{ ach.color }}-500/20">
+                                <i data-lucide="{{ ach.icon }}" class="w-2.5 h-2.5"></i>
+                                {{ ach.title }}
+                            </span>
+                            
+                            <!-- Tooltip: Added z-[1000] and fixed positioning -->
+                            <div class="absolute bottom-full left-0 mb-3 hidden group-hover/tooltip:block w-48 bg-slate-950 border border-white/10 p-3 rounded-xl shadow-2xl z-[1000] pointer-events-none backdrop-blur-xl animate-in fade-in slide-in-from-bottom-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="w-5 h-5 rounded-lg bg-{{ ach.color }}-500/20 flex items-center justify-center">
+                                        <i data-lucide="{{ ach.icon }}" class="w-3 h-3 text-{{ ach.color }}-400"></i>
+                                    </div>
+                                    <p class="text-[10px] text-{{ ach.color }}-400 font-black uppercase tracking-widest">{{ ach.title }}</p>
+                                </div>
+                                <p class="text-[9px] text-slate-300 font-medium leading-relaxed italic">"{{ ach.desc }}"</p>
+                                <div class="absolute top-full left-4 w-2 h-2 bg-slate-950 border-r border-b border-white/10 rotate-45 -mt-1"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <span class="text-[8px] font-bold text-slate-600 uppercase tracking-widest">
+                        {{ student.log_count }} Logs • {{ student.avg_daily }}h avg
+                    </span>
                 </div>
                 
+                <!-- PROGRESS BAR -->
                 <div class="flex items-center gap-2">
-                    <div class="flex-grow bg-slate-900 rounded-full h-1.5 overflow-hidden">
-                        <div class="h-full transition-all duration-1000 
-                            {% if student.rank == 1 %} bg-amber-400
-                            {% elif student.is_current_user %} bg-indigo-500
-                            {% else %} bg-slate-600 {% endif %}" 
+                    <div class="flex-grow bg-slate-950 rounded-full h-1 overflow-hidden border border-white/5">
+                        <div class="h-full transition-all duration-1000 ease-out 
+                            {% if student.rank == 1 %} bg-gradient-to-r from-amber-500 to-amber-300
+                            {% elif student.is_current_user %} bg-gradient-to-r from-indigo-600 to-indigo-400
+                            {% else %} bg-slate-700 {% endif %}" 
                             style="width: {{ student.progress }}%"></div>
                     </div>
-                    <span class="text-[9px] font-bold text-slate-500 w-6 text-right">{{ student.progress }}%</span>
+                    <span class="text-[9px] font-black text-slate-500 w-6 text-right">{{ student.progress }}%</span>
                 </div>
             </div>
         </div>
@@ -133,9 +194,11 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .active-filter { background: rgba(245, 158, 11, 0.2) !important; color: #f59e0b !important; border-color: rgba(245, 158, 11, 0.4) !important; }
+    .card-glass { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
 </style>
 
 <script>
+    lucide.createIcons();
     // Search
     document.getElementById('leaderSearch').addEventListener('input', function(e) {
         const term = e.target.value.toLowerCase();

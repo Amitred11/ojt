@@ -1,9 +1,24 @@
 import asyncio
 from quart import Blueprint, render_template, request, redirect, url_for, session
 from db import get_db
-from datetime import datetime
-from utils import process_multiple_images
+from datetime import datetime, timedelta
+from util import process_multiple_images
 from bson import ObjectId
+# new
+from utils.achievements import get_achievements
+from routes.tracker import PH_HOLIDAYS
+import re
+# new
+def is_workday(date_obj):
+    if date_obj.weekday() >= 5: return False
+    if date_obj.strftime('%Y-%m-%d') in PH_HOLIDAYS: return False
+    return True
+
+def get_previous_workday(date_obj):
+    prev = date_obj - timedelta(days=1)
+    while not is_workday(prev):
+        prev -= timedelta(days=1)
+    return prev
 
 portfolio_bp = Blueprint('portfolio', __name__, url_prefix='/portfolio')
 
@@ -56,6 +71,93 @@ async def setup_profile():
 
     p = await db.profiles.find_one({'user_id': session['user_id']}) or {}
     return await render_template('portfolio/portfolio_setup.html', p=p)
+
+from datetime import timedelta
+
+# new
+@portfolio_bp.route('/my-profile')
+async def view_profile():
+    if 'user_id' not in session: 
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    uid = session['user_id']
+    
+    # 1. Fetch Profile and Logs
+    p = await db.profiles.find_one({'user_id': uid}) or {}
+    logs = await db.logs.find({'user_id': uid}).sort('log_date', -1).to_list(None)
+    
+    # 2. Process Logs & Calculate Total Hours
+    processed_logs = []
+    total_h = 0
+    for l in logs:
+        log_dt = l['log_date']
+        if isinstance(log_dt, str):
+            l['log_date_obj'] = datetime.strptime(log_dt, '%Y-%m-%d')
+        else:
+            l['log_date_obj'] = log_dt
+        
+        total_h += l.get('hours', 0)
+        processed_logs.append(l)
+
+    log_count = len(processed_logs)
+    avg_daily = round(total_h / log_count, 1) if log_count else 0
+
+    # 3. Calculate Target Hours from the "Duration" field in Profile
+    target = 486 
+    if p.get('duration'):
+        digits = re.findall(r'\d+', str(p['duration']))
+        if digits: 
+            target = int(digits[0])
+
+    progress = min(int((total_h / target) * 100), 100) if target > 0 else 0
+
+    # 4. Calculate Rank (Leaderboard position)
+    pipeline = [
+        {"$group": {"_id": "$user_id", "total": {"$sum": "$hours"}}}, 
+        {"$match": {"total": {"$gt": total_h}}}
+    ]
+    higher_users = await db.logs.aggregate(pipeline).to_list(None)
+    rank = len(higher_users) + 1
+
+    # 5. Streak Calculation
+    streak_days = 0
+    if processed_logs:
+        log_dates = sorted({l['log_date_obj'].date() for l in processed_logs}, reverse=True)
+        streak_days = 1
+        for i in range(len(log_dates) - 1):
+            expected = get_previous_workday(log_dates[i])
+            if log_dates[i+1] == expected:
+                streak_days += 1
+            else:
+                break
+
+    # 6. Build Stats for Achievements
+    stats = {
+        'rank': rank, 
+        'total_hours': total_h, 
+        'log_count': log_count,
+        'avg_daily': avg_daily, 
+        'progress': progress, 
+        'streak_days': streak_days,
+        'early_logs': sum(1 for l in processed_logs if l['log_date_obj'].hour < 8), 
+        'late_logs': sum(1 for l in processed_logs if l['log_date_obj'].hour >= 21), 
+        'max_daily_hours': max([l.get('hours', 0) for l in processed_logs]) if processed_logs else 0, 
+        'weekend_logs': sum(1 for l in processed_logs if l['log_date_obj'].weekday() >= 5)
+    }
+    
+    achievements = get_achievements(stats)
+
+    return await render_template(
+        'main/profile.html', 
+        p=p, 
+        total_hours=round(total_h, 1), 
+        log_count=log_count, 
+        avg_hours=avg_daily, 
+        progress=progress, 
+        recent_activity=processed_logs[:5], 
+        achievements=achievements
+    )
 
 # --- WEEKLY LOGS ---
 

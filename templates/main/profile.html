@@ -1,0 +1,176 @@
+{% extends "main/base.html" %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto px-4 pt-8 pb-32">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-900 tracking-tightest text-white uppercase italic">Student Profile</h1>
+            <p class="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">OJT Digital Identity</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="copyProfileLink()" class="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all">
+                <i data-lucide="share-2" class="w-5 h-5"></i>
+            </button>
+            <a href="{{ url_for('portfolio.setup_profile') }}" class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-all">
+                <i data-lucide="edit-3" class="w-5 h-5"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Profile Hero Card -->
+    <div class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 blur-[80px] rounded-full"></div>
+        
+        <div class="flex flex-col items-center text-center relative z-10">
+            <div class="relative mb-4">
+                <div class="w-28 h-28 rounded-[2rem] bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-600 flex items-center justify-center text-5xl font-black text-white shadow-2xl border-4 border-white/10">
+                    {{ p.full_name[0] if p.full_name else '?' }}
+                </div>
+                <div class="absolute -bottom-2 -right-2 px-3 py-1 rounded-full bg-emerald-500 text-[10px] font-black text-white uppercase tracking-widest border-4 border-[#020617]">
+                    Active
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-black text-white tracking-tight">{{ p.full_name or 'Trainee Name' }}</h2>
+            <p class="text-indigo-400 font-bold text-xs uppercase tracking-widest mt-1">{{ p.course or 'Course not set' }}</p>
+            
+            <!-- Overall Progress Bar -->
+            <div class="w-full mt-6 px-4">
+                <div class="flex justify-between items-end mb-2">
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest">Training Progress</p>
+                    <p class="text-xs font-black text-white">{{ progress }}%</p>
+                </div>
+                <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                    <div class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full" style="width: {{ progress }}%"></div>
+                </div>
+                <p class="text-[9px] text-slate-500 font-bold mt-2 italic text-center">Goal: {{ p.duration or 'Not Set' }}</p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 w-full mt-8 pt-6 border-t border-white/5">
+                <div>
+                    <p class="text-[9px] text-slate-500 font-black uppercase mb-1">Total Logs</p>
+                    <p class="text-xl font-black text-white">{{ log_count }}</p>
+                </div>
+                <div class="border-x border-white/5">
+                    <p class="text-[9px] text-slate-500 font-black uppercase mb-1">Avg. Hours</p>
+                    <p class="text-xl font-black text-white">{{ avg_hours }}h</p>
+                </div>
+                <div>
+                    <p class="text-[9px] text-slate-500 font-black uppercase mb-1">Total Time</p>
+                    <p class="text-xl font-black text-white">{{ total_hours }}h</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Objectives Section -->
+    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                <i data-lucide="target" class="w-4 h-4"></i>
+            </div>
+            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Learning Objectives</h3>
+        </div>
+        <p class="text-slate-300 text-sm leading-relaxed italic">
+            "{{ p.objectives or 'No learning objectives specified yet. Head to setup to add them!' }}"
+        </p>
+    </div>
+
+    <!-- Achievements Section -->
+    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
+        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Earned Achievements</h3>
+        <div class="flex flex-wrap gap-2">
+            {% for ach in achievements %}
+            <div class="group/tooltip relative">
+                <div class="flex items-center gap-2 bg-{{ ach.color }}-500/10 border border-{{ ach.color }}-500/20 px-4 py-2.5 rounded-xl cursor-help hover:bg-{{ ach.color }}-500/20 transition-all">
+                    <i data-lucide="{{ ach.icon }}" class="w-4 h-4 text-{{ ach.color }}-400"></i>
+                    <span class="text-[11px] font-black text-white uppercase tracking-tight">{{ ach.title }}</span>
+                </div>
+                <!-- Tooltip logic remains as per your working version -->
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Training Environment (HTE & Overview) -->
+<div class="space-y-4">
+    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                    <i data-lucide="building-2"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Training At</p>
+                    <p class="text-white font-bold">{{ p.hte_name or 'HTE Not Set' }}</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Supervisor</p>
+                <p class="text-slate-300 font-bold text-sm">{{ p.supervisor or 'N/A' }}</p>
+            </div>
+        </div>
+
+        <!-- Detailed Overview Fields with Scrollbars -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/5">
+            <!-- Company Profile Column -->
+            <div class="flex flex-col">
+                <h4 class="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                    <i data-lucide="info" class="w-3 h-3"></i> Company Profile
+                </h4>
+                <div class="max-h-64 overflow-y-auto pr-3 custom-scrollbar">
+                    <!-- whitespace-pre-line preserves manual line breaks from the textarea -->
+                    <p class="text-[11px] text-slate-400 leading-relaxed whitespace-pre-line">
+                        {{ p.company_desc or 'Company description not provided.' }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Department Column -->
+            <div class="flex flex-col">
+                <h4 class="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                    <i data-lucide="briefcase" class="w-3 h-3"></i> Department
+                </h4>
+                <div class="max-h-64 overflow-y-auto pr-3 custom-scrollbar">
+                    <p class="text-[11px] text-slate-400 leading-relaxed whitespace-pre-line">
+                        {{ p.dept_desc or 'Department details not provided.' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Recent Activity Timeline -->
+        <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8">
+            <h3 class="text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                <i data-lucide="history" class="w-4 h-4"></i> Recent Activity
+            </h3>
+            <div class="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1px] before:bg-white/10">
+                {% for log in recent_activity %}
+                <div class="relative pl-8">
+                    <div class="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-slate-950 border border-white/10 flex items-center justify-center">
+                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-white font-bold text-sm">{{ log.log_date }}</p>
+                            <p class="text-slate-500 text-xs">{{ log.hours }} hours logged</p>
+                        </div>
+                        <span class="text-[10px] font-black text-slate-600 bg-white/5 px-2 py-1 rounded-md uppercase">Verified</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+    function copyProfileLink() {
+        navigator.clipboard.writeText(window.location.href);
+        alert("Profile link copied!");
+    }
+</script>
+{% endblock %}

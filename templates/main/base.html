@@ -14,7 +14,23 @@
     <script src="//instant.page/5.2.0" type="module"></script>
     <!-- SWEETALERT2 (Custom Alerts) -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+    <div class="hidden 
+    bg-amber-500/10 border-amber-500/20 text-amber-400 
+    bg-rose-500/10 border-rose-500/20 text-rose-400 
+    bg-cyan-500/10 border-cyan-500/20 text-cyan-400 
+    bg-emerald-500/10 border-emerald-500/20 text-emerald-400 
+    bg-blue-500/10 border-blue-500/20 text-blue-400 
+    bg-indigo-500/10 border-indigo-500/20 text-indigo-400 
+    bg-orange-500/10 border-orange-500/20 text-orange-400
+    bg-red-500/10 border-red-500/20 text-red-400
+    bg-violet-500/10 border-violet-500/20 text-violet-400
+    bg-lime-500/10 border-lime-500/20 text-lime-400
+    bg-yellow-500/10 border-yellow-500/20 text-yellow-400
+    bg-purple-500/10 border-purple-500/20 text-purple-400
+    bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-400
+    bg-slate-500/10 border-slate-500/20 text-slate-400
+    bg-pink-500/10 border-pink-500/20 text-pink-400">
+    </div>
     <style>
         /* BASE STYLES */
         body { 
@@ -144,6 +160,11 @@
         .swal2-loader {
             border-color: #6366f1 transparent #6366f1 transparent !important;
         }
+
+        .custom-scrollbar::-webkit-scrollbar {width: 4px;}
+        .custom-scrollbar::-webkit-scrollbar-track {background: rgba(255, 255, 255, 0.02);border-radius: 10px;}
+        .custom-scrollbar::-webkit-scrollbar-thumb {background: rgba(16, 185, 129, 0.2); /* Emerald color matching your HTE theme */border-radius: 10px;}
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {background: rgba(16, 185, 129, 0.4);}
     </style>
 </head>
 <body class="min-h-screen pb-24 relative">
@@ -157,7 +178,7 @@
     
     <!-- ADDED: Only visible to the Master Admin -->
     {% if session.get('user_id') == '6979fc7f59b791fd5fcbf90f' %}
-    <a href="{{ url_for('auth.manage_users') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'admin' in request.endpoint else 'text-slate-500' }}">
+    <a href="{{ url_for('auth.manage_users') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if request.endpoint.startswith('auth.') else 'text-slate-500' }}">
         <i data-lucide="shield-check" class="w-6 h-6"></i>
     </a>
     {% endif %}
@@ -167,6 +188,9 @@
     </a>
     <a href="{{ url_for('portfolio.list_reports') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'portfolio' in request.endpoint else 'text-slate-500' }}">
         <i data-lucide="book-open" class="w-6 h-6"></i>
+    </a>
+    <a href="{{ url_for('portfolio.view_profile') }}" class="flex items-center gap-3 p-3 rounded-2xl hover:bg-white/5 transition-all text-slate-400 hover:text-white">
+        <i data-lucide="user"></i>
     </a>
     
     <button onclick="confirmLogout(event, '{{ url_for('auth.logout') }}')" class="flex flex-col items-center gap-1 text-xs font-bold text-slate-500 hover:text-red-400 transition-colors">

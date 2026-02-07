@@ -36,3 +36,6 @@ async def home():
 
 # IMPORTANT: Do not use app.run() for Vercel. 
 # Vercel handles the execution.
+
+if __name__ == "__main__":
+    app.run(debug=True)
