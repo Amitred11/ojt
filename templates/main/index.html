@@ -23,15 +23,15 @@
         </div>
     </div>
 
-        <!-- 1. PROGRESS CARD (Now only shows current stats) -->
+    <!-- 1. PROGRESS CARD -->
     <div class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
         <div class="flex justify-between items-start mb-8 relative z-10">
             <div>
                 <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Completion Status</p>
                 <div class="flex items-baseline gap-1">
-                    <span class="text-5xl font-900 tracking-tighter text-white">{{ total_str.split('h')[0] }}</span>
+                    <span class="text-5xl font-900 tracking-tighter text-white">{{ total_str.split('h')[0] if total_str else '0' }}</span>
                     <span class="text-xl font-800 text-slate-500">h</span>
-                    <span class="text-3xl font-800 tracking-tighter text-white ml-2">{{ total_str.split(' ')[1] if ' ' in total_str else '0m' }}</span>
+                    <span class="text-3xl font-800 tracking-tighter text-white ml-2">{{ total_str.split(' ')[1] if (total_str and ' ' in total_str) else '0m' }}</span>
                 </div>
             </div>
             <div class="bg-white/5 border border-white/10 rounded-2xl p-3 backdrop-blur-md">
@@ -57,31 +57,84 @@
         </div>
     </div>
 
-    
+    <!-- 2. INTELLIGENCE DASHBOARD (GRAPH & REAL-NUMBERS MATH) -->
+    <details class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 mb-8 overflow-hidden group/analytics shadow-2xl">
+        <summary class="flex items-center justify-between p-7 cursor-pointer list-none outline-none select-none">
+            <div class="flex items-center gap-5">
+                <div class="relative w-12 h-12 rounded-2xl bg-slate-950 flex items-center justify-center border border-white/10">
+                    <i data-lucide="bar-chart-big" class="w-6 h-6 text-indigo-400 group-open/analytics:text-emerald-400 transition-colors"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-black uppercase tracking-[0.2em] text-white">Intelligence Center</h2>
+                    <p class="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">{{ avg_speed | round(2) }} hrs / day</p>
+                </div>
+            </div>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-slate-500 transition-transform duration-500 group-open/analytics:rotate-180"></i>
+        </summary>
 
-    <!-- 2. SEPARATE COMPLETION CARD -->
-    <div class="relative overflow-hidden bg-indigo-600 rounded-[2rem] p-6 mb-10 shadow-[0_20px_50px_rgba(79,70,229,0.3)]">
-        <!-- Decorative Circle -->
+        <div class="px-7 pb-8 space-y-8">
+            <!-- Monthly Chart -->
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Monthly Output Volume</p>
+                <div class="relative bg-slate-950/50 rounded-3xl p-6 border border-white/5">
+                    <div class="flex items-end justify-around gap-2 h-32 w-full">
+                        {% for month, data in grouped_logs.items() %}
+                            {% set m_goal_percent = (data.month_total_m / (486 * 60) * 100) %}
+                            <div class="relative group/bar flex flex-col items-center w-full">
+                                <div class="absolute -top-10 scale-0 group-hover/bar:scale-100 transition-transform bg-white text-slate-950 text-[9px] font-black px-2 py-1 rounded shadow-xl z-30 whitespace-nowrap">{{ data.month_total_str }}</div>
+                                <div class="w-full max-w-[25px] bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-lg transition-all duration-1000 group-hover/bar:from-emerald-500 group-hover/bar:to-cyan-400"
+                                     style="height: {{ m_goal_percent * 2 + 10 }}px; min-height: 4px;"></div>
+                                <p class="text-[7px] font-black text-slate-600 mt-2 uppercase text-center truncate w-full">{{ month.split(' ')[0] }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Precision Math Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white/5 rounded-[2rem] p-5 border border-white/5">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Pace Analysis</p>
+                    <p class="text-2xl font-900 text-white tracking-tighter">{{ avg_speed | round(2) }} hrs</p>
+                    <p class="text-[9px] font-bold text-slate-500 leading-relaxed">Calculated from <span class="text-indigo-400 font-black">{{ log_count }}</span> active sessions.</p>
+                </div>
+                <div class="bg-white/5 rounded-[2rem] p-5 border border-white/5">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Work Days Left</p>
+                    <p class="text-2xl font-900 text-white tracking-tighter">{{ "%.1f"|format(finish_info.days_left) }}</p>
+                    <p class="text-[9px] font-bold text-slate-500 leading-relaxed">Total hours divided by exact daily velocity.</p>
+                </div>
+            </div>
+
+            <!-- Ledger -->
+            <div class="space-y-4 pt-4 border-t border-white/5">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Monthly Ledger</p>
+                {% for month, data in grouped_logs.items() %}
+                <div class="bg-slate-950/30 rounded-2xl p-4 flex items-center justify-between border border-white/[0.03]">
+                    <p class="text-[10px] font-black text-white uppercase">{{ month }}</p>
+                    <p class="text-xs font-black text-indigo-400">{{ data.month_total_str }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </details>
+
+    <!-- 3. PRECISE ETA CARD -->
+    <div class="relative overflow-hidden bg-indigo-600 rounded-[2.5rem] p-8 mb-10 shadow-[0_20px_50px_rgba(79,70,229,0.3)]">        
         <div class="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-        
-        <div class="flex items-center gap-5 relative z-10">
-            <div class="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">
-                <i data-lucide="flag" class="text-white w-7 h-7 fill-white/20"></i>
+        <div class="flex items-center gap-6 relative z-10">
+            <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">
+                <i data-lucide="flag" class="text-white w-8 h-8 fill-white/20"></i>
             </div>
             <div>
                 <p class="text-indigo-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Estimated Finish Date</p>
-                <h3 class="text-2xl font-900 text-white tracking-tight">
-                    {% if finish_info == 'Completed' %}
-                        OJT COMPLETED 🎉
-                    {% else %}
-                        {{ finish_info.date }}
-                    {% endif %}
+                <h3 class="text-3xl font-900 text-white tracking-tight">
+                    {% if finish_info.date == 'Completed' %} OJT COMPLETED 🎉 {% else %} {{ finish_info.date }} {% endif %}
                 </h3>
-                {% if finish_info != 'Completed' %}
+                {% if finish_info.date != 'Completed' %}
                 <div class="flex items-center gap-2 mt-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <p class="text-indigo-100/80 text-[10px] font-bold uppercase tracking-widest">
-                        Approx. {{ finish_info.days_left }} work days remaining
+                    <p class="text-indigo-100/80 text-[11px] font-black uppercase tracking-widest">
+                        {{ "%.2f"|format(finish_info.days_left) }} real work days remaining
                     </p>
                 </div>
                 {% endif %}
@@ -89,124 +142,93 @@
         </div>
     </div>
 
-    <!-- Log Form Section -->
+    <!-- 4. LOG FORM -->
     <div class="mb-12" id="log-section">
         <div class="flex justify-between items-center mb-5 px-4">
-            <h2 id="form-title" class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Log Entry</h2>
+            <h2 id="form-title" class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">New Entry</h2>
             <div class="flex gap-2">
-                <button onclick="resetForm()" id="cancel-edit" class="hidden text-[10px] font-black text-slate-400 bg-white/5 px-4 py-2 rounded-xl border border-white/10 hover:bg-white/10">CANCEL</button>
+                <button onclick="resetForm()" id="cancel-edit" class="hidden text-[10px] font-black text-slate-400 bg-white/5 px-4 py-2 rounded-xl">CANCEL</button>
                 <button onclick="quickFill()" class="text-[10px] font-black text-indigo-400 hover:text-white transition-all">⚡ QUICK 8-5</button>
             </div>
         </div>
         
         <form method="POST" id="log-form" class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-7 border border-white/10 space-y-6">
             <input type="hidden" name="log_id" id="log_id">
-            
             <div class="relative">
                 <i data-lucide="calendar" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
                 <input type="date" name="log_date" id="log_date" value="{{ today }}" required 
-                       class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-14 pr-6 py-5 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-white appearance-none">
+                       class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-14 pr-6 py-5 outline-none focus:border-indigo-500 text-white font-bold appearance-none">
             </div>
-
             <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-3">
                     <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Morning</label>
                     <div class="space-y-2">
-                        <input type="time" name="am_in" id="am_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
-                        <input type="time" name="am_out" id="am_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
+                        <input type="time" name="am_in" id="am_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white">
+                        <input type="time" name="am_out" id="am_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white">
                     </div>
                 </div>
                 <div class="space-y-3">
                     <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Afternoon</label>
                     <div class="space-y-2">
-                        <input type="time" name="pm_in" id="pm_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
-                        <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white focus:border-indigo-500/50 transition-all">
+                        <input type="time" name="pm_in" id="pm_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white">
+                        <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white">
                     </div>
                 </div>
             </div>
-
-            <button type="submit" id="submit-btn" class="w-full relative group overflow-hidden bg-white text-slate-950 font-900 py-5 rounded-2xl transition-all active:scale-[0.97]">
-                <span class="relative z-10 flex items-center justify-center gap-2">
-                    Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                </span>
+            <button type="submit" id="submit-btn" class="w-full bg-white text-slate-950 font-900 py-5 rounded-2xl transition-all active:scale-[0.97]">
+                <span class="flex items-center justify-center gap-2">Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i></span>
             </button>
         </form>
     </div>
 
-    <!-- History Archive Section -->
+    <!-- 5. HISTORY -->
     <div class="mb-8 px-4">
         <div class="flex items-center justify-between mb-6">
-            <div>
-                <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">History Archive</h2>
-                <p id="search-count" class="text-[10px] text-indigo-400/60 font-bold mt-1 hidden">Found 0 matches</p>
-            </div>
+            <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Archive</h2>
             <div class="flex items-center gap-3">
-                <!-- Master Toggle -->
-                <button onclick="toggleAllFolders()" id="master-toggle" class="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all" title="Toggle All">
+                <button onclick="toggleAllFolders()" class="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400">
                     <i data-lucide="chevrons-up-down" class="w-4 h-4"></i>
                 </button>
-                <!-- Search -->
-                <div class="relative">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600"></i>
-                    <input type="text" id="logSearch" placeholder="Search logs..." 
-                           class="bg-slate-950 border border-white/10 rounded-2xl py-2.5 pl-9 pr-4 text-[11px] font-bold text-white focus:w-48 transition-all w-32 outline-none focus:border-indigo-500/50">
-                </div>
+                <input type="text" id="logSearch" placeholder="Search..." class="bg-slate-950 border border-white/10 rounded-2xl py-2 px-4 text-[11px] font-bold text-white w-32 focus:w-48 transition-all outline-none">
             </div>
         </div>
 
-        <!-- History Container -->
         <div class="space-y-4" id="history-container">
             {% for month, data in grouped_logs.items() %}
-            <details {% if loop.first %}open{% endif %} class="group month-folder transition-all duration-300">
-                <summary class="sticky top-4 z-20 flex items-center gap-4 mb-3 px-4 py-2 select-none outline-none cursor-pointer list-none bg-slate-950/80 backdrop-blur-md rounded-2xl border border-white/5">
-                    <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-open:bg-indigo-500/10 group-open:border-indigo-500/20 transition-all">
+            <details {% if loop.first %}open{% endif %} class="group month-folder transition-all">
+                <summary class="sticky top-4 z-20 flex items-center gap-4 mb-3 px-4 py-2 select-none cursor-pointer list-none bg-slate-950/80 backdrop-blur-md rounded-2xl border border-white/5">
+                    <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
                         <i data-lucide="folder" class="w-4 h-4 text-slate-500 group-open:hidden"></i>
                         <i data-lucide="folder-open" class="w-4 h-4 hidden group-open:block text-indigo-400"></i>
                     </div>
                     <div class="flex-grow">
-                        <h2 class="text-sm font-black text-slate-300 group-open:text-white transition-colors">{{ month }}</h2>
-                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{{ data.logs|length }} entries • {{ data.month_total_str }}</p>
+                        <h2 class="text-sm font-black text-slate-300">{{ month }}</h2>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase">{{ data.logs|length }} entries • {{ data.month_total_str }}</p>
                     </div>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 transition-transform group-open:rotate-180"></i>
                 </summary>
 
                 <div class="space-y-3 mt-4 px-2">
                     {% for log in data.logs %}
-                    <div class="log-item bg-slate-900/30 border border-white/[0.03] rounded-3xl p-4 flex items-center justify-between hover:bg-white/[0.05] hover:border-white/10 transition-all group/item" 
+                    <div class="log-item bg-slate-900/30 border border-white/[0.03] rounded-3xl p-4 flex items-center justify-between group/item" 
                          data-date="{{ log.log_date }}" data-day="{{ log.display_weekday }}">
-                        
                         <div class="flex items-center gap-4">
-                            <!-- Date Icon -->
-                            <div class="w-11 h-11 rounded-2xl bg-slate-950 flex flex-col items-center justify-center border border-white/5 group-hover/item:border-indigo-500/30 transition-colors">
+                            <div class="w-11 h-11 rounded-2xl bg-slate-950 flex flex-col items-center justify-center border border-white/5">
                                 <span class="text-[9px] font-black text-slate-500 leading-none mb-0.5">{{ log.display_weekday[:3].upper() }}</span>
                                 <span class="text-sm font-black text-white leading-none">{{ log.display_day }}</span>
                             </div>
-
-                            <!-- Info -->
                             <div>
-                                <div class="flex items-center gap-2 mb-1">
-                                    <p class="text-[10px] font-black text-white uppercase tracking-tighter">{{ log.am_str }}</p>
-                                    <span class="text-slate-700 text-[8px]">•</span>
-                                    <p class="text-[10px] font-black text-white uppercase tracking-tighter">{{ log.pm_str }}</p>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">{{ log.hours_str }}</span>
-                                    <!-- Dynamic Badge: Assuming 8h is a full day -->
-                                    {% if '8h' in log.hours_str %}
-                                    <span class="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[7px] font-black uppercase tracking-tighter">Full Session</span>
-                                    {% endif %}
-                                </div>
+                                <p class="text-[10px] font-black text-white uppercase">{{ log.am_str }} • {{ log.pm_str }}</p>
+                                <span class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">{{ log.hours_str }}</span>
                             </div>
                         </div>
-                        
-                        <!-- Actions -->
                         <div class="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                             <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}')" 
-                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all">
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10">
                                 <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                             </button>
                             <button onclick="confirmDelete(event, '{{ url_for('tracker.delete_log', log_id=log.id) }}')" 
-                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-all">
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10">
                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
@@ -215,28 +237,13 @@
                 </div>
             </details>
             {% endfor %}
-            
-            <!-- Empty Search State -->
-            <div id="no-results" class="hidden py-20 text-center">
-                <div class="w-16 h-16 bg-slate-900 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-white/5">
-                    <i data-lucide="search-x" class="text-slate-600 w-8 h-8"></i>
-                </div>
-                <p class="text-slate-500 font-bold text-sm">No logs match your search</p>
-                <button onclick="clearSearch()" class="mt-4 text-xs font-black text-indigo-400 uppercase tracking-widest">Clear Filter</button>
-            </div>
         </div>
     </div>
-
-<style>
-    summary::-webkit-details-marker { display: none; }
-    input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.3; }
-    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.3; }
-</style>
+</div>
 
 <script>
     lucide.createIcons();
 
-    // --- Form Controls ---
     function quickFill() {
         document.getElementById('am_in').value = "08:00"; 
         document.getElementById('am_out').value = "12:00";
@@ -251,12 +258,11 @@
         document.getElementById('am_out').value = amOut;
         document.getElementById('pm_in').value = pmIn;
         document.getElementById('pm_out').value = pmOut;
-        
-        document.getElementById('form-title').innerText = "Edit Session";
+        document.getElementById('form-title').innerText = "Update Session";
         const btn = document.getElementById('submit-btn');
-        btn.innerHTML = `<span class="relative z-10 flex items-center justify-center gap-2">Update Session <i data-lucide="refresh-cw" class="w-4 h-4"></i></span>`;
-        btn.classList.remove('bg-white', 'text-slate-950');
-        btn.classList.add('bg-emerald-500', 'text-white');
+        btn.innerHTML = `<span class="flex items-center justify-center gap-2">Update Session <i data-lucide="refresh-cw" class="w-4 h-4"></i></span>`;
+        btn.classList.replace('bg-white', 'bg-emerald-500');
+        btn.classList.replace('text-slate-950', 'text-white');
         document.getElementById('cancel-edit').classList.remove('hidden');
         lucide.createIcons();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -266,79 +272,42 @@
         document.getElementById('log_id').value = "";
         document.getElementById('log-form').reset();
         document.getElementById('log_date').value = "{{ today }}";
-        document.getElementById('form-title').innerText = "Log Entry";
+        document.getElementById('form-title').innerText = "New Entry";
         const btn = document.getElementById('submit-btn');
-        btn.innerHTML = `<span class="relative z-10 flex items-center justify-center gap-2">Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i></span>`;
-        btn.classList.remove('bg-emerald-500', 'text-white');
-        btn.classList.add('bg-white', 'text-slate-950');
+        btn.innerHTML = `<span class="flex items-center justify-center gap-2">Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i></span>`;
+        btn.classList.replace('bg-emerald-500', 'bg-white');
+        btn.classList.replace('text-white', 'text-slate-950');
         document.getElementById('cancel-edit').classList.add('hidden');
         lucide.createIcons();
     }
 
-    // --- Advanced Archive Controls ---
     const searchInput = document.getElementById('logSearch');
-    const noResults = document.getElementById('no-results');
-    const searchCount = document.getElementById('search-count');
-
     searchInput.addEventListener('input', function(e) {
         const term = e.target.value.toLowerCase();
-        let totalVisible = 0;
-
         document.querySelectorAll('.month-folder').forEach(folder => {
-            let folderHasMatch = false;
-            const logs = folder.querySelectorAll('.log-item');
-            
-            logs.forEach(item => {
-                const dateText = item.getAttribute('data-date').toLowerCase();
-                const dayText = item.getAttribute('data-day').toLowerCase();
-                const isMatch = dateText.includes(term) || dayText.includes(term);
-                
+            let match = false;
+            folder.querySelectorAll('.log-item').forEach(item => {
+                const text = item.getAttribute('data-date') + item.getAttribute('data-day');
+                const isMatch = text.toLowerCase().includes(term);
                 item.style.display = isMatch ? 'flex' : 'none';
-                if(isMatch) {
-                    folderHasMatch = true;
-                    totalVisible++;
-                }
+                if(isMatch) match = true;
             });
-
-            // Show/Hide folder and auto-expand if searching
-            folder.style.display = folderHasMatch ? 'block' : 'none';
-            if (term !== "" && folderHasMatch) {
-                folder.setAttribute('open', '');
-            }
+            folder.style.display = match ? 'block' : 'none';
+            if (term !== "" && match) folder.setAttribute('open', '');
         });
-
-        // Update UI states
-        noResults.style.display = (totalVisible === 0 && term !== "") ? 'block' : 'none';
-        if (term !== "") {
-            searchCount.classList.remove('hidden');
-            searchCount.innerText = `Found ${totalVisible} matches`;
-        } else {
-            searchCount.classList.add('hidden');
-        }
     });
-
-    function clearSearch() {
-        searchInput.value = "";
-        searchInput.dispatchEvent(new Event('input'));
-    }
 
     let allExpanded = true; 
     function toggleAllFolders() {
-        const folders = document.querySelectorAll('.month-folder');
         allExpanded = !allExpanded;
-        folders.forEach(f => {
+        document.querySelectorAll('.month-folder').forEach(f => {
             if (allExpanded) f.setAttribute('open', '');
             else f.removeAttribute('open');
         });
-        
-        // Update the icon dynamically
-        const icon = document.querySelector('#master-toggle i');
-        icon.setAttribute('data-lucide', allExpanded ? 'chevrons-up-down' : 'chevrons-down-up');
-        lucide.createIcons();
     }
 
     function confirmDelete(e, url) {
-        if(confirm("Permanently delete this log?")) window.location.href = url;
+        if(confirm("Permanently delete this session?")) window.location.href = url;
     }
 </script>
 {% endblock %}

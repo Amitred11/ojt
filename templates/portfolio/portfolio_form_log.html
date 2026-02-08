@@ -67,20 +67,27 @@
 
 <script>
 document.getElementById('logForm').addEventListener('submit', async function(e) {
-    e.preventDefault(); // Stop immediate submission
+    e.preventDefault(); 
 
     const btn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const input = document.getElementById('photoInput');
-    const originalText = btnText.innerText;
+    const originalText = btnText.innerHTML;
 
+    // 1. Validation using Premium Toast
     const MAX_IMAGES = 6;
     if (input.files.length > MAX_IMAGES) {
-        alert(`You can only upload a maximum of ${MAX_IMAGES} images per log.`);
-        return; // Stop execution
+        Toast.fire({
+            icon: 'error',
+            title: `Limit exceeded: Max ${MAX_IMAGES} photos allowed.`
+        });
+        return; 
     }
 
-    // UI Feedback
+    // 2. UI Feedback - Show the premium loading overlay from base.html
+    showUploading();
+    
+    // Also update the button state
     btn.disabled = true;
     btn.classList.add('opacity-75', 'cursor-not-allowed');
     btnText.innerHTML = `
@@ -88,39 +95,37 @@ document.getElementById('logForm').addEventListener('submit', async function(e) 
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        Compressing Images...
+        Processing...
     `;
 
     try {
-        // Only process if files are selected
         if (input.files.length > 0) {
             const dataTransfer = new DataTransfer();
-            
-            // Convert FileList to Array and map to compression promises
             const filePromises = Array.from(input.files).map(file => compressImage(file));
-            
-            // Wait for ALL images to compress
             const compressedFiles = await Promise.all(filePromises);
-            
-            // Add compressed files to DataTransfer object
             compressedFiles.forEach(file => dataTransfer.items.add(file));
-            
-            // Replace the input files with compressed ones
             input.files = dataTransfer.files;
         }
 
-        // Submit the form
+        // Submit the form programmatically
         this.submit();
 
     } catch (error) {
         console.error("Compression failed:", error);
-        alert("An error occurred while processing images. Please try again.");
+        
+        // 3. Error handling using Premium Toast
+        Swal.close(); // Close the loading spinner
+        Toast.fire({
+            icon: 'error',
+            title: 'Image processing failed. Please try again.'
+        });
+        
         btn.disabled = false;
-        btnText.innerText = originalText;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        btnText.innerHTML = originalText;
     }
 });
 
-// Reusable Compression Function
 function compressImage(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -130,7 +135,7 @@ function compressImage(file) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const maxWidth = 1000; // Resize to max 1000px width
+                const maxWidth = 1000; 
                 const scale = maxWidth / img.width;
                 
                 if (scale < 1) {
@@ -144,7 +149,6 @@ function compressImage(file) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                // Convert to Blob (JPEG 70% quality)
                 canvas.toBlob((blob) => {
                     if (!blob) return reject(new Error('Compression failed'));
                     const newFile = new File([blob], file.name, {

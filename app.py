@@ -36,3 +36,8 @@ async def home():
 
 # IMPORTANT: Do not use app.run() for Vercel. 
 # Vercel handles the execution.
+
+if __name__ == "__main__":
+    # debug=True for auto-reload and error messages
+    # host='0.0.0.0' allows access from other devices in your network
+    app.run(port=5000, debug=True)
