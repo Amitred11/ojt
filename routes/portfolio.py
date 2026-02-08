@@ -169,6 +169,8 @@ async def new_log():
             db = get_db()
             form = await request.form
             files = (await request.files).getlist('photos')
+            if len(files) > 6:
+                return "Error: Maximum 6 images allowed", 400
             images = await process_multiple_images(files)
             await db.weekly_logs.insert_one({
                 'user_id': session['user_id'],
@@ -199,6 +201,9 @@ async def edit_log(log_id):
             'updated_at': datetime.utcnow()
         }
         if files and files[0].filename != '':
+            if len(files) > 6:
+                return "Error: Maximum 6 images allowed", 400
+            
             new_imgs = await process_multiple_images(files)
             if new_imgs: update_data['images'] = new_imgs
         await db.weekly_logs.update_one({'_id': ObjectId(log_id), 'user_id': session['user_id']}, {'$set': update_data})

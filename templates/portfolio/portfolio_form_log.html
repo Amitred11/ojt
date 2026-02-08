@@ -26,7 +26,7 @@
                 
                 <div class="space-y-2">
                     <label class="text-[11px] font-black text-emerald-400 uppercase tracking-widest ml-1">
-                        Documentation {% if log %}(Upload to Replace){% endif %}
+                        Documentation (Max 6 photos) {% if log %}(Upload to Replace){% endif %}
                     </label>
                     <input type="file" id="photoInput" name="photos" multiple accept="image/*" class="w-full text-[10px] text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 cursor-pointer">
                     
@@ -73,6 +73,12 @@ document.getElementById('logForm').addEventListener('submit', async function(e) 
     const btnText = document.getElementById('btnText');
     const input = document.getElementById('photoInput');
     const originalText = btnText.innerText;
+
+    const MAX_IMAGES = 6;
+    if (input.files.length > MAX_IMAGES) {
+        alert(`You can only upload a maximum of ${MAX_IMAGES} images per log.`);
+        return; // Stop execution
+    }
 
     // UI Feedback
     btn.disabled = true;
