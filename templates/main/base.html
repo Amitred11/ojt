@@ -186,10 +186,10 @@
     <a href="{{ url_for('leaderboard.index') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'leaderboard' in request.endpoint else 'text-slate-500' }}">
         <i data-lucide="trophy" class="w-6 h-6"></i>
     </a>
-    <a href="{{ url_for('portfolio.list_reports') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'portfolio' in request.endpoint else 'text-slate-500' }}">
+    <a href="{{ url_for('portfolio.list_reports') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'portfolio.list_reports' in request.endpoint else 'text-slate-500' }}">
         <i data-lucide="book-open" class="w-6 h-6"></i>
     </a>
-    <a href="{{ url_for('portfolio.view_profile') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'portfolio' in request.endpoint else 'text-slate-500' }}">
+    <a href="{{ url_for('portfolio.view_profile') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'portfolio.view_profile' in request.endpoint else 'text-slate-500' }}">
         <i data-lucide="user"></i>
     </a>
     
