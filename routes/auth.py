@@ -67,31 +67,47 @@ async def register():
 
     return await render_template("auth/register.html")
 
+import re # Add this import at the top of your file
+
 @auth_bp.route("/fix-account", methods=["GET", "POST"])
 async def fix_account():
     if request.method == "POST":
         form = await request.form
-        username = form.get("username").lower().strip()
+        input_username = form.get("username").strip()
         password = form.get("password")
 
-        user = await users_col.find_one({"username": username})
+        # Use a case-insensitive regex search
+        # This will find "RinYuRin" even if you type "rinyurin"
+        user = await users_col.find_one({
+            "username": {"$regex": f"^{re.escape(input_username)}$", "$options": "i"}
+        })
 
         if user:
-            # Check if the password matches the plain text in the DB
-            # (Old system used plain text, new system uses check_password_hash)
-            # This logic assumes you are converting from plain text to hash
-            if user['password'] == password:
+            # Check if the plain text password matches
+            if str(user.get('password')) == str(password):
                 hashed_pw = generate_password_hash(password)
+                
+                # Update the account: 
+                # 1. New hashed password
+                # 2. Set status to approved
+                # 3. Convert username to lowercase to follow your 'new' system format
                 await users_col.update_one(
                     {"_id": user['_id']},
-                    {"$set": {"password": hashed_pw}}
+                    {
+                        "$set": {
+                            "username": user['username'].lower(), # Normalizes to "rinyurin"
+                            "password": hashed_pw,
+                            "status": "approved"
+                        }
+                    }
                 )
-                await flash("Account security updated! You can now login.", "success")
+                
+                await flash(f"Account '{user['username']}' is now fixed and approved!", "success")
                 return redirect(url_for('auth.login'))
             else:
-                await flash("Old credentials do not match our records.", "error")
+                await flash("Password does not match the old records.", "error")
         else:
-            await flash("Username not found.", "error")
+            await flash(f"User '{input_username}' not found even with case-insensitive search.", "error")
             
     return await render_template("auth/migration_tool.html")
 
