@@ -4,7 +4,7 @@
 <div class="max-w-2xl mx-auto px-4 sm:px-6 pt-8 pb-24">
     
     <!-- HEADER -->
-    <div class="flex justify-between items-end mb-10">
+    <div class="flex justify-between items-end mb-8">
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <div class="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20">
@@ -23,11 +23,22 @@
         </div>
     </div>
 
-    <!-- 1. UPGRADED PROGRESS CARD -->
+    <!-- POLICY TOGGLE -->
+    <div class="flex justify-center mb-10">
+        <form method="POST" class="inline-flex p-1 bg-slate-950/50 border border-white/5 rounded-2xl backdrop-blur-xl">
+            <input type="hidden" name="toggle_ot_policy" value="1">
+            <button type="submit" class="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all {{ 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' if allow_ot else 'text-slate-500 hover:text-white' }}">
+                <i data-lucide="zap" class="w-3 h-3"></i> OT Allowed
+            </button>
+            <button type="submit" class="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all {{ 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' if not allow_ot else 'text-slate-500 hover:text-white' }}">
+                <i data-lucide="shield-alert" class="w-3 h-3"></i> Strict 8h Cap
+            </button>
+        </form>
+    </div>
+
+    <!-- 1. PROGRESS CARD -->
     <div class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
-        <!-- Background Decor -->
         <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl"></div>
-        
         <div class="relative z-10">
             <div class="flex justify-between items-start mb-10">
                 <div>
@@ -50,7 +61,6 @@
             </div>
 
             <div class="space-y-6">
-                <!-- Advanced Progress Bar -->
                 <div class="space-y-2">
                     <div class="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">
                         <span>Initiated</span>
@@ -62,10 +72,9 @@
                     </div>
                 </div>
 
-                <!-- Secondary Stats Row -->
                 <div class="grid grid-cols-3 gap-3">
                     <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                        <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Actual</p>
+                        <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Raw Total</p>
                         <p class="text-xs font-bold text-white">{{ total_raw_str }}</p>
                     </div>
                     <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
@@ -81,7 +90,7 @@
         </div>
     </div>
 
-    <!-- 2. INTELLIGENCE CENTER (EXPANDED) -->
+    <!-- 2. INTELLIGENCE CENTER -->
     <details class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 mb-8 overflow-hidden group/analytics shadow-2xl">
         <summary class="flex items-center justify-between p-7 cursor-pointer list-none outline-none select-none">
             <div class="flex items-center gap-5">
@@ -96,50 +105,38 @@
             <i data-lucide="plus" class="w-5 h-5 text-slate-500 group-open/analytics:hidden"></i>
             <i data-lucide="minus" class="w-5 h-5 text-slate-500 hidden group-open/analytics:block"></i>
         </summary>
-
         <div class="px-7 pb-8 space-y-8">
-            <!-- New Feature: Time Distribution -->
             <div class="space-y-4">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Work Shift Distribution</p>
                 <div class="flex gap-2 h-12">
                     <div class="bg-orange-500/20 border border-orange-500/30 rounded-xl flex items-center justify-center group/tip relative" style="width: {{ am_perc }}%">
                         <i data-lucide="sun" class="w-4 h-4 text-orange-400"></i>
-                        <span class="absolute -top-8 scale-0 group-hover/tip:scale-100 transition-all text-[9px] bg-white text-black px-2 py-1 rounded font-bold">Morning: {{ am_perc }}%</span>
                     </div>
                     <div class="bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center justify-center group/tip relative" style="width: {{ pm_perc }}%">
                         <i data-lucide="moon" class="w-4 h-4 text-indigo-400"></i>
-                        <span class="absolute -top-8 scale-0 group-hover/tip:scale-100 transition-all text-[9px] bg-white text-black px-2 py-1 rounded font-bold">Afternoon: {{ pm_perc }}%</span>
                     </div>
                 </div>
             </div>
-
-            <!-- Forecast Row -->
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-white/5 rounded-3xl p-5 border border-white/5">
                     <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Days to Goal</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-3xl font-900 text-white">{{ "%.1f"|format(finish_info.days_left) }}</span>
-                        <span class="text-[10px] font-bold text-slate-500 uppercase">Work Days</span>
                     </div>
                 </div>
                 <div class="bg-white/5 rounded-3xl p-5 border border-white/5">
-                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Efficiency Score</p>
+                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Efficiency</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-3xl font-900 text-emerald-400">{{ (progress / (log_count or 1)) | round(1) }}</span>
-                        <span class="text-[10px] font-bold text-slate-500 uppercase">%/Day</span>
                     </div>
                 </div>
             </div>
-
-            <!-- New Feature: Milestone Tracker -->
             <div class="space-y-4">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Milestones</p>
                 <div class="grid grid-cols-2 gap-3">
                     {% for ms in milestones %}
                     <div class="flex items-center gap-3 p-3 rounded-2xl border {% if ms.done %}bg-emerald-500/5 border-emerald-500/20{% else %}bg-white/5 border-white/5 opacity-50{% endif %}">
-                        <div class="w-6 h-6 rounded-full flex items-center justify-center {% if ms.done %}bg-emerald-500 text-slate-950{% else %}bg-slate-800 text-slate-500{% endif %}">
-                            <i data-lucide="{% if ms.done %}check{% else %}lock{% endif %}" class="w-3 h-3"></i>
-                        </div>
+                        <i data-lucide="{% if ms.done %}check{% else %}lock{% endif %}" class="w-3 h-3 text-white"></i>
                         <span class="text-[10px] font-black uppercase text-white tracking-tighter">{{ ms.label }}</span>
                     </div>
                     {% endfor %}
@@ -149,10 +146,10 @@
     </details>
 
     <!-- 3. ETA CARD -->
-    <div class="relative overflow-hidden bg-indigo-600 rounded-[2.5rem] p-8 mb-10 shadow-[0_20px_50px_rgba(79,70,229,0.3)] group hover:scale-[1.01] transition-transform">        
-        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+    <div class="relative overflow-hidden bg-indigo-600 rounded-[2.5rem] p-8 mb-10 shadow-[0_20px_50px_rgba(79,70,229,0.3)]">        
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
         <div class="flex items-center gap-6 relative z-10">
-            <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">
+            <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
                 <i data-lucide="calendar-check" class="text-white w-8 h-8"></i>
             </div>
             <div>
@@ -164,7 +161,7 @@
         </div>
     </div>
 
-    <!-- 4. LOG FORM (SAME AS BEFORE) -->
+    <!-- 4. LOG FORM -->
     <div class="mb-12" id="log-section">
         <div class="flex flex-col gap-4 mb-5 px-4">
             <div class="flex justify-between items-center">
@@ -172,71 +169,55 @@
                 <button onclick="resetForm()" id="cancel-edit" class="hidden text-[10px] font-black text-slate-400 bg-white/5 px-4 py-2 rounded-xl">CANCEL</button>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button type="button" onclick="quickFill()" class="flex-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black py-2.5 rounded-xl hover:bg-indigo-500 hover:text-white transition-all uppercase tracking-wider flex items-center justify-center gap-1">
+                <button type="button" onclick="quickFill()" class="flex-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1">
                     <i data-lucide="zap" class="w-3 h-3"></i> Full Day
                 </button>
-                <button type="button" onclick="setHalfDay('AM')" class="flex-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black py-2.5 rounded-xl hover:bg-emerald-500 hover:text-white transition-all uppercase tracking-wider flex items-center justify-center gap-1">
+                <button type="button" onclick="setHalfDay('AM')" class="flex-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1">
                     <i data-lucide="sun" class="w-3 h-3"></i> Half AM
                 </button>
-                <button type="button" onclick="setHalfDay('PM')" class="flex-1 bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[9px] font-black py-2.5 rounded-xl hover:bg-sky-500 hover:text-white transition-all uppercase tracking-wider flex items-center justify-center gap-1">
+                <button type="button" onclick="setHalfDay('PM')" class="flex-1 bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1">
                     <i data-lucide="moon" class="w-3 h-3"></i> Half PM
                 </button>
-                <button type="button" onclick="setAbsent()" class="flex-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black py-2.5 rounded-xl hover:bg-rose-500 hover:text-white transition-all uppercase tracking-wider flex items-center justify-center gap-1">
+                <button type="button" onclick="setAbsent()" class="flex-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1">
                     <i data-lucide="calendar-x" class="w-3 h-3"></i> Absent
                 </button>
             </div>
         </div>
         <form method="POST" id="log-form" class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-7 border border-white/10 space-y-6">
             <input type="hidden" name="log_id" id="log_id">
-            <div class="relative">
-                <i data-lucide="calendar" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
-                <input type="date" name="log_date" id="log_date" value="{{ today }}" required class="w-full bg-slate-950/50 border border-white/10 rounded-2xl pl-14 pr-6 py-5 outline-none focus:border-indigo-500 text-white font-bold appearance-none">
-            </div>
+            <input type="date" name="log_date" id="log_date" value="{{ today }}" required class="w-full bg-slate-950/50 border border-white/10 rounded-2xl p-5 outline-none text-white font-bold">
             <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-3">
                     <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Morning</label>
-                    <div class="space-y-2">
-                        <input type="time" name="am_in" id="am_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white">
-                        <input type="time" name="am_out" id="am_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white">
-                    </div>
+                    <input type="time" name="am_in" id="am_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
+                    <input type="time" name="am_out" id="am_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
                 </div>
                 <div class="space-y-3">
                     <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Afternoon</label>
-                    <div class="space-y-2">
-                        <input type="time" name="pm_in" id="pm_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white">
-                        <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center font-black text-white">
-                    </div>
+                    <input type="time" name="pm_in" id="pm_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
+                    <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
                 </div>
             </div>
-            <button type="submit" id="submit-btn" class="w-full bg-white text-slate-950 font-900 py-5 rounded-2xl transition-all active:scale-[0.97]">
-                <span class="flex items-center justify-center gap-2">Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i></span>
-            </button>
+            <button type="submit" id="submit-btn" class="w-full bg-white text-slate-950 font-900 py-5 rounded-2xl">Log Session</button>
         </form>
     </div>
 
-    <!-- 5. HISTORY -->
+    <!-- 5. ARCHIVE -->
     <div class="mb-8 px-4">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Archive</h2>
-            <div class="flex items-center gap-3">
-                <button onclick="toggleAllFolders()" class="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400"><i data-lucide="chevrons-up-down" class="w-4 h-4"></i></button>
-                <input type="text" id="logSearch" placeholder="Search..." class="bg-slate-950 border border-white/10 rounded-2xl py-2 px-4 text-[11px] font-bold text-white w-32 focus:w-48 transition-all outline-none">
-            </div>
+            <input type="text" id="logSearch" placeholder="Search..." class="bg-slate-950 border border-white/10 rounded-2xl py-2 px-4 text-[11px] font-bold text-white w-32 outline-none">
         </div>
 
-        <div class="space-y-4" id="history-container">
+        <div class="space-y-4">
             {% for month, data in grouped_logs.items() %}
-            <details {% if loop.first %}open{% endif %} class="group month-folder transition-all">
-                <summary class="sticky top-4 z-20 flex items-center gap-4 mb-3 px-4 py-2 select-none cursor-pointer list-none bg-slate-950/80 backdrop-blur-md rounded-2xl border border-white/5">
-                    <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                        <i data-lucide="folder" class="w-4 h-4 text-slate-500 group-open:hidden"></i>
-                        <i data-lucide="folder-open" class="w-4 h-4 hidden group-open:block text-indigo-400"></i>
-                    </div>
+            <details {% if loop.first %}open{% endif %} class="group month-folder">
+                <summary class="sticky top-4 z-20 flex items-center gap-4 mb-3 px-4 py-2 bg-slate-950/80 rounded-2xl border border-white/5 cursor-pointer list-none">
                     <div class="flex-grow">
                         <h2 class="text-sm font-black text-slate-300">{{ month }}</h2>
-                        <p class="text-[9px] font-bold text-slate-500 uppercase">{{ data.logs|length }} entries • {{ data.month_total_str }}</p>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase">{{ data.month_total_str }} Credited</p>
                     </div>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 transition-transform group-open:rotate-180"></i>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 group-open:rotate-180"></i>
                 </summary>
 
                 <div class="space-y-3 mt-4 px-2">
@@ -249,21 +230,20 @@
                             </div>
                             <div>
                                 <p class="text-[10px] font-black text-white uppercase">{{ log.am_str }} • {{ log.pm_str }}</p>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">{{ log.hours_str }}</span>
-                                    {% if log.is_overtime %}
-                                    <span class="text-[7px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">8h Credited</span>
-                                    {% endif %}
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Raw: {{ log.raw_hours_str }}</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] font-black text-indigo-400 uppercase">{{ log.credited_hours_str }} Credited</span>
+                                        <span class="text-[7px] bg-{{ log.status_color }}-500/10 text-{{ log.status_color }}-500 px-1.5 py-0.5 rounded font-black uppercase border border-{{ log.status_color }}-500/20">
+                                            {{ log.status_tag }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div class="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                            <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10">
-                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                            </button>
-                            <button onclick="confirmDelete(event, '{{ url_for('tracker.delete_log', log_id=log.id) }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10">
-                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                            </button>
+                            <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="confirmDelete(event, '{{ url_for('tracker.delete_log', log_id=log.id) }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                         </div>
                     </div>
                     {% endfor %}
@@ -282,7 +262,6 @@
         document.getElementById('am_out').value = "12:00";
         document.getElementById('pm_in').value = "13:00"; 
         document.getElementById('pm_out').value = "17:00";
-        Toast.fire({ icon: 'success', title: 'Full day applied' });
     }
 
     function setHalfDay(shift) {
@@ -291,22 +270,16 @@
             document.getElementById('am_out').value = "12:00";
             document.getElementById('pm_in').value = "";
             document.getElementById('pm_out').value = "";
-            Toast.fire({ icon: 'success', title: 'Morning shift applied' });
         } else {
             document.getElementById('am_in').value = "";
             document.getElementById('am_out').value = "";
             document.getElementById('pm_in').value = "13:00";
             document.getElementById('pm_out').value = "17:00";
-            Toast.fire({ icon: 'success', title: 'Afternoon shift applied' });
         }
     }
 
     function setAbsent() {
-        document.getElementById('am_in').value = "";
-        document.getElementById('am_out').value = "";
-        document.getElementById('pm_in').value = "";
-        document.getElementById('pm_out').value = "";
-        Toast.fire({ icon: 'info', title: 'Marked as Absent' });
+        ['am_in', 'am_out', 'pm_in', 'pm_out'].forEach(id => document.getElementById(id).value = "");
     }
 
     function editLog(id, date, amIn, amOut, pmIn, pmOut) {
@@ -317,12 +290,8 @@
         document.getElementById('pm_in').value = pmIn;
         document.getElementById('pm_out').value = pmOut;
         document.getElementById('form-title').innerText = "Update Session";
-        const btn = document.getElementById('submit-btn');
-        btn.innerHTML = `<span class="flex items-center justify-center gap-2">Update Session <i data-lucide="refresh-cw" class="w-4 h-4"></i></span>`;
-        btn.classList.replace('bg-white', 'bg-emerald-500');
-        btn.classList.replace('text-slate-950', 'text-white');
+        document.getElementById('submit-btn').innerText = "Update Session";
         document.getElementById('cancel-edit').classList.remove('hidden');
-        lucide.createIcons();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -331,49 +300,22 @@
         document.getElementById('log-form').reset();
         document.getElementById('log_date').value = "{{ today }}";
         document.getElementById('form-title').innerText = "New Entry";
-        const btn = document.getElementById('submit-btn');
-        btn.innerHTML = `<span class="flex items-center justify-center gap-2">Log Session <i data-lucide="chevron-right" class="w-4 h-4"></i></span>`;
-        btn.classList.replace('bg-emerald-500', 'bg-white');
-        btn.classList.replace('text-white', 'text-slate-950');
+        document.getElementById('submit-btn').innerText = "Log Session";
         document.getElementById('cancel-edit').classList.add('hidden');
-        lucide.createIcons();
     }
 
     function confirmDelete(e, url) {
         e.preventDefault();
-        Swal.fire({
-            title: 'Delete Session?',
-            text: "This record will be permanently removed.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Delete Now',
-            customClass: { popup: 'premium-modal', confirmButton: 'premium-danger', cancelButton: 'premium-cancel' }
-        }).then((result) => { if (result.isConfirmed) { window.location.href = url; } });
+        if(confirm("Delete this record permanently?")) window.location.href = url;
     }
 
     const searchInput = document.getElementById('logSearch');
     searchInput.addEventListener('input', function(e) {
         const term = e.target.value.toLowerCase();
-        document.querySelectorAll('.month-folder').forEach(folder => {
-            let match = false;
-            folder.querySelectorAll('.log-item').forEach(item => {
-                const text = item.getAttribute('data-date') + item.getAttribute('data-day');
-                const isMatch = text.toLowerCase().includes(term);
-                item.style.display = isMatch ? 'flex' : 'none';
-                if(isMatch) match = true;
-            });
-            folder.style.display = match ? 'block' : 'none';
-            if (term !== "" && match) folder.setAttribute('open', '');
+        document.querySelectorAll('.log-item').forEach(item => {
+            const match = item.getAttribute('data-date').includes(term) || item.getAttribute('data-day').toLowerCase().includes(term);
+            item.style.display = match ? 'flex' : 'none';
         });
     });
-
-    let allExpanded = true; 
-    function toggleAllFolders() {
-        allExpanded = !allExpanded;
-        document.querySelectorAll('.month-folder').forEach(f => {
-            if (allExpanded) f.setAttribute('open', '');
-            else f.removeAttribute('open');
-        });
-    }
 </script>
 {% endblock %}
