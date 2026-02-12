@@ -90,7 +90,7 @@
         </div>
     </div>
 
-    <!-- 2. INTELLIGENCE CENTER -->
+    <!-- 2. INTELLIGENCE CENTER (WITH TOOLTIPS ONLY HERE) -->
     <details class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 mb-8 overflow-hidden group/analytics shadow-2xl">
         <summary class="flex items-center justify-between p-7 cursor-pointer list-none outline-none select-none">
             <div class="flex items-center gap-5">
@@ -99,48 +99,111 @@
                 </div>
                 <div>
                     <h2 class="text-sm font-black uppercase tracking-[0.2em] text-white">Intelligence Center</h2>
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Deep Analytics & Forecasting</p>
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Pulse & Audit Controls</p>
                 </div>
             </div>
             <i data-lucide="plus" class="w-5 h-5 text-slate-500 group-open/analytics:hidden"></i>
             <i data-lucide="minus" class="w-5 h-5 text-slate-500 hidden group-open/analytics:block"></i>
         </summary>
         <div class="px-7 pb-8 space-y-8">
-            <div class="space-y-4">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Work Shift Distribution</p>
-                <div class="flex gap-2 h-12">
-                    <div class="bg-orange-500/20 border border-orange-500/30 rounded-xl flex items-center justify-center group/tip relative" style="width: {{ am_perc }}%">
-                        <i data-lucide="sun" class="w-4 h-4 text-orange-400"></i>
-                    </div>
-                    <div class="bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center justify-center group/tip relative" style="width: {{ pm_perc }}%">
-                        <i data-lucide="moon" class="w-4 h-4 text-indigo-400"></i>
-                    </div>
-                </div>
-            </div>
+            
+            <!-- Projections -->
             <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white/5 rounded-3xl p-5 border border-white/5">
-                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Days to Goal</p>
+                <div class="group relative bg-white/5 rounded-3xl p-5 border border-white/5">
+                    <div class="absolute bottom-full mb-3 left-0 hidden group-hover:block w-full p-2 bg-slate-800 border border-white/10 rounded-lg text-[9px] text-center z-50 normal-case shadow-2xl">
+                        Calculated work shifts remaining based on your current velocity.
+                    </div>
+                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Work Days Left</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-3xl font-900 text-white">{{ "%.1f"|format(finish_info.days_left) }}</span>
                     </div>
                 </div>
-                <div class="bg-white/5 rounded-3xl p-5 border border-white/5">
-                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Efficiency</p>
+                <div class="group relative bg-white/5 rounded-3xl p-5 border border-white/5">
+                    <div class="absolute bottom-full mb-3 left-0 hidden group-hover:block w-full p-2 bg-slate-800 border border-white/10 rounded-lg text-[9px] text-center z-50 normal-case shadow-2xl">
+                        Total real-world days including weekends and upcoming holidays.
+                    </div>
+                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Calendar Span</p>
                     <div class="flex items-baseline gap-2">
-                        <span class="text-3xl font-900 text-emerald-400">{{ (progress / (log_count or 1)) | round(1) }}</span>
+                        <span class="text-3xl font-900 text-indigo-400">{{ finish_info.calendar_days }}</span>
                     </div>
                 </div>
             </div>
-            <div class="space-y-4">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Milestones</p>
-                <div class="grid grid-cols-2 gap-3">
-                    {% for ms in milestones %}
-                    <div class="flex items-center gap-3 p-3 rounded-2xl border {% if ms.done %}bg-emerald-500/5 border-emerald-500/20{% else %}bg-white/5 border-white/5 opacity-50{% endif %}">
-                        <i data-lucide="{% if ms.done %}check{% else %}lock{% endif %}" class="w-3 h-3 text-white"></i>
-                        <span class="text-[10px] font-black uppercase text-white tracking-tighter">{{ ms.label }}</span>
+
+            <!-- Pulse and Efficiency -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="group relative bg-white/5 rounded-3xl p-5 border border-white/5">
+                    <div class="absolute bottom-full mb-3 left-0 hidden group-hover:block w-full p-2 bg-slate-800 border border-white/10 rounded-lg text-[9px] text-center z-50 normal-case shadow-2xl">
+                        Compares your last 5 logs to your overall speed. 
                     </div>
-                    {% endfor %}
+                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3 flex items-center justify-between">
+                        Pulse 
+                        <i data-lucide="trending-{{ pulse_trend }}" class="w-3 h-3 {{ 'text-emerald-400' if pulse_trend == 'up' else 'text-rose-400' }}"></i>
+                    </p>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-900 text-white">{{ 'Optimal' if pulse_trend == 'up' else 'Stalling' }}</span>
+                    </div>
                 </div>
+                <div class="group relative bg-white/5 rounded-3xl p-5 border border-white/5">
+                    <div class="absolute bottom-full mb-3 left-0 hidden group-hover:block w-full p-2 bg-slate-800 border border-white/10 rounded-lg text-[9px] text-center z-50 normal-case shadow-2xl">
+                        Percentage of your raw hours that were successfully credited.
+                    </div>
+                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Efficiency Index</p>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-900 text-emerald-400">{{ productivity_idx }}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Audit Breakdown -->
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Time Audit Breakdown</p>
+                <div class="grid grid-cols-2 gap-3 bg-slate-950/50 rounded-2xl p-4 border border-white/5">
+                    <div class="group relative">
+                        <div class="absolute bottom-full mb-3 left-0 hidden group-hover:block w-full p-2 bg-slate-800 border border-white/10 rounded-lg text-[9px] text-center z-50 normal-case shadow-2xl">Standard daytime hours logged.</div>
+                        <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Standard Shift</p>
+                        <p class="text-xs font-bold text-white">{{ total_str }}</p>
+                    </div>
+                    <div class="group relative border-l border-white/5 pl-3">
+                        <div class="absolute bottom-full mb-3 left-0 hidden group-hover:block w-full p-2 bg-slate-800 border border-white/10 rounded-lg text-[9px] text-center z-50 normal-case shadow-2xl">Additional hours credited after 5:00 PM.</div>
+                        <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Overtime Credit</p>
+                        <p class="text-xs font-bold text-indigo-400">{{ ot_str }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribution Heatmap -->
+            <div class="space-y-4">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Work Shift Distribution</p>
+                <div class="flex gap-2 h-12">
+                    <div class="group relative bg-orange-500/20 border border-orange-500/30 rounded-xl flex items-center justify-center transition-all hover:bg-orange-500/30" style="width: {{ am_perc }}%">
+                        <div class="absolute bottom-full mb-2 hidden group-hover:block bg-slate-800 px-2 py-1 rounded text-[9px] z-50 whitespace-nowrap">Morning: {{ am_perc }}%</div>
+                        <i data-lucide="sun" class="w-4 h-4 text-orange-400"></i>
+                    </div>
+                    <div class="group relative bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center justify-center transition-all hover:bg-indigo-500/30" style="width: {{ pm_perc }}%">
+                        <div class="absolute bottom-full mb-2 hidden group-hover:block bg-slate-800 px-2 py-1 rounded text-[9px] z-50 whitespace-nowrap">Afternoon/OT: {{ pm_perc }}%</div>
+                        <i data-lucide="moon" class="w-4 h-4 text-indigo-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Milestone Tracker -->
+            <div class="space-y-4">
+                <div class="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                    <span class="text-slate-400">Next Focus: {{ next_ms.label }}</span>
+                    <span class="text-indigo-400">{{ ms_progress|int }}%</span>
+                </div>
+                <div class="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden">
+                    <div class="h-full bg-indigo-500 transition-all duration-1000" style="width: {{ ms_progress }}%"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                {% for ms in milestones %}
+                <div class="flex items-center gap-3 p-3 rounded-2xl border {% if ms.done %}bg-emerald-500/5 border-emerald-500/20{% else %}bg-white/5 border-white/5 opacity-50{% endif %}">
+                    <i data-lucide="{% if ms.done %}check{% else %}lock{% endif %}" class="w-3 h-3 text-white"></i>
+                    <span class="text-[10px] font-black uppercase text-white tracking-tighter">{{ ms.label }}</span>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </details>
@@ -169,16 +232,16 @@
                 <button onclick="resetForm()" id="cancel-edit" class="hidden text-[10px] font-black text-slate-400 bg-white/5 px-4 py-2 rounded-xl">CANCEL</button>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button type="button" onclick="quickFill()" class="flex-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1">
+                <button type="button" onclick="quickFill()" class="flex-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1 transition-all hover:bg-indigo-500 hover:text-white">
                     <i data-lucide="zap" class="w-3 h-3"></i> Full Day
                 </button>
-                <button type="button" onclick="setHalfDay('AM')" class="flex-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1">
+                <button type="button" onclick="setHalfDay('AM')" class="flex-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1 transition-all hover:bg-emerald-500 hover:text-white">
                     <i data-lucide="sun" class="w-3 h-3"></i> Half AM
                 </button>
-                <button type="button" onclick="setHalfDay('PM')" class="flex-1 bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1">
+                <button type="button" onclick="setHalfDay('PM')" class="flex-1 bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1 transition-all hover:bg-sky-500 hover:text-white">
                     <i data-lucide="moon" class="w-3 h-3"></i> Half PM
                 </button>
-                <button type="button" onclick="setAbsent()" class="flex-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1">
+                <button type="button" onclick="setAbsent()" class="flex-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1 transition-all hover:bg-rose-500 hover:text-white">
                     <i data-lucide="calendar-x" class="w-3 h-3"></i> Absent
                 </button>
             </div>
@@ -198,7 +261,7 @@
                     <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
                 </div>
             </div>
-            <button type="submit" id="submit-btn" class="w-full bg-white text-slate-950 font-900 py-5 rounded-2xl">Log Session</button>
+            <button type="submit" id="submit-btn" class="w-full bg-white text-slate-950 font-900 py-5 rounded-2xl shadow-xl">Log Session</button>
         </form>
     </div>
 
@@ -206,18 +269,18 @@
     <div class="mb-8 px-4">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Archive</h2>
-            <input type="text" id="logSearch" placeholder="Search..." class="bg-slate-950 border border-white/10 rounded-2xl py-2 px-4 text-[11px] font-bold text-white w-32 outline-none">
+            <input type="text" id="logSearch" placeholder="Search..." class="bg-slate-950 border border-white/10 rounded-2xl py-2 px-4 text-[11px] font-bold text-white w-32 outline-none focus:w-48 transition-all">
         </div>
 
         <div class="space-y-4">
             {% for month, data in grouped_logs.items() %}
             <details {% if loop.first %}open{% endif %} class="group month-folder">
-                <summary class="sticky top-4 z-20 flex items-center gap-4 mb-3 px-4 py-2 bg-slate-950/80 rounded-2xl border border-white/5 cursor-pointer list-none">
+                <summary class="sticky top-4 z-20 flex items-center gap-4 mb-3 px-4 py-2 bg-slate-950/80 rounded-2xl border border-white/5 cursor-pointer list-none backdrop-blur-md">
                     <div class="flex-grow">
                         <h2 class="text-sm font-black text-slate-300">{{ month }}</h2>
                         <p class="text-[9px] font-bold text-slate-500 uppercase">{{ data.month_total_str }} Credited</p>
                     </div>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 group-open:rotate-180"></i>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 group-open:rotate-180 transition-transform"></i>
                 </summary>
 
                 <div class="space-y-3 mt-4 px-2">
@@ -231,18 +294,16 @@
                             <div>
                                 <p class="text-[10px] font-black text-white uppercase">{{ log.am_str }} • {{ log.pm_str }}</p>
                                 <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Raw: {{ log.raw_hours_str }}</span>
+                                    <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Raw: {{ log.raw_str }}</span>
                                     <div class="flex items-center gap-1.5">
-                                        <span class="text-[10px] font-black text-indigo-400 uppercase">{{ log.credited_hours_str }} Credited</span>
-                                        <span class="text-[7px] bg-{{ log.status_color }}-500/10 text-{{ log.status_color }}-500 px-1.5 py-0.5 rounded font-black uppercase border border-{{ log.status_color }}-500/20">
-                                            {{ log.status_tag }}
-                                        </span>
+                                        <span class="text-[10px] font-black text-indigo-400 uppercase">{{ log.credited_str }} Credited</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                             <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                            <!-- FIXED RL.ID TO LOG.ID HERE -->
                             <button onclick="confirmDelete(event, '{{ url_for('tracker.delete_log', log_id=log.id) }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                         </div>
                     </div>
