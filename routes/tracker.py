@@ -41,16 +41,23 @@ def calculate_ot_minutes(pm_out):
 
 def calculate_finish_date(remaining_minutes, avg_daily_m):
     if remaining_minutes <= 0: return {"date": "Completed", "days_left": 0, "calendar_days": 0}
-    proj_speed = min(avg_daily_m, DAILY_CAP_MINUTES) or DAILY_CAP_MINUTES
+    
+    proj_speed = DAILY_CAP_MINUTES
+    
     work_days_left = remaining_minutes / proj_speed
     
     current_date = date.today()
     start_date = current_date
     temp_m = remaining_minutes
-    while temp_m > 0:
+    
+    max_loops = 1000
+    loops = 0
+
+    while temp_m > 0 and loops < max_loops:
         current_date += timedelta(days=1)
         if current_date.weekday() < 5 and current_date.isoformat() not in PH_HOLIDAYS:
             temp_m -= proj_speed
+        loops += 1
             
     return {
         "date": current_date.strftime("%b %d, %Y"),

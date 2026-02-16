@@ -196,6 +196,14 @@
                     <span class="text-[8px] font-bold text-slate-600 uppercase tracking-widest">
                         {{ student.log_count }} Logs • {{ student.avg_daily }}h avg
                     </span>
+                    <span class="text-[8px] font-bold uppercase tracking-widest block mt-0.5 {{ 'text-emerald-500' if student.est_finish == 'Completed' else 'text-indigo-400' }}">
+                        <i data-lucide="flag" class="inline w-2.5 h-2.5 mr-0.5 -mt-0.5"></i>
+                        {% if student.est_finish == 'Completed' %}
+                            Done
+                        {% else %}
+                            ETA: {{ student.est_finish }}
+                        {% endif %}
+                    </span>
                 </div>
                 
                 <!-- PROGRESS BAR -->
