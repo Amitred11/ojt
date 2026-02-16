@@ -17,7 +17,6 @@ PH_HOLIDAYS = [
     "2026-12-08", "2026-12-25", "2026-12-30"
 ]
 
-# --- Helper Functions ---
 def minutes_to_string(total_minutes):
     if total_minutes < 0: total_minutes = 0
     h = int(total_minutes // 60)
@@ -59,8 +58,6 @@ def calculate_finish_date(remaining_minutes, avg_daily_m):
         "calendar_days": (current_date - start_date).days
     }
 
-# --- Routes ---
-
 @tracker_bp.route("/tracker", methods=["GET", "POST"])
 async def index():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
@@ -69,41 +66,40 @@ async def index():
 
     if request.method == "POST":
         form = await request.form
-        
-        # 1. Handle Toggle OT
         if "toggle_ot_policy" in form:
             session['allow_ot'] = not session['allow_ot']
             return redirect(url_for("tracker.index"))
         
-        # 2. Handle Save Log
         log_id, log_date = form.get("log_id"), form.get("log_date")
         am_in, am_out = form.get("am_in", ""), form.get("am_out", "")
         pm_in, pm_out = form.get("pm_in", ""), form.get("pm_out", "")
         
-        # --- THE FIX: Calculate total_minutes here so Leaderboard can read it ---
-        am_calc = get_minutes_diff(am_in, am_out)
-        pm_calc = get_minutes_diff(pm_in, pm_out)
-        total_minutes = am_calc + pm_calc
+        # --- CALCULATE MINUTES BEFORE SAVING ---
+        am_m = get_minutes_diff(am_in, am_out)
+        pm_m = get_minutes_diff(pm_in, pm_out)
+        raw_ot = calculate_ot_minutes(pm_out)
+        
+        # Calculate totals
+        total_raw_minutes = am_m + pm_m
+        # Logic: (Total - OT) is capped at 8hrs, then add OT back
+        reg_m = min(total_raw_minutes - raw_ot, DAILY_CAP_MINUTES)
+        credited_minutes = reg_m + raw_ot # Always credit OT in DB, filter in UI
         
         log_data = {
             "user_id": user_id, 
             "log_date": log_date, 
-            "am_in": am_in, 
-            "am_out": am_out, 
-            "pm_in": pm_in, 
-            "pm_out": pm_out,
-            "total_minutes": total_minutes # Leaderboard reads this field!
+            "am_in": am_in, "am_out": am_out, 
+            "pm_in": pm_in, "pm_out": pm_out,
+            # SAVE INTEGERS FOR LEADERBOARD ACCURACY
+            "total_minutes": total_raw_minutes,
+            "credited_minutes": credited_minutes,
+            "ot_minutes": raw_ot
         }
-        # ----------------------------------------------------------------------
-
-        if log_id: 
-            await logs_col.update_one({"_id": ObjectId(log_id)}, {"$set": log_data})
-        else: 
-            await logs_col.update_one({"log_date": log_date, "user_id": user_id}, {"$set": log_data}, upsert=True)
-            
+        
+        if log_id: await logs_col.update_one({"_id": ObjectId(log_id)}, {"$set": log_data})
+        else: await logs_col.update_one({"log_date": log_date, "user_id": user_id}, {"$set": log_data}, upsert=True)
         return redirect(url_for("tracker.index"))
 
-    # GET Request Handling (Display)
     raw_logs = await logs_col.find({"user_id": user_id}).sort("log_date", -1).to_list(None)
     allow_ot = session.get('allow_ot', True)
     
@@ -111,13 +107,13 @@ async def index():
     processed_logs = []
     
     for rl in raw_logs:
-        # Calculate dynamic values for UI
+        # Re-calculate for display integrity or use saved values
         am_m = get_minutes_diff(rl.get('am_in'), rl.get('am_out'))
         pm_m = get_minutes_diff(rl.get('pm_in'), rl.get('pm_out'))
         raw_ot = calculate_ot_minutes(rl.get('pm_out'))
         
-        # Capping Logic for UI display
         reg_m = min((am_m + pm_m) - raw_ot, DAILY_CAP_MINUTES)
+        # Apply session policy
         credited = reg_m + (raw_ot if allow_ot else 0)
         
         total_raw_m += (am_m + pm_m)
