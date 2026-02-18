@@ -10,7 +10,10 @@
                 <div class="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20">
                     <p class="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">System Active</p>
                 </div>
-                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{{ today }}</p>
+                <div class="px-2 py-0.5 rounded-md {% if today_type == 'Work Day' %}bg-emerald-500/10 border-emerald-500/20{% else %}bg-rose-500/10 border-rose-500/20{% endif %} border">
+                    <p class="text-[9px] font-black {% if today_type == 'Work Day' %}text-emerald-400{% else %}text-rose-400{% endif %} uppercase tracking-tighter">{{ today_type }}</p>
+                </div>
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest ml-1">{{ today }}</p>
             </div>
             <h1 class="text-4xl font-900 tracking-tightest bg-gradient-to-r from-white via-white to-slate-500 bg-clip-text text-transparent">Overview</h1>
         </div>
@@ -37,7 +40,8 @@
     </div>
 
     <!-- 1. PROGRESS CARD -->
-    <div class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
+    <!-- ADDED ID: stats-container -->
+    <div id="stats-container" class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
         <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl"></div>
         <div class="relative z-10">
             <div class="flex justify-between items-start mb-10">
@@ -90,8 +94,9 @@
         </div>
     </div>
 
-    <!-- 2. INTELLIGENCE CENTER (WITH TOOLTIPS ONLY HERE) -->
-    <details class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 mb-8 overflow-hidden group/analytics shadow-2xl">
+    <!-- 2. INTELLIGENCE CENTER -->
+    <!-- ADDED ID: intelligence-container -->
+    <details id="intelligence-container" class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 mb-8 overflow-hidden group/analytics shadow-2xl">
         <summary class="flex items-center justify-between p-7 cursor-pointer list-none outline-none select-none">
             <div class="flex items-center gap-5">
                 <div class="w-12 h-12 rounded-2xl bg-slate-950 flex items-center justify-center border border-white/10">
@@ -209,7 +214,8 @@
     </details>
 
     <!-- 3. ETA CARD -->
-    <div class="relative overflow-hidden bg-indigo-600 rounded-[2.5rem] p-8 mb-10 shadow-[0_20px_50px_rgba(79,70,229,0.3)]">        
+    <!-- ADDED ID: eta-container -->
+    <div id="eta-container" class="relative overflow-hidden bg-indigo-600 rounded-[2.5rem] p-8 mb-10 shadow-[0_20px_50px_rgba(79,70,229,0.3)]">        
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
         <div class="flex items-center gap-6 relative z-10">
             <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
@@ -228,114 +234,169 @@
     <div class="mb-12" id="log-section">
         <div class="flex flex-col gap-4 mb-5 px-4">
             <div class="flex justify-between items-center">
-                <h2 id="form-title" class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">New Entry</h2>
-                <button onclick="resetForm()" id="cancel-edit" class="hidden text-[10px] font-black text-slate-400 bg-white/5 px-4 py-2 rounded-xl">CANCEL</button>
+                <div class="flex items-center gap-3">
+                    <h2 id="form-title" class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">New Entry</h2>
+                    <div id="status-badge" class="hidden px-3 py-1 rounded-full text-[9px] font-black uppercase"></div>
+                </div>
+                <button type="button" onclick="resetForm()" id="cancel-edit" class="hidden text-[10px] font-black text-slate-400 bg-white/5 px-4 py-2 rounded-xl">CANCEL</button>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <button type="button" onclick="quickFill()" class="flex-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1 transition-all hover:bg-indigo-500 hover:text-white">
-                    <i data-lucide="zap" class="w-3 h-3"></i> Full Day
-                </button>
-                <button type="button" onclick="setHalfDay('AM')" class="flex-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1 transition-all hover:bg-emerald-500 hover:text-white">
-                    <i data-lucide="sun" class="w-3 h-3"></i> Half AM
-                </button>
-                <button type="button" onclick="setHalfDay('PM')" class="flex-1 bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1 transition-all hover:bg-sky-500 hover:text-white">
-                    <i data-lucide="moon" class="w-3 h-3"></i> Half PM
-                </button>
-                <button type="button" onclick="setAbsent()" class="flex-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1 transition-all hover:bg-rose-500 hover:text-white">
-                    <i data-lucide="calendar-x" class="w-3 h-3"></i> Absent
-                </button>
+            <div class="flex flex-wrap gap-2" id="form-controls">
+                <button type="button" onclick="quickFill()" class="quick-btn flex-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black py-2.5 rounded-xl uppercase flex items-center justify-center gap-1">Full Day</button>
+                <button type="button" onclick="setHalfDay('AM')" class="quick-btn flex-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black py-2.5 rounded-xl uppercase">Half AM</button>
+                <button type="button" onclick="setHalfDay('PM')" class="quick-btn flex-1 bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[9px] font-black py-2.5 rounded-xl uppercase">Half PM</button>
+                <button type="button" onclick="setAbsent()" class="quick-btn flex-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black py-2.5 rounded-xl uppercase">Absent</button>
             </div>
         </div>
-        <form method="POST" id="log-form" class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-7 border border-white/10 space-y-6">
+        
+        <form id="log-form" class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-7 border border-white/10 space-y-6">
             <input type="hidden" name="log_id" id="log_id">
-            <input type="date" name="log_date" id="log_date" value="{{ today }}" required class="w-full bg-slate-950/50 border border-white/10 rounded-2xl p-5 outline-none text-white font-bold">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-3">
-                    <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Morning</label>
-                    <input type="time" name="am_in" id="am_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
-                    <input type="time" name="am_out" id="am_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
-                </div>
-                <div class="space-y-3">
-                    <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Afternoon</label>
-                    <input type="time" name="pm_in" id="pm_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
-                    <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
-                </div>
+            <div class="relative z-[60]">
+                <input type="date" name="log_date" id="log_date" value="{{ today }}" onchange="checkDateRestrictions()" required class="w-full bg-slate-950/50 border border-white/10 rounded-2xl p-5 outline-none text-white font-bold">
             </div>
-            <button type="submit" id="submit-btn" class="w-full bg-white text-slate-950 font-900 py-5 rounded-2xl shadow-xl">Log Session</button>
+            <div class="relative">
+                <div id="restriction-overlay" class="hidden absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-md rounded-2xl flex-col items-center justify-center text-center p-6">
+                    <i data-lucide="calendar-off" class="text-rose-500 w-8 h-8 mb-3"></i>
+                    <h3 class="text-white font-black uppercase tracking-widest text-xs">Restricted Day</h3>
+                    <p id="restriction-msg" class="text-slate-400 text-[9px] uppercase mt-1 font-bold"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-3">
+                        <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Morning</label>
+                        <input type="time" name="am_in" id="am_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
+                        <input type="time" name="am_out" id="am_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
+                    </div>
+                    <div class="space-y-3">
+                        <label class="text-[10px] text-slate-500 font-black uppercase tracking-widest ml-2">Afternoon</label>
+                        <input type="time" name="pm_in" id="pm_in" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
+                        <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
+                    </div>
+                </div>
+                <button type="submit" id="submit-btn" class="w-full bg-white text-slate-950 font-900 py-5 rounded-2xl shadow-xl mt-6">Log Session</button>
+            </div>
         </form>
     </div>
 
     <!-- 5. ARCHIVE -->
-    <div class="mb-8 px-4">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Archive</h2>
-            <input type="text" id="logSearch" placeholder="Search..." class="bg-slate-950 border border-white/10 rounded-2xl py-2 px-4 text-[11px] font-bold text-white w-32 outline-none focus:w-48 transition-all">
-        </div>
-
-        <div class="space-y-4">
-            {% for month, data in grouped_logs.items() %}
-            <details {% if loop.first %}open{% endif %} class="group month-folder">
-                <summary class="sticky top-4 z-20 flex items-center gap-4 mb-3 px-4 py-2 bg-slate-950/80 rounded-2xl border border-white/5 cursor-pointer list-none backdrop-blur-md">
-                    <div class="flex-grow">
-                        <h2 class="text-sm font-black text-slate-300">{{ month }}</h2>
-                        <p class="text-[9px] font-bold text-slate-500 uppercase">{{ data.month_total_str }} Credited</p>
-                    </div>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 group-open:rotate-180 transition-transform"></i>
-                </summary>
-
-                <div class="space-y-3 mt-4 px-2">
-                    {% for log in data.logs %}
-                    <div class="log-item bg-slate-900/30 border border-white/[0.03] rounded-3xl p-4 flex items-center justify-between group/item" data-date="{{ log.log_date }}" data-day="{{ log.display_weekday }}">
-                        <div class="flex items-center gap-4">
-                            <div class="w-11 h-11 rounded-2xl bg-slate-950 flex flex-col items-center justify-center border border-white/5">
-                                <span class="text-[9px] font-black text-slate-500 leading-none mb-0.5">{{ log.display_weekday[:3].upper() }}</span>
-                                <span class="text-sm font-black text-white leading-none">{{ log.display_day }}</span>
-                            </div>
-                            <div>
-                                <p class="text-[10px] font-black text-white uppercase">{{ log.am_str }} • {{ log.pm_str }}</p>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Raw: {{ log.raw_str }}</span>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="text-[10px] font-black text-indigo-400 uppercase">{{ log.credited_str }} Credited</span>
-                                    </div>
+    <div id="archive-container">
+        <div class="mb-8 px-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Archive</h2>
+                <input type="text" id="logSearch" placeholder="Search..." class="bg-slate-950 border border-white/10 rounded-2xl py-2 px-4 text-[11px] font-bold text-white w-32 outline-none focus:w-48 transition-all">
+            </div>
+            <div class="space-y-4">
+                {% for month, data in grouped_logs.items() %}
+                <details {% if loop.first %}open{% endif %} class="group month-folder">
+                    <summary class="sticky top-4 z-20 flex items-center gap-4 mb-3 px-4 py-2 bg-slate-950/80 rounded-2xl border border-white/5 cursor-pointer list-none backdrop-blur-md">
+                        <div class="flex-grow">
+                            <h2 class="text-sm font-black text-slate-300">{{ month }}</h2>
+                            <p class="text-[9px] font-bold text-slate-500 uppercase">{{ data.month_total_str }} Credited</p>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-600 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="space-y-3 mt-4 px-2">
+                        {% for log in data.logs %}
+                        <div class="log-item bg-slate-900/30 border border-white/[0.03] rounded-3xl p-4 flex items-center justify-between group/item" data-date="{{ log.log_date }}" data-day="{{ log.display_weekday }}">
+                            <div class="flex items-center gap-4">
+                                <div class="w-11 h-11 rounded-2xl bg-slate-950 flex flex-col items-center justify-center border border-white/5">
+                                    <span class="text-[9px] font-black text-slate-500 leading-none mb-0.5">{{ log.display_weekday[:3].upper() }}</span>
+                                    <span class="text-sm font-black text-white leading-none">{{ log.display_day }}</span>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-black text-white uppercase">{{ log.am_str }} • {{ log.pm_str }}</p>
+                                    <span class="text-[10px] font-black text-indigo-400 uppercase">{{ log.credited_str }} Credited</span>
                                 </div>
                             </div>
+                            <div class="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="confirmDelete(event, '{{ url_for('tracker.delete_log', log_id=log.id) }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                            <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                            <!-- FIXED RL.ID TO LOG.ID HERE -->
-                            <button onclick="confirmDelete(event, '{{ url_for('tracker.delete_log', log_id=log.id) }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
-            </details>
-            {% endfor %}
+                </details>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </div>
 
 <script>
     lucide.createIcons();
+    const HOLIDAYS = {{ ph_holidays|tojson }};
+
+    // FORM AJAX HANDLER
+    document.getElementById('log-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submit-btn');
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        const formData = new FormData(e.target);
+        try {
+            // 1. Submit the form in the background
+            await fetch(window.location.href, { method: 'POST', body: formData });
+            
+            // 2. Silently fetch the current page again to get updated HTML
+            const response = await fetch(window.location.href);
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // 3. Swap only the relevant containers
+            ['stats-container', 'intelligence-container', 'eta-container', 'archive-container'].forEach(id => {
+                document.getElementById(id).innerHTML = doc.getElementById(id).innerHTML;
+            });
+
+            // 4. Reset UI
+            resetForm();
+            lucide.createIcons();
+            btn.disabled = false;
+        } catch (err) {
+            console.error("Submission failed", err);
+            btn.innerText = "Error - Retry";
+            btn.disabled = false;
+        }
+    });
+
+    function checkDateRestrictions() {
+        const dateInput = document.getElementById('log_date');
+        const dateStr = dateInput.value;
+        if (!dateStr) return;
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const selectedDate = new Date(y, m - 1, d);
+        const dayOfWeek = selectedDate.getDay(); 
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const isHoliday = HOLIDAYS.includes(dateStr);
+        const overlay = document.getElementById('restriction-overlay');
+        const badge = document.getElementById('status-badge');
+        const controls = document.querySelectorAll('.quick-btn');
+
+        if (isWeekend || isHoliday) {
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+            document.getElementById('restriction-msg').innerText = isWeekend ? "Weekend Logging Blocked" : "Public Holiday: Blocked";
+            badge.innerText = isWeekend ? "Weekend" : "Holiday";
+            badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20";
+            badge.classList.remove('hidden');
+            controls.forEach(b => { b.style.opacity = '0.3'; b.style.pointerEvents = 'none'; });
+        } else {
+            overlay.classList.add('hidden'); overlay.classList.remove('flex');
+            badge.classList.add('hidden');
+            controls.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; });
+        }
+    }
 
     function quickFill() {
-        document.getElementById('am_in').value = "08:00"; 
-        document.getElementById('am_out').value = "12:00";
-        document.getElementById('pm_in').value = "13:00"; 
-        document.getElementById('pm_out').value = "17:00";
+        document.getElementById('am_in').value = "08:00"; document.getElementById('am_out').value = "12:00";
+        document.getElementById('pm_in').value = "13:00"; document.getElementById('pm_out').value = "17:00";
     }
 
     function setHalfDay(shift) {
         if (shift === 'AM') {
-            document.getElementById('am_in').value = "08:00";
-            document.getElementById('am_out').value = "12:00";
-            document.getElementById('pm_in').value = "";
-            document.getElementById('pm_out').value = "";
+            document.getElementById('am_in').value = "08:00"; document.getElementById('am_out').value = "12:00";
+            document.getElementById('pm_in').value = ""; document.getElementById('pm_out').value = "";
         } else {
-            document.getElementById('am_in').value = "";
-            document.getElementById('am_out').value = "";
-            document.getElementById('pm_in').value = "13:00";
-            document.getElementById('pm_out').value = "17:00";
+            document.getElementById('am_in').value = ""; document.getElementById('am_out').value = "";
+            document.getElementById('pm_in').value = "13:00"; document.getElementById('pm_out').value = "17:00";
         }
     }
 
@@ -353,6 +414,7 @@
         document.getElementById('form-title').innerText = "Update Session";
         document.getElementById('submit-btn').innerText = "Update Session";
         document.getElementById('cancel-edit').classList.remove('hidden');
+        checkDateRestrictions();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -363,20 +425,24 @@
         document.getElementById('form-title').innerText = "New Entry";
         document.getElementById('submit-btn').innerText = "Log Session";
         document.getElementById('cancel-edit').classList.add('hidden');
+        checkDateRestrictions();
     }
 
     function confirmDelete(e, url) {
         e.preventDefault();
-        if(confirm("Delete this record permanently?")) window.location.href = url;
+        if(confirm("Delete this record permanently?")) {
+            fetch(url).then(() => {
+                fetch(window.location.href).then(r => r.text()).then(html => {
+                    const doc = (new DOMParser()).parseFromString(html, 'text/html');
+                    ['stats-container', 'intelligence-container', 'eta-container', 'archive-container'].forEach(id => {
+                        document.getElementById(id).innerHTML = doc.getElementById(id).innerHTML;
+                    });
+                    lucide.createIcons();
+                });
+            });
+        }
     }
 
-    const searchInput = document.getElementById('logSearch');
-    searchInput.addEventListener('input', function(e) {
-        const term = e.target.value.toLowerCase();
-        document.querySelectorAll('.log-item').forEach(item => {
-            const match = item.getAttribute('data-date').includes(term) || item.getAttribute('data-day').toLowerCase().includes(term);
-            item.style.display = match ? 'flex' : 'none';
-        });
-    });
+    document.addEventListener('DOMContentLoaded', checkDateRestrictions);
 </script>
 {% endblock %}
