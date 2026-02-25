@@ -1,143 +1,162 @@
 {% extends "main/base.html" %}
 {% block content %}
 
-<div class="min-h-screen max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-32">
+<div class="min-h-screen max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 pt-10 pb-32">
     
-    <!-- HEADER SECTION -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-16">
-        <div class="space-y-1">
-            <h1 class="text-4xl md:text-5xl font-900 tracking-tighter bg-gradient-to-br from-white via-slate-200 to-slate-500 bg-clip-text text-transparent uppercase italic">
+    <!-- HEADER SECTION: Clean & Wide -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16 border-b border-white/5 pb-10">
+        <div class="space-y-3">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Security Console</span>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-900 tracking-tighter bg-gradient-to-br from-white via-slate-200 to-slate-500 bg-clip-text text-transparent uppercase italic">
                 Gatekeeper
             </h1>
-            <div class="flex items-center gap-2 px-1">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                </span>
-                <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.4em]">
-                    System Administration
-                </p>
-            </div>
         </div>
 
-        <!-- SEARCH BAR -->
         <div class="relative w-full md:w-96 group">
-            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <i data-lucide="search" class="w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors"></i>
-            </div>
-            <input type="text" id="adminSearch" placeholder="Search users or emails..." 
-                   class="w-full bg-slate-900/40 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/40 transition-all backdrop-blur-sm">
+            <input type="text" id="adminSearch" placeholder="Filter by name or status..." 
+                   class="w-full bg-slate-900/40 border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:bg-slate-900 transition-all backdrop-blur-xl shadow-2xl">
+            <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors"></i>
         </div>
     </div>
 
-    <!-- MAIN STACK (ROWS) -->
-    <div class="flex flex-col gap-14">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         
-        <!-- ROW 1: PENDING REQUESTS -->
-        <section class="space-y-6">
-            <div class="flex items-center gap-4 px-2">
-                <div class="w-1.5 h-5 bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.3)]"></div>
-                <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Pending Authorization</h2>
-                <span class="ml-auto bg-amber-500/10 text-amber-500 text-[11px] font-black px-3 py-1 rounded-full border border-amber-500/20">
+        <!-- SIDEBAR: PENDING (Sticky on Desktop) -->
+        <div class="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-10 space-y-6">
+            <div class="flex items-center justify-between px-2">
+                <h2 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+                    <span class="w-1.5 h-4 bg-amber-500 rounded-full"></span>
+                    Pending Approval
+                </h2>
+                <span class="text-[10px] font-black bg-amber-500/10 text-amber-500 px-2.5 py-1 rounded-full border border-amber-500/20">
                     {{ pending|length }}
                 </span>
             </div>
 
-            <div class="flex flex-col gap-4" id="pendingList">
+            <div class="space-y-4" id="pendingList">
                 {% for user in pending %}
-                <div class="user-card group bg-slate-900/40 border border-amber-500/10 rounded-3xl p-5 hover:bg-slate-900/60 transition-all" data-username="{{ user.username.lower() }}">
-                    <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
-                        <div class="flex items-center gap-5 w-full">
-                            <div class="w-14 h-14 rounded-2xl bg-amber-500/5 flex items-center justify-center border border-amber-500/20 flex-shrink-0">
-                                <i data-lucide="user-plus" class="text-amber-500 w-6 h-6"></i>
+                <div class="user-card bg-slate-900/40 border border-white/5 rounded-[2rem] p-6 hover:border-amber-500/40 transition-all group shadow-xl" data-username="{{ user.username }}">
+                    <div class="flex flex-col gap-5">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                                <i data-lucide="user-plus" class="w-6 h-6"></i>
                             </div>
                             <div class="min-w-0">
                                 <h3 class="text-white font-bold text-lg truncate">{{ user.username }}</h3>
-                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{{ user.total_hours|round(1) }}h logged • Status: Waiting</p>
+                                <p class="text-[10px] text-slate-500 uppercase font-black tracking-tighter">New Registration</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 w-full sm:w-auto">
-                            <a href="{{ url_for('auth.approve_user', user_id=user._id|string) }}" 
-                               class="flex-1 sm:flex-none text-center bg-white text-slate-950 px-8 py-3.5 rounded-xl text-[11px] font-900 uppercase tracking-widest hover:bg-amber-400 transition-all shadow-lg active:scale-95">
+                        
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('auth.approve_user', user_id=user.id_str) }}" 
+                               class="flex-1 bg-white text-slate-950 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest text-center hover:bg-amber-400 transition-all active:scale-95">
                                 Approve
                             </a>
-                            <button onclick="confirmDelete(event, '{{ url_for('auth.delete_user', user_id=user._id|string) }}')"
-                                    class="p-3.5 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">
+                            <button onclick="confirmDelete(event, '{{ url_for('auth.delete_user', user_id=user.id_str) }}')"
+                                    class="px-4 rounded-xl bg-red-500/10 text-red-500 border border-red-500/10 hover:bg-red-500 hover:text-white transition-all">
                                 <i data-lucide="trash-2" class="w-5 h-5"></i>
                             </button>
                         </div>
                     </div>
                 </div>
                 {% else %}
-                <div class="py-16 text-center bg-slate-900/10 border-2 border-dashed border-white/5 rounded-[2.5rem]">
-                    <p class="text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">No pending access requests</p>
+                <div class="py-16 text-center bg-slate-900/20 border-2 border-dashed border-white/5 rounded-[2.5rem]">
+                    <i data-lucide="user-check" class="w-8 h-8 text-slate-800 mx-auto mb-3"></i>
+                    <p class="text-slate-600 text-[10px] font-black uppercase tracking-widest">No pending tasks</p>
                 </div>
                 {% endfor %}
             </div>
-        </section>
+        </div>
 
-        <!-- ROW 2: ACTIVE PERSONNEL -->
-        <section class="space-y-6">
-            <div class="flex items-center gap-4 px-2">
-                <div class="w-1.5 h-5 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
-                <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Authorized Personnel</h2>
-                <span class="ml-auto bg-emerald-500/10 text-emerald-500 text-[11px] font-black px-3 py-1 rounded-full border border-emerald-500/20">
-                    {{ active|length }}
-                </span>
+        <!-- MAIN AREA: ACTIVE (Grid layout) -->
+        <div class="lg:col-span-8 xl:col-span-9 space-y-8">
+            <div class="flex items-center justify-between px-2 border-b border-white/5 pb-4">
+                <h2 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+                    <span class="w-1.5 h-4 bg-emerald-500 rounded-full"></span>
+                    Active Personnel
+                </h2>
+                <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Verification Status: Confirmed</p>
             </div>
 
-            <div class="flex flex-col gap-3" id="activeList">
+            <!-- Responsive Grid: 1 on mobile, 2 on laptop, 3 on large desktop -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" id="activeList">
                 {% for user in active %}
-                <div class="user-card bg-slate-900/30 border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/[0.04] transition-all" data-username="{{ user.username.lower() }}">
-                    <div class="flex items-center gap-5 min-w-0">
-                        <div class="relative flex-shrink-0">
-                            <div class="w-12 h-12 rounded-xl bg-slate-950 border border-white/10 flex items-center justify-center font-black text-slate-400 text-lg uppercase group-hover:border-emerald-500/40 transition-all">
-                                {{ user.username[0] }}
+                {% set progress = (user.total_hours / 486 * 100)|round|int %}
+                <div class="user-card relative overflow-hidden bg-slate-900/40 border border-white/5 rounded-[2rem] p-6 hover:bg-slate-900/80 hover:border-indigo-500/30 hover:-translate-y-1 transition-all duration-300 group shadow-lg" data-username="{{ user.username }}">
+                    
+                    <!-- Vertical progress indicator (sleeker for desktop) -->
+                    <div class="absolute top-0 right-0 w-1 h-full bg-white/5">
+                        <div class="w-full bg-indigo-500/40 transition-all duration-1000" style="height: {{ progress if progress <= 100 else 100 }}%"></div>
+                    </div>
+
+                    <div class="flex flex-col h-full justify-between gap-6 relative z-10">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-2xl bg-slate-950 border border-white/10 flex items-center justify-center font-black text-slate-300 text-xl uppercase group-hover:border-indigo-500/50 transition-colors">
+                                    {{ user.username[0] }}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h3 class="text-white font-bold text-lg truncate">{{ user.username }}</h3>
+                                        {% if user.id_str == admin_id %}
+                                        <span class="text-[8px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">Root</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[9px] font-black uppercase tracking-widest border border-emerald-500/10">Authorized</span>
+                                </div>
                             </div>
-                            <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-950 rounded-full shadow-lg"></div>
+                            
+                            {% if user.id_str != admin_id %}
+                            <button onclick="confirmDelete(event, '{{ url_for('auth.delete_user', user_id=user.id_str) }}')"
+                                    class="lg:opacity-0 group-hover:opacity-100 p-2.5 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all">
+                                <i data-lucide="user-minus" class="w-5 h-5"></i>
+                            </button>
+                            {% endif %}
                         </div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-3">
-                                <p class="text-slate-200 font-bold text-base truncate">{{ user.username }}</p>
-                                {% if user._id|string == admin_id %}
-                                <span class="text-[8px] font-black bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded uppercase">Master</span>
-                                {% endif %}
+
+                        <!-- Progress Section -->
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-end">
+                                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Project Completion</p>
+                                <p class="text-xs font-black text-white italic">{{ progress }}%</p>
                             </div>
-                            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{{ user.total_hours|round(1) }} Hours Total</p>
+                            <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full transition-all duration-1000" style="width: {{ progress if progress <= 100 else 100 }}%"></div>
+                            </div>
+                            <p class="text-[11px] font-bold text-slate-400">{{ user.total_hours }} <span class="text-[9px] text-slate-600 uppercase ml-1">of 486 Hours logged</span></p>
                         </div>
                     </div>
-                    
-                    {% if user._id|string != admin_id %}
-                    <button onclick="confirmDelete(event, '{{ url_for('auth.delete_user', user_id=user._id|string) }}')"
-                            class="w-11 h-11 flex items-center justify-center rounded-xl text-slate-600 hover:text-red-400 hover:bg-red-400/10 transition-all opacity-0 group-hover:opacity-100">
-                        <i data-lucide="user-minus" class="w-5 h-5"></i>
-                    </button>
-                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
-        </section>
-
+        </div>
     </div>
 </div>
 
 <script>
     lucide.createIcons();
 
-    const searchInput = document.getElementById('adminSearch');
-    const cards = document.querySelectorAll('.user-card');
-
-    searchInput.addEventListener('input', (e) => {
+    // Live Search with zero-latency display toggle
+    document.getElementById('adminSearch').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase().trim();
-        cards.forEach(card => {
-            const username = card.getAttribute('data-username');
-            card.style.display = username.includes(term) ? 'flex' : 'none';
+        document.querySelectorAll('.user-card').forEach(card => {
+            const name = card.getAttribute('data-username').toLowerCase();
+            if (name.includes(term)) {
+                card.style.display = 'block';
+                card.style.opacity = '1';
+            } else {
+                card.style.display = 'none';
+                card.style.opacity = '0';
+            }
         });
     });
 
     function confirmDelete(e, url) {
         e.preventDefault();
-        if (confirm("🚨 WARNING: This will permanently revoke system access. Proceed?")) {
+        if (confirm("🚨 SECURITY OVERRIDE: Permanently revoke access and erase credentials for this personnel?")) {
             window.location.href = url;
         }
     }

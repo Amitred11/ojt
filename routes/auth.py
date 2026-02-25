@@ -2,6 +2,7 @@ from quart import Blueprint, render_template, request, redirect, url_for, sessio
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import users_col, get_db
 from bson import ObjectId
+from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -11,6 +12,35 @@ ADMIN_ID = "6979fc7f59b791fd5fcbf90f"
 # Helper to check if user is the specific admin
 def is_admin():
     return session.get('user_id') == ADMIN_ID
+
+def calculate_user_total_minutes(logs, allow_ot=True):
+    total_m = 0
+    for log in logs:
+        def get_min(t1, t2):
+            try:
+                if not t1 or not t2: return 0
+                fmt = "%H:%M"
+                d1, d2 = datetime.strptime(t1, fmt), datetime.strptime(t2, fmt)
+                return int((d2 - d1).total_seconds() // 60) if d2 > d1 else 0
+            except: return 0
+
+        am_m = get_min(log.get('am_in'), log.get('am_out'))
+        pm_m = get_min(log.get('pm_in'), log.get('pm_out'))
+        
+        # OT Logic: starts at 17:00
+        raw_ot = 0
+        pm_out = log.get('pm_out')
+        if pm_out:
+            try:
+                out_t = datetime.strptime(pm_out, "%H:%M")
+                limit = datetime.strptime("17:00", "%H:%M")
+                if out_t > limit:
+                    raw_ot = int((out_t - limit).total_seconds() // 60)
+            except: pass
+            
+        reg_m = min((am_m + pm_m) - raw_ot, 480) # 480 is DAILY_CAP_MINUTES
+        total_m += (reg_m + raw_ot)
+    return total_m
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 async def login():
@@ -122,37 +152,30 @@ async def logout():
 @auth_bp.route("/admin/users")
 async def manage_users():
     if not is_admin():
-        await flash("Access Denied: Admin privileges required.", "error")
+        await flash("Access Denied.", "error")
         return redirect(url_for('tracker.index'))
     
-    db = get_db()
+    # Fetch all users
+    users_cursor = users_col.find().sort("username", 1)
+    all_users = await users_cursor.to_list(length=500)
     
-    # Aggregation to get users and their sum of hours from the logs collection
-    pipeline = [
-        {
-            "$lookup": {
-                "from": "logs",
-                "localField": "_id",
-                "foreignField": "user_id",
-                "as": "user_logs"
-            }
-        },
-        {
-            "$project": {
-                "username": 1,
-                "status": 1,
-                "total_hours": { "$sum": "$user_logs.hours" }
-            }
-        },
-        { "$sort": {"username": 1} }
-    ]
+    pending = []
+    active = []
     
-    all_users = await users_col.aggregate(pipeline).to_list(length=500)
-    
-    # Filter lists for the template
-    pending = [u for u in all_users if u.get('status') == 'pending']
-    active = [u for u in all_users if u.get('status') == 'approved']
-    
+    for u in all_users:
+        # Fetch logs for this specific user
+        # Note: tracker.py stores user_id as a string in logs
+        user_logs = await get_db().logs.find({"user_id": str(u['_id'])}).to_list(None)
+        
+        total_minutes = calculate_user_total_minutes(user_logs)
+        u['total_hours'] = round(total_minutes / 60, 1)
+        u['id_str'] = str(u['_id'])
+        
+        if u.get('status') == 'pending':
+            pending.append(u)
+        else:
+            active.append(u)
+            
     return await render_template(
         "auth/admin_users.html", 
         pending=pending, 

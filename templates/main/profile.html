@@ -19,46 +19,71 @@
     </div>
 
     <!-- Profile Hero Card -->
-    <div class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
-        <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 blur-[80px] rounded-full"></div>
+    <div class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl group">
+        <!-- Decorative Ambient Glows -->
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 blur-[100px] rounded-full transition-opacity group-hover:opacity-50"></div>
+        <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full transition-opacity group-hover:opacity-50"></div>
         
         <div class="flex flex-col items-center text-center relative z-10">
-            <div class="relative mb-4">
-                <div class="w-28 h-28 rounded-[2rem] bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-600 flex items-center justify-center text-5xl font-black text-white shadow-2xl border-4 border-white/10">
-                    {{ p.full_name[0] if p.full_name else '?' }}
+            <!-- Avatar Section with Glow -->
+            <div class="relative mb-6">
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500 to-blue-600 blur-2xl opacity-20 rounded-full animate-pulse"></div>
+                <div class="relative w-28 h-28 rounded-[2.2rem] bg-gradient-to-br from-slate-800 to-slate-900 p-1 shadow-2xl border border-white/10">
+                    <div class="w-full h-full rounded-[1.8rem] bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-600 flex items-center justify-center text-5xl font-black text-white shadow-inner">
+                        {{ p.full_name[0] if p.full_name else '?' }}
+                    </div>
                 </div>
-                <div class="absolute -bottom-2 -right-2 px-3 py-1 rounded-full bg-emerald-500 text-[10px] font-black text-white uppercase tracking-widest border-4 border-[#020617]">
-                    Active
+                <!-- Status Badge -->
+                <div class="absolute -bottom-1 -right-1 flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950 border border-emerald-500/50 shadow-lg">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Active</span>
                 </div>
             </div>
 
-            <h2 class="text-2xl font-black text-white tracking-tight">{{ p.full_name or 'Trainee Name' }}</h2>
-            <p class="text-indigo-400 font-bold text-xs uppercase tracking-widest mt-1">{{ p.course or 'Course not set' }}</p>
+            <!-- Name & Course -->
+            <div class="space-y-1">
+                <h2 class="text-3xl font-900 text-white tracking-tightest uppercase italic">
+                    {{ p.full_name or 'Trainee Name' }}
+                </h2>
+                <div class="inline-flex items-center px-3 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                    <p class="text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em]">
+                        {{ p.course or 'Course not set' }}
+                    </p>
+                </div>
+            </div>
             
-            <!-- Overall Progress Bar -->
-            <div class="w-full mt-6 px-4">
-                <div class="flex justify-between items-end mb-2">
-                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest">Training Progress</p>
-                    <p class="text-xs font-black text-white">{{ progress }}%</p>
+            <!-- Progress Section -->
+            <div class="w-full mt-8 px-2">
+                <div class="flex justify-between items-end mb-3">
+                    <div class="flex flex-col items-start">
+                        <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Training Progress</p>
+                        <p class="text-[9px] text-indigo-400/60 font-bold italic">Target: {{ p.duration or 'Not Set' }}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl font-black text-white tabular-nums">{{ progress }}%</span>
+                    </div>
                 </div>
-                <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                    <div class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full" style="width: {{ progress }}%"></div>
+                <div class="w-full h-3 bg-slate-950 rounded-full p-0.5 border border-white/5 overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-indigo-600 via-blue-500 to-emerald-400 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all duration-1000" style="width: {{ progress }}%"></div>
                 </div>
-                <p class="text-[9px] text-slate-500 font-bold mt-2 italic text-center">Goal: {{ p.duration or 'Not Set' }}</p>
             </div>
 
-            <div class="grid grid-cols-3 gap-4 w-full mt-8 pt-6 border-t border-white/5">
-                <div>
-                    <p class="text-[9px] text-slate-500 font-black uppercase mb-1">Total Logs</p>
-                    <p class="text-xl font-black text-white">{{ log_count }}</p>
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-3 gap-2 w-full mt-10 p-2 bg-slate-950/50 rounded-[1.5rem] border border-white/5">
+                <div class="py-4 hover:bg-white/[0.02] rounded-2xl transition-colors">
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Total Logs</p>
+                    <p class="text-xl font-black text-white tabular-nums">{{ log_count }}</p>
                 </div>
-                <div class="border-x border-white/5">
-                    <p class="text-[9px] text-slate-500 font-black uppercase mb-1">Avg. Hours</p>
-                    <p class="text-xl font-black text-white">{{ avg_hours }}h</p>
+                <div class="py-4 border-x border-white/5 hover:bg-white/[0.02] rounded-2xl transition-colors">
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Avg. Daily</p>
+                    <p class="text-xl font-black text-white tabular-nums">{{ avg_hours }}<span class="text-xs text-slate-500 ml-0.5">h</span></p>
                 </div>
-                <div>
-                    <p class="text-[9px] text-slate-500 font-black uppercase mb-1">Total Time</p>
-                    <p class="text-xl font-black text-white">{{ total_hours }}h</p>
+                <div class="py-4 hover:bg-white/[0.02] rounded-2xl transition-colors">
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Total Time</p>
+                    <p class="text-xl font-black text-indigo-400 tabular-nums">{{ total_hours }}<span class="text-xs text-slate-500 ml-0.5">h</span></p>
                 </div>
             </div>
         </div>
@@ -155,7 +180,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-white font-bold text-sm">{{ log.log_date }}</p>
-                            <p class="text-slate-500 text-xs">{{ log.hours }} hours logged</p>
+                            <p class="text-slate-500 text-xs">{{ log.display_hours }} hours logged</p>
                         </div>
                         <span class="text-[10px] font-black text-slate-600 bg-white/5 px-2 py-1 rounded-md uppercase">Verified</span>
                     </div>

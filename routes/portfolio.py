@@ -83,44 +83,74 @@ async def view_profile():
     db = get_db()
     uid = session['user_id']
     
-    # 1. Fetch Profile and Logs
     p = await db.profiles.find_one({'user_id': uid}) or {}
     logs = await db.logs.find({'user_id': uid}).sort('log_date', -1).to_list(None)
     
-    # 2. Process Logs & Calculate Total Hours
+    # --- INTERNAL LOGIC HELPERS (Matches tracker.py) ---
+    def get_min_diff(t_in, t_out):
+        if not t_in or not t_out: return 0
+        try:
+            t1 = datetime.strptime(t_in, "%H:%M")
+            t2 = datetime.strptime(t_out, "%H:%M")
+            return int((t2 - t1).total_seconds() // 60) if t2 > t1 else 0
+        except: return 0
+
+    def get_ot_min(pm_out):
+        if not pm_out: return 0
+        try:
+            out_time = datetime.strptime(pm_out, "%H:%M")
+            threshold = datetime.strptime("17:00", "%H:%M")
+            return int((out_time - threshold).total_seconds() // 60) if out_time > threshold else 0
+        except: return 0
+    # ---------------------------------------------------
+
     processed_logs = []
-    total_h = 0
+    total_credited_minutes = 0
+    
     for l in logs:
-        log_dt = l['log_date']
-        if isinstance(log_dt, str):
-            l['log_date_obj'] = datetime.strptime(log_dt, '%Y-%m-%d')
-        else:
-            l['log_date_obj'] = log_dt
+        # 1. Parse date for the timeline
+        log_dt_str = l['log_date']
+        log_date_obj = datetime.strptime(log_dt_str, '%Y-%m-%d') if isinstance(log_dt_str, str) else log_dt_str
         
-        total_h += l.get('hours', 0)
+        # 2. RE-CALCULATE credited minutes from raw strings
+        # This ensures old logs follow the 8h cap + OT rule
+        am_m = get_min_diff(l.get('am_in'), l.get('am_out'))
+        pm_m = get_min_diff(l.get('pm_in'), l.get('pm_out'))
+        raw_ot = get_ot_min(l.get('pm_out'))
+        
+        # Apply the 8-hour (480 min) cap logic
+        reg_m = min((am_m + pm_m) - raw_ot, 480)
+        credited_m = reg_m + raw_ot
+        
+        total_credited_minutes += credited_m
+        
+        # Prepare for template display
+        l['log_date_obj'] = log_date_obj
+        l['display_hours'] = round(credited_m / 60, 1)
         processed_logs.append(l)
 
+    # 3. Final Totals
+    total_hours_numeric = total_credited_minutes / 60
     log_count = len(processed_logs)
-    avg_daily = round(total_h / log_count, 1) if log_count else 0
+    avg_daily = round(total_hours_numeric / log_count, 1) if log_count else 0
 
-    # 3. Calculate Target Hours from the "Duration" field in Profile
+    # 4. Target & Progress
     target = 486 
     if p.get('duration'):
         digits = re.findall(r'\d+', str(p['duration']))
-        if digits: 
-            target = int(digits[0])
+        if digits: target = int(digits[0])
+    progress = min(int((total_hours_numeric / target) * 100), 100) if target > 0 else 0
 
-    progress = min(int((total_h / target) * 100), 100) if target > 0 else 0
-
-    # 4. Calculate Rank (Leaderboard position)
+    # 5. Leaderboard Rank
+    # For the leaderboard, we still use the stored credited_minutes for efficiency
     pipeline = [
-        {"$group": {"_id": "$user_id", "total": {"$sum": "$hours"}}}, 
-        {"$match": {"total": {"$gt": total_h}}}
+        {"$group": {"_id": "$user_id", "total_m": {"$sum": "$credited_minutes"}}}, 
+        {"$match": {"total_m": {"$gt": total_credited_minutes}}}
     ]
     higher_users = await db.logs.aggregate(pipeline).to_list(None)
     rank = len(higher_users) + 1
 
-    # 5. Streak Calculation
+    # 6. Streak
     streak_days = 0
     if processed_logs:
         log_dates = sorted({l['log_date_obj'].date() for l in processed_logs}, reverse=True)
@@ -132,17 +162,17 @@ async def view_profile():
             else:
                 break
 
-    # 6. Build Stats for Achievements
+    # 7. Achievement Stats
     stats = {
         'rank': rank, 
-        'total_hours': total_h, 
+        'total_hours': total_hours_numeric, 
         'log_count': log_count,
         'avg_daily': avg_daily, 
         'progress': progress, 
         'streak_days': streak_days,
-        'early_logs': sum(1 for l in processed_logs if l['log_date_obj'].hour < 8), 
-        'late_logs': sum(1 for l in processed_logs if l['log_date_obj'].hour >= 21), 
-        'max_daily_hours': max([l.get('hours', 0) for l in processed_logs]) if processed_logs else 0, 
+        'early_logs': sum(1 for l in processed_logs if l.get('am_in') and int(l.get('am_in').split(':')[0]) < 8), 
+        'late_logs': sum(1 for l in processed_logs if l.get('pm_out') and int(l.get('pm_out').split(':')[0]) >= 21), 
+        'max_daily_hours': max([l['display_hours'] for l in processed_logs]) if processed_logs else 0, 
         'weekend_logs': sum(1 for l in processed_logs if l['log_date_obj'].weekday() >= 5)
     }
     
@@ -151,7 +181,7 @@ async def view_profile():
     return await render_template(
         'main/profile.html', 
         p=p, 
-        total_hours=round(total_h, 1), 
+        total_hours=round(total_hours_numeric, 1), 
         log_count=log_count, 
         avg_hours=avg_daily, 
         progress=progress, 
