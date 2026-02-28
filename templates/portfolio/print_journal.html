@@ -2,417 +2,364 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OJT Journal - {{ p.full_name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OJT Portfolio Assistant - {{ p.full_name }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* FONTS */
-        @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap'); /* Closest free Google Font to Old English */
-        @import url('https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400&display=swap'); /* Tinos is a great Times New Roman alternative */
-
-        body {
-            background: #525659;
-            margin: 0;
-            padding: 20px;
-            font-family: 'Tinos', 'Times New Roman', serif;
-        }
-
-        /* PAGE SETUP (Letter Size) */
-        .page {
-            background: white;
-            width: 8.5in;
-            height: 11in;
-            margin: 0 auto 20px auto;
-            position: relative;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            overflow: hidden;
-            page-break-after: always;
-        }
-
-        /* HEADER DESIGN (CSS Only - No Images Needed) */
-        .header-bg {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 120px;
-            background: black;
-            overflow: hidden;
-        }
-        /* The Orange Swoosh */
-        .header-swoosh {
-            position: absolute;
-            bottom: -50%;
-            left: -10%;
-            width: 120%;
-            height: 100%;
-            background: white;
-            border-top: 15px solid #ea580c; /* Orange */
-            border-radius: 50%;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; }
         
-        /* HEADER TEXT */
-        .header-content {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            padding-top: 15px;
-            color: white;
-        }
-        .school-name {
-            font-family: 'UnifrakturMaguntia', cursive; /* Old English Style */
-            font-size: 32px;
-            letter-spacing: 1px;
-        }
-        .dept-name {
-            font-family: 'Tinos', serif;
-            font-size: 16px;
-            letter-spacing: 0.5px;
-        }
-        /* LOGO PLACEHOLDERS */
-        .logo-left, .logo-right {
-            position: absolute;
-            top: 10px;
-            width: 70px;
-            height: 70px;
-            background: white; /* Placeholder for actual logo */
-            border-radius: 50%;
-            border: 2px solid #ea580c;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 8px;
-            color: black;
-            text-align: center;
-            font-weight: bold;
-        }
-        .logo-left { left: 40px; }
-        .logo-right { right: 40px; }
-
-        /* FOOTER DESIGN */
-        .footer-bg {
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 50px;
-            background: black;
-            color: white;
-            display: flex;
-            align-items: center;
-            padding-left: 40px;
-            font-size: 12px;
-            font-weight: bold;
-            z-index: 10;
-        }
-        /* Orange Swoosh for Footer */
-        .footer-swoosh {
-            position: absolute;
-            top: -20px;
-            left: -10%;
-            width: 120%;
-            height: 50px;
+        /* Modern Paper Styling */
+        .sheet {
             background: white;
-            border-bottom: 8px solid #ea580c;
-            border-radius: 50%;
-            z-index: 5;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease;
         }
 
-        /* CONTENT AREA */
-        .content {
-            padding: 140px 60px 60px 60px; /* Top padding clears header */
-            height: 100%;
-            box-sizing: border-box;
+        .section-tag {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 4px 12px;
+            border-radius: 20px;
         }
 
-        /* TYPOGRAPHY */
-        h1.page-title {
-            text-align: center;
-            font-size: 28px;
-            margin-top: 40px;
-            margin-bottom: 40px;
-            color: black;
-        }
-
-        h2.section-header {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            margin-top: 20px;
-        }
-
-        /* TABLES */
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { border: 1px solid black; background: #f3f4f6; padding: 8px; font-weight: bold; text-align: left; }
-        td { border: 1px solid black; padding: 8px; vertical-align: top; }
-
-        /* PRINT SETTINGS */
         @media print {
-            body { background: white; padding: 0; }
-            .page { margin: 0; box-shadow: none; border: none; }
             .no-print { display: none !important; }
-            /* Ensure background graphics print */
-            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { background: white; padding: 0; }
+            .sheet { box-shadow: none; border: 1px solid #eee; margin-bottom: 20px; transform: none !important; }
+            .page-break { page-break-after: always; }
         }
+
+        .copy-btn:active { transform: scale(0.95); }
     </style>
 </head>
-<body>
+<body class="p-4 md:p-12 pb-32">
 
-    <!-- PRINT BUTTON -->
-    <div class="fixed top-6 right-6 z-50 no-print flex gap-2">
-        <button onclick="window.print()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl shadow-xl flex items-center gap-2 transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-            Print to PDF
-        </button>
-    </div>
-
-    <!-- MACRO: HEADER TEMPLATE -->
-    {% macro header() %}
-    <div class="header-bg">
-        <div class="logo-left">CDM Logo</div> <!-- Replace with <img> if you have url -->
-        <div class="header-content">
-            <div class="school-name">Colegio de Montalban</div>
-            <div class="dept-name">Institute of Computing Studies</div>
-        </div>
-        <div class="logo-right">ICS Logo</div> <!-- Replace with <img> if you have url -->
-        <div class="header-swoosh"></div>
-    </div>
-    {% endmacro %}
-
-    <!-- MACRO: FOOTER TEMPLATE -->
-    {% macro footer() %}
-    <div class="footer-swoosh"></div>
-    <div class="footer-bg">
-        On-the-Job Training (OJT) Journal
-    </div>
-    {% endmacro %}
-
-    <!-- PAGE 1: TITLE PAGE -->
-    <div class="page">
-        {{ header() }}
-        <div class="content flex flex-col items-center justify-center text-center">
-            <h1 class="font-bold text-3xl mb-20 uppercase mt-10">On-the-Job Training (OJT)<br>Journal</h1>
-
-            <div class="mt-10 mb-20 w-full">
-                <p class="font-bold text-2xl uppercase border-b border-black inline-block px-10 mb-2">{{ p.full_name }}</p>
-                <p class="text-lg">(Student's Name)</p>
-            </div>
-
-            <div class="mb-20">
-                <p class="font-bold text-xl">Bachelor of Science in Information Technology</p>
-            </div>
-
-            <div class="mb-10 w-full">
-                <p class="font-bold text-xl uppercase border-b border-black inline-block px-10 mb-2">{{ p.hte_name }}</p>
-                <p class="text-lg">(Name of HTE)</p>
-            </div>
-
-            <div class="w-full">
-                <p class="font-bold text-xl uppercase border-b border-black inline-block px-10 mb-2">{{ p.duration }}</p>
-                <p class="text-lg">(Duration)</p>
-            </div>
-        </div>
-        {{ footer() }}
-    </div>
-
-    <!-- PAGE 2: TABLE OF CONTENTS (Placeholder) -->
-    <div class="page">
-        {{ header() }}
-        <div class="content">
-            <h1 class="page-title">Table of Contents</h1>
-            <ul class="list-none space-y-4 text-lg">
-                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Approval Sheet</span> <span>i</span></li>
-                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Acknowledgement</span> <span>ii</span></li>
-                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Personal Information</span> <span>1</span></li>
-                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Training Details</span> <span>2</span></li>
-                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Company Profile</span> <span>3</span></li>
-                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Weekly Work Log</span> <span>4</span></li>
-                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Monthly Reflection</span> <span>10</span></li>
-                <li class="flex justify-between border-b border-dotted border-black pb-1"><span>Appendices</span> <span>15</span></li>
-            </ul>
-        </div>
-        {{ footer() }}
-    </div>
-
-    <!-- PAGE 3: PERSONAL INFORMATION -->
-    <div class="page">
-        {{ header() }}
-        <div class="content">
-            <h1 class="page-title">Personal Information</h1>
-            <table class="mb-8">
-                <tr>
-                    <td width="30%" class="font-bold bg-gray-100">Full Name</td>
-                    <td>{{ p.full_name }}</td>
-                </tr>
-                <tr>
-                    <td class="font-bold bg-gray-100">Program/Course</td>
-                    <td>{{ p.course }}</td>
-                </tr>
-                <tr>
-                    <td class="font-bold bg-gray-100">OJT Duration</td>
-                    <td>{{ p.duration }} Hours</td>
-                </tr>
-            </table>
-
-            <h1 class="page-title" style="margin-top: 60px;">Training Details</h1>
-            <table>
-                <tr>
-                    <td width="30%" class="font-bold bg-gray-100">Host Training Establishment</td>
-                    <td>{{ p.hte_name }}</td>
-                </tr>
-                <tr>
-                    <td class="font-bold bg-gray-100">Department Assigned</td>
-                    <td>{{ p.dept_desc }}</td>
-                </tr>
-                <tr>
-                    <td class="font-bold bg-gray-100">Direct Supervisor</td>
-                    <td>{{ p.supervisor }}</td>
-                </tr>
-            </table>
-
-            <h1 class="page-title" style="margin-top: 60px;">Learning Objectives</h1>
-            <div class="border border-black p-4 min-h-[150px] text-sm whitespace-pre-line text-justify">
-                {{ p.objectives }}
-            </div>
-        </div>
-        {{ footer() }}
-    </div>
-
-    <!-- PAGE 4: COMPANY PROFILE -->
-    <div class="page">
-        {{ header() }}
-        <div class="content">
-            <h1 class="page-title">Company Profile</h1>
-            <div class="text-justify text-sm leading-relaxed whitespace-pre-line">
-                {{ p.company_desc }}
-            </div>
-        </div>
-        {{ footer() }}
-    </div>
-
-    <!-- PAGE 5: WEEKLY WORK LOG -->
-    <!-- We create a scrolling page here, usually you might split this if very long -->
-    <div class="page">
-        {{ header() }}
-        <div class="content">
-            <h1 class="page-title">Weekly Work Log</h1>
-            
-            {% for log in weekly_logs %}
-            <div class="mb-6 break-inside-avoid">
-                <div class="bg-black text-white px-4 py-2 font-bold text-sm flex justify-between">
-                    <span>Week Ending: {{ log.week_end_date }}</span>
-                    <span>Verified</span>
+    <!-- FLOATING NAV BAR (GUIDE-DRIVEN) -->
+    <nav class="max-w-5xl mx-auto mb-10 sticky top-6 z-50 no-print">
+        <div class="bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 shadow-2xl flex items-center justify-between px-6 border border-slate-700">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white">
+                    <i data-lucide="layout"></i>
                 </div>
-                <table class="mt-2">
-                    <thead>
-                        <tr>
-                            <th width="33%">Task Description</th>
-                            <th width="33%">Competencies Applied</th>
-                            <th width="33%">Knowledge Gained</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="whitespace-pre-line">{{ log.tasks }}</td>
-                            <td class="whitespace-pre-line">{{ log.competencies }}</td>
-                            <td class="whitespace-pre-line">{{ log.knowledge }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h1 class="text-white font-bold text-sm tracking-tight">OJT Journal Assistant</h1>
             </div>
-            {% else %}
-            <p class="text-center italic text-gray-500">No logs recorded yet.</p>
-            {% endfor %}
-        </div>
-        {{ footer() }}
-    </div>
-
-    <!-- PAGE 6: MONTHLY REFLECTIONS -->
-    <div class="page">
-        {{ header() }}
-        <div class="content">
-            <h1 class="page-title">Monthly Reflection</h1>
-            
-            {% for ref in reflections %}
-            <div class="mb-10 break-inside-avoid border-b-2 border-dashed border-gray-300 pb-6">
-                <h2 class="text-xl font-bold mb-4 uppercase text-center border-b border-black inline-block">{{ ref.month_date }}</h2>
-                
-                <h3 class="font-bold text-sm mt-4 text-orange-700">Reflection</h3>
-                <p class="text-sm text-justify whitespace-pre-line mb-3">{{ ref.monthly_reflection }}</p>
-
-                <h3 class="font-bold text-sm mt-4 text-orange-700">Self-Evaluation</h3>
-                <p class="text-sm text-justify whitespace-pre-line mb-3">{{ ref.self_evaluation }}</p>
-
-                <h3 class="font-bold text-sm mt-4 text-orange-700">Supervisory Feedback</h3>
-                <div class="bg-gray-100 p-3 border-l-4 border-orange-500 text-sm italic">
-                    "{{ ref.feedback }}"
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {{ footer() }}
-    </div>
-
-    <!-- SEPARATOR: APPENDICES -->
-    <div class="page flex items-center justify-center">
-        {{ header() }}
-        <div class="content flex items-center justify-center w-full">
-            <h1 class="font-bold text-4xl uppercase tracking-widest text-center">Appendices &<br>Documentation</h1>
-        </div>
-        {{ footer() }}
-    </div>
-
-    <!-- PAGE 7: DTR IMAGES -->
-    {% for dtr in dtr_uploads %}
-    <div class="page">
-        {{ header() }}
-        <div class="content">
-            <h1 class="page-title">Daily Time Record (DTR)</h1>
-            <p class="text-center font-bold mb-4 uppercase">{{ dtr.description }}</p>
-            
-            <div class="grid grid-cols-2 gap-4 h-[800px]">
-                <!-- Front Side -->
-                <div class="border border-black flex flex-col items-center p-2">
-                    <p class="text-xs font-bold mb-2 uppercase">Front Side</p>
-                    {% if dtr.image_front %}
-                    <img src="data:image/webp;base64,{{ dtr.image_front }}" class="max-h-[90%] object-contain">
-                    {% else %}
-                    <div class="flex-1 flex items-center justify-center text-gray-400">Missing</div>
-                    {% endif %}
-                </div>
-                <!-- Back Side -->
-                <div class="border border-black flex flex-col items-center p-2">
-                    <p class="text-xs font-bold mb-2 uppercase">Back Side</p>
-                    {% if dtr.image_back %}
-                    <img src="data:image/webp;base64,{{ dtr.image_back }}" class="max-h-[90%] object-contain">
-                    {% else %}
-                    <div class="flex-1 flex items-center justify-center text-gray-400">Missing</div>
-                    {% endif %}
-                </div>
+            <div class="flex gap-2">
+                <button onclick="window.print()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg text-xs font-bold hover:bg-indigo-500 transition-all flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Export PDF
+                </button>
+                <a href="{{ url_for('portfolio.list_reports') }}" class="p-2 text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </a>
             </div>
         </div>
-        {{ footer() }}
-    </div>
-    {% endfor %}
+    </nav>
 
-    <!-- PAGE 8: PHOTO DOCUMENTATION -->
-    <div class="page">
-        {{ header() }}
-        <div class="content">
-            <h1 class="page-title">Photo Documentation</h1>
-            
-            <div class="grid grid-cols-2 gap-6">
-                {% for log in weekly_logs %}
-                    {% if log.images %}
-                        {% for img in log.images %}
-                        <div class="break-inside-avoid mb-4">
-                            <div class="border-2 border-black p-1 h-64 flex items-center justify-center bg-gray-50 overflow-hidden">
-                                <img src="data:image/webp;base64,{{ img }}" class="w-full h-full object-cover">
-                            </div>
-                            <p class="text-center font-bold text-xs mt-2 uppercase">Week Ending: {{ log.week_end_date }}</p>
+    <main class="max-w-5xl mx-auto space-y-12">
+
+        <!-- 1. PRELIMINARY PAGES -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 mb-4 px-2">
+                <span class="w-6 h-6 rounded bg-slate-200 flex items-center justify-center text-[10px] font-black">1</span>
+                <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Preliminary Pages</h2>
+            </div>
+            <div class="sheet rounded-3xl p-8 md:p-12">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <h3 class="font-bold text-sm mb-2">Title Page Data</h3>
+                        <p class="text-xs text-slate-500 mb-4">Copy these to your title page</p>
+                        <ul class="text-xs space-y-2">
+                            <li><b class="text-indigo-600">Name:</b> {{ p.full_name }}</li>
+                            <li><b class="text-indigo-600">Course:</b> {{ p.course }}</li>
+                            <li><b class="text-indigo-600">HTE:</b> {{ p.hte_name }}</li>
+                            <li><b class="text-indigo-600">Duration:</b> {{ p.duration }} Hours</li>
+                        </ul>
+                    </div>
+                    <div class="p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-sm text-indigo-900">Quick ToC List</h3>
+                            <button onclick="copyToC()" class="no-print text-[10px] font-black text-indigo-600 uppercase">Copy</button>
                         </div>
-                        {% endfor %}
-                    {% endif %}
+                        <div id="toc-data" class="text-[11px] text-indigo-800 space-y-2 font-medium">
+                            <p>I. Preliminary Pages</p>
+                            <p>II. Student Trainee Profile</p>
+                            <p>III. Company Overview</p>
+                            <p>IV. Daily/Weekly Work Log</p>
+                            <p>V. Reflection & Evaluation</p>
+                            <p>VI. Appendices & Documentation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. STUDENT TRAINEE PROFILE -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 mb-4 px-2">
+                <span class="w-6 h-6 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black">2</span>
+                <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Student Trainee Profile</h2>
+            </div>
+            <div class="sheet rounded-3xl p-8 md:p-12 border-l-4 border-indigo-500">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div class="space-y-6">
+                        <div>
+                            <span class="section-tag bg-indigo-50 text-indigo-600 mb-2 inline-block">Personal Information</span>
+                            <p class="text-sm font-bold">{{ p.full_name }}</p>
+                            <p class="text-xs text-slate-500 italic">{{ p.course }}</p>
+                        </div>
+                        <div>
+                            <span class="section-tag bg-slate-100 text-slate-600 mb-2 inline-block">Training Details</span>
+                            <p class="text-sm font-bold text-slate-700">{{ p.hte_name }}</p>
+                            <p class="text-xs text-slate-500 italic">Supervisor: {{ p.supervisor }}</p>
+                            <p class="text-xs text-slate-500">Dept: {{ p.dept_desc }}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="section-tag bg-orange-50 text-orange-600 mb-2 inline-block">Learning Objectives</span>
+                        <div class="p-5 bg-orange-50/30 rounded-2xl border border-orange-100 italic text-sm text-slate-600 leading-relaxed">
+                            {{ p.objectives }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. COMPANY OVERVIEW -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 mb-4 px-2">
+                <span class="w-6 h-6 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black">3</span>
+                <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Company Overview</h2>
+            </div>
+            <div class="sheet rounded-3xl p-8 md:p-12 border-l-4 border-emerald-500">
+                <h3 class="font-bold text-slate-800 mb-4">Company Profile & Description</h3>
+                <div class="text-sm text-slate-600 leading-[1.8] text-justify whitespace-pre-line bg-slate-50 p-8 rounded-3xl border border-slate-100 italic mb-8">
+                    {{ p.company_desc }}
+                </div>
+
+                <!-- Organizational Structure - LARGE VIEW -->
+                {% if p.structure_img %}
+                <div class="mt-8 pt-8 border-t border-slate-100">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Organizational Structure</h4>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-2 overflow-hidden shadow-sm">
+                        <img src="data:image/webp;base64,{{ p.structure_img }}" class="w-full h-auto rounded-xl">
+                    </div>
+                    <div class="no-print mt-3 flex justify-end">
+                        <a href="data:image/webp;base64,{{ p.structure_img }}" download="Organizational_Structure.webp" class="text-[10px] font-bold text-indigo-600 uppercase flex items-center gap-1 hover:underline">
+                            <i data-lucide="download" class="w-3 h-3"></i> Download Original
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- 4. DAILY/WEEKLY WORK LOG -->
+        <section class="space-y-6">
+            <div class="flex items-center gap-2 mb-4 px-2">
+                <span class="w-6 h-6 rounded bg-red-100 text-red-600 flex items-center justify-center text-[10px] font-black">4</span>
+                <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Daily/Weekly Work Log</h2>
+            </div>
+
+            {% for log in weekly_logs %}
+            <div class="sheet rounded-[2.5rem] overflow-hidden group">
+                <div class="bg-slate-900 px-8 py-5 flex justify-between items-center">
+                    <span class="text-xs font-black text-white uppercase tracking-tighter italic">Week Ending: {{ log.week_end_date }}</span>
+                    <button onclick="copyWeeklyLog('{{ loop.index }}')" class="no-print bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all">
+                        Copy Week Data
+                    </button>
+                </div>
+                <div class="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div class="lg:col-span-8 space-y-6">
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Task Description</h4>
+                            <p id="tasks-{{loop.index}}" class="text-sm text-slate-700 leading-relaxed italic whitespace-pre-line">{{ log.tasks }}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                                <h4 class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Competencies</h4>
+                                <p id="skills-{{loop.index}}" class="text-[11px] text-slate-600 font-medium">{{ log.competencies }}</p>
+                            </div>
+                            <div class="p-4 bg-cyan-50/50 rounded-xl border border-cyan-100">
+                                <h4 class="text-[9px] font-black text-cyan-400 uppercase tracking-widest mb-1">New Knowledge</h4>
+                                <p id="know-{{loop.index}}" class="text-[11px] text-slate-600 font-medium">{{ log.knowledge }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-4 no-print">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Photo Samples</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            {% for img in log.images %}
+                            <div class="relative group aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                                <img src="data:image/webp;base64,{{ img }}" class="w-full h-full object-cover">
+                                <a href="data:image/webp;base64,{{ img }}" download="Log_Image_{{loop.index}}.webp" class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <i data-lucide="download" class="text-white w-5 h-5"></i>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+
+        <!-- 5. REFLECTION & EVALUATION -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-2 mb-4 px-2">
+                <span class="w-6 h-6 rounded bg-purple-100 text-purple-600 flex items-center justify-center text-[10px] font-black">5</span>
+                <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Reflection & Evaluation</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for ref in reflections %}
+                <div class="sheet rounded-[2rem] p-8 border-l-4 border-purple-500 relative group">
+                    <button onclick="copyToClipboard('ref-{{loop.index}}')" class="no-print absolute top-6 right-6 text-purple-300 hover:text-purple-600">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                    <span class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-4 block">{{ ref.month_date }} Reflection</span>
+                    <p id="ref-{{loop.index}}" class="text-sm text-slate-600 italic leading-relaxed mb-6 whitespace-pre-line">{{ ref.monthly_reflection }}</p>
+                    <div class="space-y-4 mt-6 pt-6 border-t border-slate-100">
+                        <div>
+                            <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Self Evaluation</h4>
+                            <p class="text-[11px] text-slate-500">{{ ref.self_evaluation }}</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 italic">
+                            <h4 class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Supervisor Feedback</h4>
+                            <p class="text-[11px] text-slate-500">"{{ ref.feedback }}"</p>
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
             </div>
-        </div>
-        {{ footer() }}
+        </section>
+
+        <!-- 6. APPENDICES & DOCUMENTATION -->
+        <section class="space-y-8 pb-20">
+            <div class="flex items-center gap-2 mb-4 px-2">
+                <span class="w-6 h-6 rounded bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-black">6</span>
+                <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Appendices & Documentation</h2>
+            </div>
+
+            <div class="sheet rounded-[2rem] p-8 md:p-12 space-y-12">
+                
+                <!-- Documentation: Certificate -->
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="award" class="w-4 h-4 text-orange-500"></i> Certificate of Completion
+                    </h3>
+                    {% if p.certificate_img %}
+                    <div class="bg-slate-50 border border-slate-200 rounded-3xl p-4 shadow-sm relative group">
+                        <img src="data:image/webp;base64,{{ p.certificate_img }}" class="w-full h-auto rounded-2xl">
+                        <a href="data:image/webp;base64,{{ p.certificate_img }}" download="Certificate_of_Completion.webp" class="no-print absolute top-8 right-8 bg-indigo-600 text-white p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i data-lucide="download" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="p-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
+                        <p class="text-xs text-slate-400 italic">No certificate uploaded to profile.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Work Samples - LARGE GRID -->
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="briefcase" class="w-4 h-4 text-emerald-500"></i> Samples of Work
+                    </h3>
+                    {% if p.work_samples %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {% for sample in p.work_samples %}
+                        <div class="bg-white border border-slate-200 rounded-2xl p-2 relative group shadow-sm">
+                            <img src="data:image/webp;base64,{{ sample }}" class="w-full aspect-video object-cover rounded-xl">
+                            <a href="data:image/webp;base64,{{ sample }}" download="Work_Sample_{{loop.index}}.webp" class="no-print absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all rounded-2xl">
+                                <i data-lucide="download" class="text-white w-6 h-6"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="p-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
+                        <p class="text-xs text-slate-400 italic">No work samples uploaded to profile.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- DTR SECTION -->
+                <div class="pt-12 border-t border-slate-100">
+                    <h3 class="font-bold text-sm text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="calendar-check" class="w-4 h-4 text-orange-500"></i> Daily Time Record (DTR)
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for dtr in dtr_uploads %}
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 overflow-hidden shadow-sm">
+                            <p class="text-[10px] font-black text-slate-400 uppercase mb-3 text-center">{{ dtr.description }}</p>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                {% if dtr.image_front %}
+                                <div class="aspect-[3/4] bg-white rounded-lg border border-slate-200 overflow-hidden relative group">
+                                    <img src="data:image/webp;base64,{{ dtr.image_front }}" class="w-full h-full object-cover">
+                                    <a href="data:image/webp;base64,{{ dtr.image_front }}" download="DTR_Front_{{dtr.description}}.webp" class="absolute inset-0 bg-orange-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all no-print">
+                                        <i data-lucide="download" class="text-white w-6 h-6"></i>
+                                    </a>
+                                </div>
+                                {% endif %}
+                                {% if dtr.image_back %}
+                                <div class="aspect-[3/4] bg-white rounded-lg border border-slate-200 overflow-hidden relative group">
+                                    <img src="data:image/webp;base64,{{ dtr.image_back }}" class="w-full h-full object-cover">
+                                    <a href="data:image/webp;base64,{{ dtr.image_back }}" download="DTR_Back_{{dtr.description}}.webp" class="absolute inset-0 bg-orange-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all no-print">
+                                        <i data-lucide="download" class="text-white w-6 h-6"></i>
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="copyToast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest opacity-0 pointer-events-none transition-all duration-300 z-[100] shadow-2xl flex items-center gap-3">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+        <span>Text Copied!</span>
     </div>
 
+    <script>
+        lucide.createIcons();
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => showToast());
+        }
+
+        function copyWeeklyLog(index) {
+            const tasks = document.getElementById(`tasks-${index}`).innerText;
+            const skills = document.getElementById(`skills-${index}`).innerText;
+            const know = document.getElementById(`know-${index}`).innerText;
+            const fullText = `WEEKLY TASK:\n${tasks}\n\nCOMPETENCIES:\n${skills}\n\nNEW KNOWLEDGE:\n${know}`;
+            navigator.clipboard.writeText(fullText).then(() => showToast("Weekly Log Data Copied!"));
+        }
+
+        function copyToC() {
+            const list = document.getElementById('toc-data').innerText;
+            navigator.clipboard.writeText(list).then(() => showToast("T.O.C. List Copied!"));
+        }
+
+        function showToast(msg = "Copied to Clipboard") {
+            const toast = document.getElementById('copyToast');
+            toast.querySelector('span').innerText = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100', '-translate-y-4');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                toast.classList.remove('opacity-100', '-translate-y-4');
+            }, 2000);
+        }
+    </script>
 </body>
 </html>

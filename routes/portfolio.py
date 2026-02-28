@@ -1,5 +1,5 @@
 import asyncio
-from quart import Blueprint, render_template, request, redirect, url_for, session
+from quart import Blueprint, render_template, request, redirect, url_for, flash,  session
 from db import get_db
 from datetime import datetime, timedelta
 from util import process_multiple_images
@@ -54,6 +54,13 @@ async def setup_profile():
     
     if request.method == 'POST':
         form = await request.form
+        files = await request.files
+        
+        # Process new document images
+        cert_img = await process_multiple_images(files.getlist('certificate_img'))
+        struct_img = await process_multiple_images(files.getlist('structure_img'))
+        work_samples = await process_multiple_images(files.getlist('work_samples'))
+
         data = {
             'user_id': session['user_id'],
             'full_name': form.get('full_name'),
@@ -62,10 +69,19 @@ async def setup_profile():
             'objectives': form.get('objectives'),
             'hte_name': form.get('hte_name'),
             'supervisor': form.get('supervisor'),
+            # New Guide Fields
+            'coordinator_name': form.get('coordinator_name'),
+            'acknowledgement': form.get('acknowledgement'),
             'company_desc': form.get('company_desc'),
             'dept_desc': form.get('dept_desc'),
             'updated_at': datetime.utcnow()
         }
+
+        # Only update images if new ones are uploaded
+        if cert_img: data['certificate_img'] = cert_img[0]
+        if struct_img: data['structure_img'] = struct_img[0]
+        if work_samples: data['work_samples'] = work_samples # List of images
+
         await db.profiles.update_one({'user_id': session['user_id']}, {'$set': data}, upsert=True)
         return redirect(url_for('portfolio.list_reports'))
 
@@ -356,3 +372,41 @@ async def print_journal():
     p, weekly_logs, reflections, dtr_uploads, tracker_logs = await asyncio.gather(p_task, w_task, r_task, d_task, t_task)
     total_hours = sum([log.get('hours', 0) for log in tracker_logs])
     return await render_template('portfolio/print_journal.html', p=p or {}, weekly_logs=weekly_logs, reflections=reflections, dtr_uploads=dtr_uploads, total_hours=total_hours)
+
+@portfolio_bp.route('/setup/delete-file/<field_name>')
+async def delete_profile_file(field_name):
+    if 'user_id' not in session: 
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    allowed_fields = ['certificate_img', 'structure_img']
+    
+    if field_name in allowed_fields:
+        await db.profiles.update_one(
+            {'user_id': session['user_id']},
+            {'$unset': {field_name: ""}}
+        )
+        flash(f"{field_name.replace('_img', '').title()} deleted successfully", "success")
+    
+    # Use redirect instead of render_template so the view_profile logic runs again
+    return redirect(url_for('portfolio.view_profile'))
+
+@portfolio_bp.route('/setup/delete-work-sample/<int:index>')
+async def delete_work_sample(index):
+    if 'user_id' not in session: 
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    p = await db.profiles.find_one({'user_id': session['user_id']})
+    
+    if p and 'work_samples' in p:
+        samples = p['work_samples']
+        if 0 <= index < len(samples):
+            samples.pop(index)
+            await db.profiles.update_one(
+                {'user_id': session['user_id']},
+                {'$set': {'work_samples': samples}}
+            )
+            flash("Work sample removed", "success")
+            
+    return redirect(url_for('portfolio.view_profile'))
