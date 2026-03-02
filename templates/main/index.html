@@ -18,29 +18,110 @@
             <h1 class="text-4xl font-900 tracking-tightest bg-gradient-to-r from-white via-white to-slate-500 bg-clip-text text-transparent">Overview</h1>
         </div>
         <div class="flex flex-col items-end">
-            <p class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Active Streak</p>
-            <div class="flex items-center gap-2">
-                <span class="text-2xl font-900 text-white">{{ streak }}</span>
-                <i data-lucide="flame" class="w-5 h-5 text-orange-500 fill-orange-500/20"></i>
-            </div>
+            <p class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Logs</p>
+            <span class="text-2xl font-900 text-white">{{ log_count }}</span>
         </div>
     </div>
 
-    <!-- POLICY TOGGLE -->
-    <div class="flex justify-center mb-10">
-        <form method="POST" class="inline-flex p-1 bg-slate-950/50 border border-white/5 rounded-2xl backdrop-blur-xl">
-            <input type="hidden" name="toggle_ot_policy" value="1">
-            <button type="submit" class="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all {{ 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' if allow_ot else 'text-slate-500 hover:text-white' }}">
-                <i data-lucide="zap" class="w-3 h-3"></i> OT Allowed
-            </button>
-            <button type="submit" class="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all {{ 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' if not allow_ot else 'text-slate-500 hover:text-white' }}">
-                <i data-lucide="shield-alert" class="w-3 h-3"></i> Strict 8h Cap
+    <!-- SYSTEM CONFIGURATION PANEL (REFACTORED DESIGN) -->
+<details class="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 mb-10 overflow-hidden group/config shadow-2xl">
+    <summary class="flex items-center justify-between p-7 cursor-pointer list-none outline-none select-none">
+        <div class="flex items-center gap-5">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+                <i data-lucide="sliders" class="w-6 h-6 text-indigo-400"></i>
+            </div>
+            <div>
+                <h2 class="text-sm font-black uppercase tracking-[0.2em] text-white">System Config</h2>
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">
+                    {{ 'Strict 8h Mode' if settings.strict_8h else 'Variable OT Mode' }}
+                </p>
+            </div>
+        </div>
+        <i data-lucide="settings" class="w-5 h-5 text-slate-500 group-open/config:rotate-180 transition-transform"></i>
+    </summary>
+    <div class="px-7 pb-8">
+        <form id="config-form" method="POST" class="space-y-6">
+            <input type="hidden" name="update_configs" value="1">
+            
+            <!-- 1. Primary Goal -->
+            <div class="bg-white/5 rounded-3xl p-5 border border-white/5">
+                <label class="text-[9px] text-indigo-400 font-black uppercase tracking-[0.2em] mb-3 block">Program Goal</label>
+                <div class="flex items-center gap-4">
+                    <input type="number" name="required_hours" value="{{ settings.required_hours }}" class="bg-slate-950 border border-white/10 rounded-xl p-3 text-white font-black text-xl w-32 outline-none focus:border-indigo-500 transition-all">
+                    <span class="text-xs font-black text-slate-500 uppercase">Total Required Hours</span>
+                </div>
+            </div>
+
+            <!-- 2. Master Policy Switch -->
+            <div class="bg-indigo-500/10 rounded-3xl p-1 border border-indigo-500/20">
+                <label class="flex items-center justify-between p-5 cursor-pointer group/master">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                            <i data-lucide="shield-check" class="text-white w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-black text-white uppercase block">Strict 8h Daily Cap</span>
+                            <span class="text-[9px] text-indigo-400/80 font-bold uppercase tracking-tighter">Auto-discards Overtime & Early starts</span>
+                        </div>
+                    </div>
+                    <input type="checkbox" name="strict_8h" id="master-strict" {% if settings.strict_8h %}checked{% endif %} onchange="toggleConfigAvailability()" class="w-6 h-6 rounded-lg accent-indigo-500">
+                </label>
+            </div>
+
+            <!-- 3. Sub-Rules (Locked when Strict is ON) -->
+            <div class="space-y-3" id="sub-rules-container">
+                <p class="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] ml-2">Variable Credit Rules</p>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <!-- Lunch Toggle -->
+                    <label class="config-row flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer transition-all hover:bg-white/[0.08]">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="utensils" class="w-4 h-4 text-slate-400"></i>
+                            <span class="text-[10px] font-black text-white uppercase">Auto-Credit Lunch (12-1)</span>
+                        </div>
+                        <input type="checkbox" name="count_lunch" {% if settings.count_lunch %}checked{% endif %} class="sub-config w-5 h-5 accent-indigo-500">
+                    </label>
+
+                    <!-- Before 8AM Toggle -->
+                    <label class="config-row flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer transition-all hover:bg-white/[0.08]">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="sunrise" class="w-4 h-4 text-slate-400"></i>
+                            <span class="text-[10px] font-black text-white uppercase">Allow Credits Before 8AM</span>
+                        </div>
+                        <input type="checkbox" name="allow_before_7am" {% if settings.allow_before_7am %}checked{% endif %} class="sub-config w-5 h-5 accent-indigo-500">
+                    </label>
+
+                    <!-- After 5PM Toggle -->
+                    <label class="config-row flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer transition-all hover:bg-white/[0.08]">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="moon" class="w-4 h-4 text-slate-400"></i>
+                            <span class="text-[10px] font-black text-white uppercase">Allow OT After 5:00 PM</span>
+                        </div>
+                        <input type="checkbox" name="allow_after_5pm" {% if settings.allow_after_5pm %}checked{% endif %} class="sub-config w-5 h-5 accent-indigo-500">
+                    </label>
+                </div>
+            </div>
+
+            <!-- 4. ETA Calculation Rule (Always Available) -->
+            <div class="space-y-3">
+                <p class="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] ml-2">Calendar Projection</p>
+                <label class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="calendar-days" class="w-4 h-4 text-emerald-400"></i>
+                        <span class="text-[10px] font-black text-white uppercase">Include Weekends in ETA</span>
+                    </div>
+                    <input type="checkbox" name="include_weekends_eta" {% if settings.include_weekends_eta %}checked{% endif %} class="w-5 h-5 accent-emerald-500">
+                </label>
+            </div>
+
+            <button type="submit" class="w-full bg-white text-slate-950 font-900 py-5 rounded-3xl shadow-2xl uppercase text-[11px] tracking-[0.2em] transition-transform active:scale-95">
+                Update Calculation Engine
             </button>
         </form>
     </div>
+</details>
 
     <!-- 1. PROGRESS CARD -->
-    <!-- ADDED ID: stats-container -->
     <div id="stats-container" class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
         <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl"></div>
         <div class="relative z-10">
@@ -68,7 +149,7 @@
                 <div class="space-y-2">
                     <div class="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">
                         <span>Initiated</span>
-                        <span class="text-indigo-400">Target: 486h</span>
+                        <span class="text-indigo-400">Target: {{ settings.required_hours }}h</span>
                     </div>
                     <div class="relative h-3 w-full bg-slate-950 rounded-full border border-white/5 overflow-hidden p-0.5">
                         <div class="h-full bg-gradient-to-r from-indigo-600 to-cyan-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.5)]" 
@@ -78,8 +159,8 @@
 
                 <div class="grid grid-cols-3 gap-3">
                     <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                        <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Raw Total</p>
-                        <p class="text-xs font-bold text-white">{{ total_raw_str }}</p>
+                        <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Total OT</p>
+                        <p class="text-xs font-bold text-indigo-400">{{ ot_total_str }}</p>
                     </div>
                     <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
                         <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Deficit</p>
@@ -150,11 +231,11 @@
                 </div>
                 <div class="group relative bg-white/5 rounded-3xl p-5 border border-white/5">
                     <div class="absolute bottom-full mb-3 left-0 hidden group-hover:block w-full p-2 bg-slate-800 border border-white/10 rounded-lg text-[9px] text-center z-50 normal-case shadow-2xl">
-                        Percentage of your raw hours that were successfully credited.
+                        Total number of unique days you have recorded work.
                     </div>
-                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Efficiency Index</p>
+                    <p class="text-[9px] font-black text-slate-500 uppercase mb-3">Total Sessions</p>
                     <div class="flex items-baseline gap-2">
-                        <span class="text-2xl font-900 text-emerald-400">{{ productivity_idx }}%</span>
+                        <span class="text-2xl font-900 text-emerald-400">{{ session_count }} Days</span>
                     </div>
                 </div>
             </div>
@@ -359,31 +440,43 @@
     });
 
     function checkDateRestrictions() {
-        const dateInput = document.getElementById('log_date');
-        const dateStr = dateInput.value;
-        if (!dateStr) return;
-        const [y, m, d] = dateStr.split('-').map(Number);
-        const selectedDate = new Date(y, m - 1, d);
-        const dayOfWeek = selectedDate.getDay(); 
-        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-        const isHoliday = HOLIDAYS.includes(dateStr);
-        const overlay = document.getElementById('restriction-overlay');
-        const badge = document.getElementById('status-badge');
-        const controls = document.querySelectorAll('.quick-btn');
+    const dateInput = document.getElementById('log_date');
+    const dateStr = dateInput.value;
+    if (!dateStr) return;
 
-        if (isWeekend || isHoliday) {
-            overlay.classList.remove('hidden'); overlay.classList.add('flex');
-            document.getElementById('restriction-msg').innerText = isWeekend ? "Weekend Logging Blocked" : "Public Holiday: Blocked";
-            badge.innerText = isWeekend ? "Weekend" : "Holiday";
-            badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20";
-            badge.classList.remove('hidden');
-            controls.forEach(b => { b.style.opacity = '0.3'; b.style.pointerEvents = 'none'; });
-        } else {
-            overlay.classList.add('hidden'); overlay.classList.remove('flex');
-            badge.classList.add('hidden');
-            controls.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; });
-        }
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const selectedDate = new Date(y, m - 1, d);
+    const dayOfWeek = selectedDate.getDay(); 
+    
+    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6); // 0 = Sun, 6 = Sat
+    const isHoliday = HOLIDAYS.includes(dateStr);
+    
+    // FETCH THE CURRENT SETTING STATE FROM THE CHECKBOX
+    const weekendDutyAllowed = document.querySelector('input[name="include_weekends_eta"]').checked;
+
+    const overlay = document.getElementById('restriction-overlay');
+    const badge = document.getElementById('status-badge');
+    const controls = document.querySelectorAll('.quick-btn');
+
+    // BLOCKED ONLY IF: (It's a weekend AND duty is NOT allowed) OR (It's a holiday)
+    if ((isWeekend && !weekendDutyAllowed) || isHoliday) {
+        overlay.classList.remove('hidden'); 
+        overlay.classList.add('flex');
+        document.getElementById('restriction-msg').innerText = isWeekend ? "Weekend Logging Blocked" : "Public Holiday: Blocked";
+        
+        badge.innerText = isWeekend ? "Weekend" : "Holiday";
+        badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20";
+        badge.classList.remove('hidden');
+        
+        controls.forEach(b => { b.style.opacity = '0.3'; b.style.pointerEvents = 'none'; });
+    } else {
+        // ALLOWED
+        overlay.classList.add('hidden'); 
+        overlay.classList.remove('flex');
+        badge.classList.add('hidden');
+        controls.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; });
     }
+}
 
     function quickFill() {
         document.getElementById('am_in').value = "08:00"; document.getElementById('am_out').value = "12:00";
@@ -444,5 +537,78 @@
     }
 
     document.addEventListener('DOMContentLoaded', checkDateRestrictions);
+
+    // HANDLER FOR CONFIG UPDATES
+// HANDLER FOR CONFIG UPDATES
+document.getElementById('config-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Recalculating History...";
+    
+    const formData = new FormData(e.target);
+    try {
+        // Send config update
+        await fetch(window.location.href, { 
+            method: 'POST', 
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest'} 
+        });
+        
+        // Fetch fresh data
+        const response = await fetch(window.location.href);
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        // Update all data containers
+        ['stats-container', 'intelligence-container', 'eta-container', 'archive-container'].forEach(id => {
+            const el = document.getElementById(id);
+            const newEl = doc.getElementById(id);
+            if(el && newEl) el.innerHTML = newEl.innerHTML;
+        });
+
+        btn.innerText = "History Synced!";
+        setTimeout(() => { btn.innerText = originalText; }, 2000);
+        lucide.createIcons(); // Refresh icons
+    } catch (err) {
+        btn.innerText = "Error Syncing";
+        console.error(err);
+    }
+});
+
+function toggleConfigAvailability() {
+    const isStrict = document.getElementById('master-strict').checked;
+    const subRulesContainer = document.getElementById('sub-rules-container');
+    const subInputs = subRulesContainer.querySelectorAll('.sub-config');
+    const rows = subRulesContainer.querySelectorAll('.config-row');
+
+    if (isStrict) {
+        // Dim and disable the sub-options
+        subRulesContainer.style.opacity = '0.3';
+        subRulesContainer.style.pointerEvents = 'none';
+        subInputs.forEach(input => {
+            input.disabled = true;
+            // Optional: uncheck them visually if you want to show they won't be used
+            // input.checked = false; 
+        });
+        rows.forEach(row => row.classList.add('grayscale'));
+    } else {
+        // Restore availability
+        subRulesContainer.style.opacity = '1';
+        subRulesContainer.style.pointerEvents = 'auto';
+        subInputs.forEach(input => {
+            input.disabled = false;
+        });
+        rows.forEach(row => row.classList.remove('grayscale'));
+    }
+
+    checkDateRestrictions();
+}
+
+// Run once on page load to set initial state
+document.addEventListener('DOMContentLoaded', () => {
+    toggleConfigAvailability();
+});
 </script>
 {% endblock %}

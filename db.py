@@ -27,17 +27,21 @@ def get_db():
     return motor_client[Config.DB_NAME]
 
 # Initialize immediately for collections export
-_db = get_db()
-users_col = _db.users
-logs_col = _db.logs
-profiles_col = _db.profiles
-weekly_logs_col = _db.weekly_logs
-reflections_col = _db.reflections
-dtr_uploads_col = _db.dtr_uploads
+db = get_db()
+
+users_col = db.users
+logs_col = db.logs
+profiles_col = db.profiles
+weekly_logs_col = db.weekly_logs
+reflections_col = db.reflections
+dtr_uploads_col = db.dtr_uploads
+settings_col = db.settings
+
 
 async def create_indexes():
     """Run this on startup to make searches instant"""
     await logs_col.create_index([("user_id", 1), ("log_date", -1)])
     await weekly_logs_col.create_index([("user_id", 1), ("week_end_date", -1)])
     await dtr_uploads_col.create_index([("user_id", 1), ("uploaded_at", -1)])
+    await settings_col.create_index("user_id", unique=True)
     print("⚡ Database Indexes Optimized")

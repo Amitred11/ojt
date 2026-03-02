@@ -1,6 +1,6 @@
 from quart import Blueprint, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from db import users_col, get_db
+from db import users_col, get_db, settings_col
 from bson import ObjectId
 from datetime import datetime
 
@@ -13,34 +13,82 @@ ADMIN_ID = "6979fc7f59b791fd5fcbf90f"
 def is_admin():
     return session.get('user_id') == ADMIN_ID
 
-def calculate_user_total_minutes(logs, allow_ot=True):
-    total_m = 0
-    for log in logs:
-        def get_min(t1, t2):
-            try:
-                if not t1 or not t2: return 0
-                fmt = "%H:%M"
-                d1, d2 = datetime.strptime(t1, fmt), datetime.strptime(t2, fmt)
-                return int((d2 - d1).total_seconds() // 60) if d2 > d1 else 0
-            except: return 0
+# --- HELPER UTILITIES (Synced with Tracker) ---
+def normalize_time(t_str):
+    if not t_str or ":" not in t_str: return None
+    try:
+        parts = t_str.split(':')
+        return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
+    except: return None
 
-        am_m = get_min(log.get('am_in'), log.get('am_out'))
-        pm_m = get_min(log.get('pm_in'), log.get('pm_out'))
+def get_minutes_diff(t_in, t_out):
+    if not t_in or not t_out: return 0
+    try:
+        t1 = datetime.strptime(normalize_time(t_in), "%H:%M")
+        t2 = datetime.strptime(normalize_time(t_out), "%H:%M")
+        return int((t2 - t1).total_seconds() // 60) if t2 > t1 else 0
+    except: return 0
+
+def calculate_ot_minutes(pm_out):
+    if not pm_out: return 0
+    try:
+        out_time = datetime.strptime(normalize_time(pm_out), "%H:%M")
+        threshold = datetime.strptime("17:00", "%H:%M")
+        return int((out_time - threshold).total_seconds() // 60) if out_time > threshold else 0
+    except: return 0
+
+# --- THE OFFICIAL CALCULATION ENGINE (Synced with Tracker) ---
+def calculate_user_official_minutes(logs, settings):
+    total_credited_m = 0
+    
+    # Default rules if user hasn't touched settings
+    strict_8h = settings.get('strict_8h', False)
+    count_lunch = settings.get('count_lunch', False)
+    allow_early = settings.get('allow_before_7am', False)
+    allow_ot = settings.get('allow_after_5pm', True)
+    weekends_allowed = settings.get('include_weekends_eta', False)
+
+    for log in logs:
+        # Check for weekend
+        log_date = log.get('log_date', "")
+        is_weekend = False
+        try:
+            is_weekend = datetime.strptime(log_date, '%Y-%m-%d').weekday() >= 5
+        except: pass
+
+        # Normalization
+        nai, nao, npi, npo = normalize_time(log.get('am_in')), normalize_time(log.get('am_out')), \
+                             normalize_time(log.get('pm_in')), normalize_time(log.get('pm_out'))
+
+        # Early start clipping (8 AM rule)
+        eff_ai = "08:00" if (not allow_early and nai and nai < "08:00") else nai
         
-        # OT Logic: starts at 17:00
-        raw_ot = 0
-        pm_out = log.get('pm_out')
-        if pm_out:
-            try:
-                out_t = datetime.strptime(pm_out, "%H:%M")
-                limit = datetime.strptime("17:00", "%H:%M")
-                if out_t > limit:
-                    raw_ot = int((out_t - limit).total_seconds() // 60)
-            except: pass
-            
-        reg_m = min((am_m + pm_m) - raw_ot, 480) # 480 is DAILY_CAP_MINUTES
-        total_m += (reg_m + raw_ot)
-    return total_m
+        m_am = get_minutes_diff(eff_ai, nao)
+        m_pm = get_minutes_diff(npi, npo)
+        
+        # Lunch logic
+        m_lunch = 0
+        if count_lunch and nao and npi:
+            if "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15":
+                m_lunch = 60
+        
+        # OT logic
+        day_ot = calculate_ot_minutes(npo) if allow_ot else 0
+        
+        # Summation
+        day_total = m_am + m_pm + m_lunch
+        if strict_8h:
+            day_total = min(day_total, 480)
+        else:
+            day_total += day_ot
+
+        # Weekend override
+        if is_weekend and not weekends_allowed:
+            day_total = 0
+
+        total_credited_m += day_total
+        
+    return total_credited_m
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 async def login():
@@ -155,21 +203,33 @@ async def manage_users():
         await flash("Access Denied.", "error")
         return redirect(url_for('tracker.index'))
     
-    # Fetch all users
     users_cursor = users_col.find().sort("username", 1)
     all_users = await users_cursor.to_list(length=500)
+    
+    # Pre-fetch all settings to reduce database queries
+    all_settings_list = await settings_col.find().to_list(length=500)
+    settings_map = {str(s['user_id']): s for s in all_settings_list}
     
     pending = []
     active = []
     
     for u in all_users:
-        # Fetch logs for this specific user
-        # Note: tracker.py stores user_id as a string in logs
-        user_logs = await get_db().logs.find({"user_id": str(u['_id'])}).to_list(None)
+        uid_str = str(u['_id'])
+        u['id_str'] = uid_str
         
-        total_minutes = calculate_user_total_minutes(user_logs)
+        # Get user specific logs
+        user_logs = await get_db().logs.find({"user_id": uid_str}).to_list(None)
+        
+        # Get user specific settings (falls back to empty dict if not found)
+        user_settings = settings_map.get(uid_str, {})
+        
+        # Calculate hours using the Tracker's actual rules
+        total_minutes = calculate_user_official_minutes(user_logs, user_settings)
         u['total_hours'] = round(total_minutes / 60, 1)
-        u['id_str'] = str(u['_id'])
+        
+        # Fetch the required hours from their settings for the progress bar
+        # Fallback to 486 if they haven't set a custom goal
+        u['goal_hours'] = user_settings.get('required_hours', 486)
         
         if u.get('status') == 'pending':
             pending.append(u)

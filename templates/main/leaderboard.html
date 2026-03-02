@@ -11,18 +11,6 @@
     </div>
 </div>
 
-<!-- FEATURE: VIEW TOGGLE -->
-<div class="flex p-1 bg-white/5 rounded-xl border border-white/10 mb-6">
-    <a href="{{ url_for('leaderboard.index', mode='official') }}" 
-       class="flex-1 py-2 text-center rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all {{ 'bg-amber-500 text-amber-950 shadow-lg' if stats.ranking_mode == 'official' else 'text-slate-500 hover:text-slate-300' }}">
-        Official (8h Cap)
-    </a>
-    <a href="{{ url_for('leaderboard.index', mode='grind') }}" 
-       class="flex-1 py-2 text-center rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all {{ 'bg-indigo-500 text-white shadow-lg' if stats.ranking_mode == 'grind' else 'text-slate-500 hover:text-slate-300' }}">
-        Grind (Raw Hours)
-    </a>
-</div>
-
 <!-- CLASS MILESTONE -->
 <div class="mb-6 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-3">
     <div class="flex justify-between items-center mb-1.5 px-1">
@@ -61,7 +49,7 @@
     <button onclick="scrollToMe()" class="px-4 py-1.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase border border-indigo-500/30 whitespace-nowrap">Find Me</button>
 </div>
 
-<!-- PODIUM (Integrity maintained via Python sorting) -->
+<!-- PODIUM -->
 <div class="flex items-end justify-center gap-2 mb-10 pt-8 px-2">
     {% set top3 = leaders[:3] %}
     {% if top3|length >= 2 %}
@@ -75,7 +63,6 @@
         <p class="text-[10px] font-bold text-slate-400 truncate w-full text-center">{{ top3[1].name.split(' ')[0] }}</p>
         <div class="flex flex-col items-center">
             <span class="text-[10px] bg-slate-400/10 text-slate-400 px-2 py-0.5 rounded-full font-bold">{{ top3[1].hours }}h</span>
-            <span class="text-[7px] text-slate-600 font-bold uppercase mt-0.5">{{ top3[1].secondary_hours }}h total</span>
         </div>
     </div>
     {% endif %}
@@ -94,7 +81,6 @@
         <p class="text-xs font-black text-white truncate w-full text-center">{{ top3[0].name.split(' ')[0] }}</p>
         <div class="flex flex-col items-center">
             <span class="text-[10px] bg-amber-400 text-amber-900 px-3 py-1 rounded-full font-black">{{ top3[0].hours }}h</span>
-            <span class="text-[8px] text-amber-500/50 font-black uppercase mt-1">{{ top3[0].secondary_hours }}h total</span>
         </div>
     </div>
     {% endif %}
@@ -110,7 +96,6 @@
         <p class="text-[10px] font-bold text-slate-400 truncate w-full text-center">{{ top3[2].name.split(' ')[0] }}</p>
         <div class="flex flex-col items-center">
             <span class="text-[10px] bg-orange-600/10 text-orange-500 px-2 py-0.5 rounded-full font-bold">{{ top3[2].hours }}h</span>
-            <span class="text-[7px] text-orange-700 font-bold uppercase mt-0.5">{{ top3[2].secondary_hours }}h total</span>
         </div>
     </div>
     {% endif %}
@@ -136,12 +121,10 @@
         <div class="card-glass rounded-2xl p-4 flex items-center gap-4 relative 
             {% if student.is_current_user %} border-indigo-500/50 bg-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.15)] {% endif %}">
             
-            <!-- RANK NUMBER -->
             <div class="w-8 text-center font-black text-xs {{ 'text-amber-400' if student.rank <= 3 else 'text-slate-600' }}">
                 #{{ student.rank }}
             </div>
 
-            <!-- AVATAR BOX -->
             <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-black text-sm relative overflow-hidden
                 {% if student.rank == 1 %} bg-gradient-to-br from-amber-300 to-amber-600 text-white shadow-[0_0_10px_rgba(251,191,36,0.3)]
                 {% elif student.rank == 2 %} bg-slate-300 text-slate-900
@@ -159,13 +142,9 @@
                         {% endif %}
                     </h3>
                     
-                    <!-- FEATURE: DOUBLE HOUR DISPLAY -->
                     <div class="text-right">
                         <span class="text-xs font-black text-white tracking-tighter block">
                             {{ student.hours }}<span class="text-[8px] text-slate-500 ml-0.5 uppercase tracking-normal">Hrs</span>
-                        </span>
-                        <span class="text-[7px] font-bold text-slate-500 uppercase block -mt-1 opacity-60">
-                            {{ student.secondary_hours }}h total
                         </span>
                     </div>
                 </div>
@@ -187,23 +166,20 @@
                                     <p class="text-[10px] text-{{ ach.color }}-400 font-black uppercase tracking-widest">{{ ach.title }}</p>
                                 </div>
                                 <p class="text-[9px] text-slate-300 font-medium leading-relaxed italic">"{{ ach.desc }}"</p>
-                                <div class="absolute top-full left-4 w-2 h-2 bg-slate-950 border-r border-b border-white/10 rotate-45 -mt-1"></div>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
                     
-                    <span class="text-[8px] font-bold text-slate-600 uppercase tracking-widest">
-                        {{ student.log_count }} Logs • {{ student.avg_daily }}h avg
-                    </span>
-                    <span class="text-[8px] font-bold uppercase tracking-widest block mt-0.5 {{ 'text-emerald-500' if student.est_finish == 'Completed' else 'text-indigo-400' }}">
-                        <i data-lucide="flag" class="inline w-2.5 h-2.5 mr-0.5 -mt-0.5"></i>
-                        {% if student.est_finish == 'Completed' %}
-                            Done
-                        {% else %}
-                            ETA: {{ student.est_finish }}
-                        {% endif %}
-                    </span>
+                    <div class="text-right">
+                        <span class="text-[8px] font-bold text-slate-600 uppercase tracking-widest block">
+                            {{ student.log_count }} Logs • {{ student.avg_daily }}h avg
+                        </span>
+                        <span class="text-[8px] font-black uppercase tracking-widest block mt-0.5 {{ 'text-emerald-500' if student.est_finish == 'Completed' else 'text-indigo-400' }}">
+                            <i data-lucide="calendar" class="inline w-2.5 h-2.5 mr-0.5 -mt-0.5"></i>
+                            {{ 'Done' if student.est_finish == 'Completed' else 'ETA: ' ~ student.est_finish }}
+                        </span>
+                    </div>
                 </div>
                 
                 <!-- PROGRESS BAR -->
