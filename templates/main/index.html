@@ -121,59 +121,89 @@
     </div>
 </details>
 
-    <!-- 1. PROGRESS CARD -->
-    <div id="stats-container" class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
-        <div class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl"></div>
-        <div class="relative z-10">
-            <div class="flex justify-between items-start mb-10">
-                <div>
-                    <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-3">Completion Engine</p>
-                    <div class="flex items-baseline gap-1">
-                        <span class="text-6xl font-900 tracking-tighter text-white">{{ total_str.split('h')[0] }}</span>
-                        <span class="text-xl font-800 text-slate-500">HRS</span>
-                        <span class="text-3xl font-800 tracking-tighter text-white ml-3">{{ total_str.split(' ')[1] }}</span>
-                    </div>
-                </div>
-                <div class="relative w-20 h-20 flex items-center justify-center">
-                    <svg class="w-full h-full -rotate-90">
-                        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="6" fill="transparent" class="text-white/5" />
-                        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="6" fill="transparent" 
-                            stroke-dasharray="226.2" stroke-dashoffset="{{ 226.2 - (progress / 100) * 226.2 }}"
-                            class="text-indigo-500 transition-all duration-1000 ease-out" />
-                    </svg>
-                    <span class="absolute inset-0 flex items-center justify-center text-sm font-black text-white">{{ progress|int }}%</span>
+<!-- 1. PROGRESS CARD -->
+<div id="stats-container" class="relative group overflow-hidden bg-slate-950 border border-white/10 rounded-[2.5rem] p-8 sm:p-10 mb-6 shadow-2xl transition-all duration-500">
+    
+    <!-- Action Button (Hidden in Screenshot) -->
+    <button onclick="captureSnippet()" data-html2canvas-ignore="true" class="absolute top-6 right-6 z-30 p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all active:scale-90 flex items-center gap-2">
+        <i data-lucide="camera" class="w-4 h-4"></i>
+        <span class="text-[10px] font-black uppercase tracking-widest pr-1">Snap</span>
+    </button>
+
+    <!-- Background Decorative Elements -->
+    <div class="absolute -right-20 -top-20 w-80 h-80 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+    <div class="absolute -left-20 -bottom-20 w-60 h-60 bg-emerald-600/5 rounded-full blur-[80px] pointer-events-none"></div>
+
+    <div class="relative z-10">
+        <!-- TOP ROW: Heading & Progress Circle -->
+        <div class="flex flex-row justify-between items-center gap-4 mb-12">
+            <div class="min-w-0">
+                <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                    System Status
+                </p>
+                <div class="flex items-baseline flex-wrap gap-x-2">
+                    <span class="text-5xl sm:text-7xl font-900 tracking-tighter text-white leading-none">{{ total_str.split('h')[0] }}</span>
+                    <span class="text-lg font-800 text-slate-500">HRS</span>
+                    <span class="text-3xl font-800 tracking-tighter text-indigo-400">{{ total_str.split(' ')[1] }}</span>
                 </div>
             </div>
-
-            <div class="space-y-6">
-                <div class="space-y-2">
-                    <div class="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">
-                        <span>Initiated</span>
-                        <span class="text-indigo-400">Target: {{ settings.required_hours }}h</span>
-                    </div>
-                    <div class="relative h-3 w-full bg-slate-950 rounded-full border border-white/5 overflow-hidden p-0.5">
-                        <div class="h-full bg-gradient-to-r from-indigo-600 to-cyan-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.5)]" 
-                             style="width: {{ progress }}%"></div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-3">
-                    <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                        <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Total OT</p>
-                        <p class="text-xs font-bold text-indigo-400">{{ ot_total_str }}</p>
-                    </div>
-                    <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                        <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Deficit</p>
-                        <p class="text-xs font-bold text-rose-400">{{ remaining_str }}</p>
-                    </div>
-                    <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                        <p class="text-[8px] text-slate-500 uppercase font-black mb-1">Velocity</p>
-                        <p class="text-xs font-bold text-emerald-400">{{ avg_speed }}h/d</p>
-                    </div>
+            
+            <!-- Progress Circle - FIXED ALIGNMENT -->
+            <div class="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 flex items-center justify-center">
+                <svg class="w-full h-full -rotate-90 drop-shadow-[0_0_12px_rgba(99,102,241,0.2)]" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" stroke="currentColor" stroke-width="10" fill="transparent" class="text-white/5" />
+                    <circle cx="50" cy="50" r="42" stroke="currentColor" stroke-width="10" fill="transparent" 
+                        stroke-dasharray="263.89" stroke-dashoffset="{{ 263.89 - (progress / 100) * 263.89 }}"
+                        stroke-linecap="round"
+                        class="text-indigo-500 transition-all duration-1000 ease-out" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span class="text-xl font-900 text-white leading-none">{{ progress|int }}%</span>
                 </div>
             </div>
         </div>
+
+        <!-- PROGRESS BAR -->
+        <div class="space-y-3 mb-10">
+            <div class="flex justify-between text-[10px] font-black uppercase tracking-widest px-1">
+                <span class="text-slate-500">Completion Track</span>
+                <span class="text-indigo-400">{{ settings.required_hours }}H Target</span>
+            </div>
+            <div class="relative h-3 w-full bg-slate-900 rounded-full border border-white/5 overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-indigo-600 to-cyan-400 rounded-full transition-all duration-1000" 
+                     style="width: {{ progress }}%"></div>
+            </div>
+        </div>
+
+        <!-- STATS GRID -->
+        <div class="grid grid-cols-3 gap-3">
+            <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4">
+                <p class="text-[8px] text-slate-500 uppercase font-black mb-1 tracking-widest">OT</p>
+                <p class="text-xs font-bold text-white">{{ ot_total_str }}</p>
+            </div>
+            <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4">
+                <p class="text-[8px] text-slate-500 uppercase font-black mb-1 tracking-widest">Deficit</p>
+                <p class="text-xs font-bold text-rose-400">{{ remaining_str }}</p>
+            </div>
+            <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4">
+                <p class="text-[8px] text-slate-500 uppercase font-black mb-1 tracking-widest">Velocity</p>
+                <p class="text-xs font-bold text-emerald-400">{{ avg_speed }}h/d</p>
+            </div>
+        </div>
+
+        <!-- WATERMARK (LHA) -->
+        <div class="mt-8 pt-6 border-t border-white/5 hidden snippet-visible">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-lg bg-indigo-500 flex items-center justify-center text-[10px] font-black text-white">L</div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">OJT Log System (LHA)</p>
+                </div>
+                <p class="text-[8px] font-black text-slate-600 uppercase tracking-widest">{{ today }}</p>
+            </div>
+        </div>
     </div>
+</div>
 
     <!-- 2. INTELLIGENCE CENTER -->
     <!-- ADDED ID: intelligence-container -->
@@ -400,7 +430,7 @@
         </div>
     </div>
 </div>
-
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script>
     lucide.createIcons();
     const HOLIDAYS = {{ ph_holidays|tojson }};
@@ -610,5 +640,61 @@ function toggleConfigAvailability() {
 document.addEventListener('DOMContentLoaded', () => {
     toggleConfigAvailability();
 });
+
+async function captureSnippet() {
+    const card = document.getElementById('stats-container');
+    const btn = event.currentTarget;
+    const originalContent = btn.innerHTML;
+    
+    // 1. Loading State
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+    lucide.createIcons();
+
+    try {
+        // 2. Capture with high-fidelity settings
+        const canvas = await html2canvas(card, {
+            backgroundColor: '#020617', // Match Slate-950
+            scale: 3, // High DPI
+            useCORS: true,
+            logging: false,
+            borderRadius: 40,
+            onclone: (clonedDoc) => {
+                const clonedCard = clonedDoc.getElementById('stats-container');
+                
+                // Show the hidden LHA watermark
+                const watermark = clonedCard.querySelector('.snippet-visible');
+                if (watermark) {
+                    watermark.classList.remove('hidden');
+                    watermark.style.display = 'block';
+                }
+
+                // Force layout consistency in the image
+                clonedCard.style.width = '500px'; 
+                clonedCard.style.padding = '50px';
+                clonedCard.style.border = '1px solid rgba(255,255,255,0.1)';
+            }
+        });
+
+        // 3. Trigger Download
+        const image = canvas.toDataURL("image/png", 1.0);
+        const link = document.createElement('a');
+        const timestamp = new Date().toLocaleDateString().replace(/\//g, '-');
+        
+        link.download = `OJT-Status-LHA-${timestamp}.png`;
+        link.href = image;
+        link.click();
+
+        // 4. Feedback
+        btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>';
+    } catch (err) {
+        console.error("Snippet failed:", err);
+        btn.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>';
+    }
+
+    setTimeout(() => {
+        btn.innerHTML = originalContent;
+        lucide.createIcons();
+    }, 2000);
+}
 </script>
 {% endblock %}
