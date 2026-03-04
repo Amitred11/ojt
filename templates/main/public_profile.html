@@ -1,0 +1,121 @@
+{% extends "main/base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 pt-10 pb-32">
+    
+    <!-- Back Button -->
+    <a href="{{ url_for('leaderboard.index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors mb-8 group">
+        <i data-lucide="arrow-left" class="w-4 h-4 transition-transform group-hover:-translate-x-1"></i>
+        <span class="text-[10px] font-black uppercase tracking-widest">Back to Leaderboard</span>
+    </a>
+
+    <!-- Profile Hero -->
+    <div class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full"></div>
+        
+        <div class="flex flex-col items-center text-center relative z-10">
+            <div class="relative mb-6">
+                <!-- Rank Badge -->
+                <div class="absolute -top-2 -left-2 bg-amber-500 text-amber-950 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-4 border-[#020617] z-20">
+                    #{{ rank }}
+                </div>
+                
+                <div class="relative w-28 h-28 rounded-[2.2rem] bg-gradient-to-br from-slate-800 to-slate-900 p-1 shadow-2xl border border-white/10">
+                    <div class="w-full h-full rounded-[1.8rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-5xl font-black text-white">
+                        {{ p.full_name[0] if p.full_name else '?' }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <h2 class="text-3xl font-900 text-white tracking-tightest uppercase italic">
+                    {{ p.full_name or 'Anonymous Student' }}
+                </h2>
+                <p class="text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em]">
+                    {{ p.course or 'Intern' }}
+                </p>
+            </div>
+            
+            <!-- Progress Section -->
+            <div class="w-full mt-8 px-2">
+                <div class="flex justify-between items-end mb-3">
+                    <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Training Completion</p>
+                    <span class="text-2xl font-black text-white tabular-nums">{{ progress }}%</span>
+                </div>
+                <div class="w-full h-3 bg-slate-950 rounded-full p-0.5 border border-white/5 overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-indigo-600 to-cyan-400 rounded-full transition-all duration-1000" style="width: {{ progress }}%"></div>
+                </div>
+            </div>
+
+            <!-- Public Stats Grid -->
+            <div class="grid grid-cols-3 gap-2 w-full mt-10 p-2 bg-slate-950/50 rounded-[1.5rem] border border-white/5">
+                <div class="py-4">
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Sessions</p>
+                    <p class="text-xl font-black text-white">{{ log_count }}</p>
+                </div>
+                <div class="py-4 border-x border-white/5">
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Efficiency</p>
+                    <p class="text-xl font-black text-white">{{ avg_hours }}<span class="text-xs text-slate-500 ml-0.5">h</span></p>
+                </div>
+                <div class="py-4">
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Total Time</p>
+                    <p class="text-xl font-black text-amber-500">{{ total_hours }}<span class="text-xs text-slate-500 ml-0.5">h</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievements Section with Fixed Tooltips -->
+    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
+        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <i data-lucide="award" class="w-4 h-4"></i> Earned Badges
+        </h3>
+        <div class="flex flex-wrap gap-2">
+            {% for ach in achievements %}
+            <div class="group/tooltip relative">
+                <!-- Badge Pill -->
+                <div class="flex items-center gap-2 bg-{{ ach.color }}-500/10 border border-{{ ach.color }}-500/20 px-4 py-2 rounded-xl cursor-help transition-all hover:bg-{{ ach.color }}-500/20">
+                    <i data-lucide="{{ ach.icon }}" class="w-3.5 h-3.5 text-{{ ach.color }}-400"></i>
+                    <span class="text-[10px] font-black text-white uppercase tracking-tight">{{ ach.title }}</span>
+                </div>
+
+                <!-- Tooltip Popup -->
+                <div class="absolute bottom-full left-0 mb-3 hidden group-hover/tooltip:block w-48 bg-slate-950 border border-white/10 p-3 rounded-xl shadow-2xl z-[1000] pointer-events-none backdrop-blur-xl animate-in fade-in slide-in-from-bottom-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-5 h-5 rounded-lg bg-{{ ach.color }}-500/20 flex items-center justify-center">
+                            <i data-lucide="{{ ach.icon }}" class="w-3 h-3 text-{{ ach.color }}-400"></i>
+                        </div>
+                        <p class="text-[10px] text-{{ ach.color }}-400 font-black uppercase tracking-widest">{{ ach.title }}</p>
+                    </div>
+                    <p class="text-[9px] text-slate-300 font-medium leading-relaxed italic">"{{ ach.desc }}"</p>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not achievements %}
+            <p class="text-xs text-slate-600 italic">No badges earned yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Training Venue -->
+    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <i data-lucide="building-2"></i>
+            </div>
+            <div>
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Currently Hosting</p>
+                <p class="text-white font-bold">{{ p.hte_name or 'Host Training Establishment' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-center text-slate-600 text-[9px] uppercase font-black mt-12 tracking-[0.3em]">
+        Verified OJT Portfolio • Digital Identity Secure
+    </p>
+
+</div>
+
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

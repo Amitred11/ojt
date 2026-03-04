@@ -8,17 +8,63 @@ from bson import ObjectId
 from utils.achievements import get_achievements
 from routes.tracker import PH_HOLIDAYS
 import re
-# new
-def is_workday(date_obj):
-    if date_obj.weekday() >= 5: return False
-    if date_obj.strftime('%Y-%m-%d') in PH_HOLIDAYS: return False
-    return True
 
-def get_previous_workday(date_obj):
-    prev = date_obj - timedelta(days=1)
-    while not is_workday(prev):
-        prev -= timedelta(days=1)
-    return prev
+def calculate_credited_minutes(log, settings):
+    """Matches the exact logic used in the Leaderboard route."""
+    def normalize_time(t_str):
+        if not t_str or ":" not in t_str: return None
+        try:
+            parts = t_str.split(':')
+            return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
+        except: return None
+
+    nai = normalize_time(log.get('am_in'))
+    nao = normalize_time(log.get('am_out'))
+    npi = normalize_time(log.get('pm_in'))
+    npo = normalize_time(log.get('pm_out'))
+
+    # Start time logic (e.g., 7am vs 8am)
+    eff_ai = "08:00" if (not settings.get('allow_before_7am') and nai and nai < "08:00") else nai
+    
+    # Calculate durations
+    def get_diff(t1_str, t2_str):
+        if not t1_str or not t2_str: return 0
+        try:
+            t1 = datetime.strptime(t1_str, "%H:%M")
+            t2 = datetime.strptime(t2_str, "%H:%M")
+            return int((t2 - t1).total_seconds() // 60) if t2 > t1 else 0
+        except: return 0
+
+    m_am = get_diff(eff_ai, nao)
+    m_pm = get_diff(npi, npo)
+    
+    # Lunch Logic
+    m_lunch = 60 if (settings.get('count_lunch') and nao and npi and 
+                    "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15") else 0
+    
+    # OT Logic
+    day_ot = 0
+    if settings.get('allow_after_5pm') and npo:
+        try:
+            out_time = datetime.strptime(npo, "%H:%M")
+            threshold = datetime.strptime("17:00", "%H:%M")
+            day_ot = int((out_time - threshold).total_seconds() // 60) if out_time > threshold else 0
+        except: pass
+
+    total = m_am + m_pm + m_lunch
+    
+    if settings.get('strict_8h'):
+        return min(total, 480)
+    
+    return total + day_ot
+
+def normalize_time(t_str):
+    if not t_str or ":" not in t_str: return None
+    try:
+        parts = t_str.split(':')
+        # This ensures "8:30" becomes "08:30", making string comparison ("<") work!
+        return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
+    except: return None
 
 portfolio_bp = Blueprint('portfolio', __name__, url_prefix='/portfolio')
 
@@ -88,126 +134,114 @@ async def setup_profile():
     p = await db.profiles.find_one({'user_id': session['user_id']}) or {}
     return await render_template('portfolio/portfolio_setup.html', p=p)
 
-from datetime import timedelta
-
 # new
+# routes/portfolio.py
+
 @portfolio_bp.route('/user/<user_id>')
 @portfolio_bp.route('/my-profile')
-async def view_profile():
-    if 'user_id' not in session: 
-        return redirect(url_for('auth.login'))
+async def view_profile(user_id=None):
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
     
     db = get_db()
-    target_uid = user_id if user_id else session['user_id']
-    
+    curr_uid = str(session['user_id'])
+    target_uid = user_id if user_id else curr_uid
+    is_owner = (target_uid == curr_uid)
+
+    # 1. Fetch All Data for Ranking (Sync with Leaderboard)
+    all_logs = await db.logs.find({}).to_list(None)
+    all_settings = await db.settings.find({}).to_list(None)
     p = await db.profiles.find_one({'user_id': target_uid}) or {}
-    logs = await db.logs.find({'user_id': target_uid}).sort('log_date', -1).to_list(None)
     
-    p = await db.profiles.find_one({'user_id': uid}) or {}
-    logs = await db.logs.find({'user_id': uid}).sort('log_date', -1).to_list(None)
+    settings_map = {str(s['user_id']): s for s in all_settings}
     
-    # --- INTERNAL LOGIC HELPERS (Matches tracker.py) ---
-    def get_min_diff(t_in, t_out):
-        if not t_in or not t_out: return 0
-        try:
-            t1 = datetime.strptime(t_in, "%H:%M")
-            t2 = datetime.strptime(t_out, "%H:%M")
-            return int((t2 - t1).total_seconds() // 60) if t2 > t1 else 0
-        except: return 0
-
-    def get_ot_min(pm_out):
-        if not pm_out: return 0
-        try:
-            out_time = datetime.strptime(pm_out, "%H:%M")
-            threshold = datetime.strptime("17:00", "%H:%M")
-            return int((out_time - threshold).total_seconds() // 60) if out_time > threshold else 0
-        except: return 0
-    # ---------------------------------------------------
-
-    processed_logs = []
-    total_credited_minutes = 0
+    # 2. Process ALL users to determine Rank (The Leaderboard Logic)
+    user_totals = {} 
+    target_user_logs = []
     
-    for l in logs:
-        # 1. Parse date for the timeline
-        log_dt_str = l['log_date']
-        log_date_obj = datetime.strptime(log_dt_str, '%Y-%m-%d') if isinstance(log_dt_str, str) else log_dt_str
+    # Achievement-specific counters for target user
+    early_logs = 0
+    late_logs = 0
+    weekend_logs = 0
+
+    for log in all_logs:
+        uid = str(log['user_id'])
+        # Get settings or default
+        u_set = settings_map.get(uid, {
+            "strict_8h": False, "count_lunch": False, 
+            "allow_before_7am": False, "allow_after_5pm": True, 
+            "include_weekends_eta": False
+        })
         
-        # 2. RE-CALCULATE credited minutes from raw strings
-        # This ensures old logs follow the 8h cap + OT rule
-        am_m = get_min_diff(l.get('am_in'), l.get('am_out'))
-        pm_m = get_min_diff(l.get('pm_in'), l.get('pm_out'))
-        raw_ot = get_ot_min(l.get('pm_out'))
+        # Calculate minutes using the EXACT same logic as leaderboard
+        credited_m = calculate_credited_minutes(log, u_set)
         
-        # Apply the 8-hour (480 min) cap logic
-        reg_m = min((am_m + pm_m) - raw_ot, 480)
-        credited_m = reg_m + raw_ot
+        # Add to global totals for ranking
+        user_totals[uid] = user_totals.get(uid, 0) + credited_m
         
-        total_credited_minutes += credited_m
-        
-        # Prepare for template display
-        l['log_date_obj'] = log_date_obj
-        l['display_hours'] = round(credited_m / 60, 1)
-        processed_logs.append(l)
+        # If this log belongs to the profile we are viewing, track extra stats
+        if uid == target_uid:
+            log_date_str = log.get('log_date', "")
+            try:
+                log_date_obj = datetime.strptime(log_date_str, '%Y-%m-%d')
+                if log_date_obj.weekday() >= 5: weekend_logs += 1
+            except: 
+                log_date_obj = datetime.now()
 
-    # 3. Final Totals
-    total_hours_numeric = total_credited_minutes / 60
-    log_count = len(processed_logs)
-    avg_daily = round(total_hours_numeric / log_count, 1) if log_count else 0
+            # Early Bird / Night Owl checks
+            nai = normalize_time(log.get('am_in'))
+            npo = normalize_time(log.get('pm_out'))
+            if nai and nai < "08:00": early_logs += 1
+            if npo and npo >= "20:00": late_logs += 1
 
-    # 4. Target & Progress
-    target = 486 
-    if p.get('duration'):
-        digits = re.findall(r'\d+', str(p['duration']))
-        if digits: target = int(digits[0])
-    progress = min(int((total_hours_numeric / target) * 100), 100) if target > 0 else 0
+            log['log_date_obj'] = log_date_obj
+            log['display_hours'] = round(credited_m / 60, 2)
+            target_user_logs.append(log)
 
-    # 5. Leaderboard Rank
-    # For the leaderboard, we still use the stored credited_minutes for efficiency
-    pipeline = [
-        {"$group": {"_id": "$user_id", "total_m": {"$sum": "$credited_minutes"}}}, 
-        {"$match": {"total_m": {"$gt": total_credited_minutes}}}
-    ]
-    higher_users = await db.logs.aggregate(pipeline).to_list(None)
-    rank = len(higher_users) + 1
+    # 3. Determine Rank (Sort everyone by total minutes)
+    sorted_ranking = sorted(user_totals.items(), key=lambda x: x[1], reverse=True)
+    
+    actual_rank = 0
+    for i, (uid, total) in enumerate(sorted_ranking, 1):
+        if uid == target_uid:
+            actual_rank = i
+            break
 
-    # 6. Streak
-    streak_days = 0
-    if processed_logs:
-        log_dates = sorted({l['log_date_obj'].date() for l in processed_logs}, reverse=True)
-        streak_days = 1
-        for i in range(len(log_dates) - 1):
-            expected = get_previous_workday(log_dates[i])
-            if log_dates[i+1] == expected:
-                streak_days += 1
-            else:
-                break
+    # 4. Final Calculations for the Target User
+    total_minutes = user_totals.get(target_uid, 0)
+    total_hours = total_minutes / 60
+    log_count = len(target_user_logs)
+    
+    # Goal logic
+    target_goal = 486
+    progress = min(int((total_hours / target_goal) * 100), 100)
+    avg_daily = round(total_hours / log_count, 1) if log_count > 0 else 0
 
-    # 7. Achievement Stats
+    # 5. Sync Achievements with stats
     stats = {
-        'rank': rank, 
-        'total_hours': total_hours_numeric, 
+        'rank': actual_rank, 
+        'total_hours': total_hours,
         'log_count': log_count,
         'avg_daily': avg_daily, 
-        'progress': progress, 
-        'streak_days': streak_days,
-        'early_logs': sum(1 for l in processed_logs if l.get('am_in') and int(l.get('am_in').split(':')[0]) < 8), 
-        'late_logs': sum(1 for l in processed_logs if l.get('pm_out') and int(l.get('pm_out').split(':')[0]) >= 21), 
-        'max_daily_hours': max([l['display_hours'] for l in processed_logs]) if processed_logs else 0, 
-        'weekend_logs': sum(1 for l in processed_logs if l['log_date_obj'].weekday() >= 5)
+        'progress': progress,
+        'early_logs': early_logs, 
+        'late_logs': late_logs,
+        'weekend_logs': weekend_logs
     }
-    
     achievements = get_achievements(stats)
+    
+    context = {
+        'p': p, 
+        'total_hours': round(total_hours, 2), 
+        'log_count': log_count, 
+        'avg_hours': avg_daily, 
+        'progress': progress, 
+        'achievements': achievements, 
+        'rank': actual_rank,
+        'is_owner': is_owner,
+    }
 
-    return await render_template(
-        'main/profile.html', 
-        p=p, 
-        total_hours=round(total_hours_numeric, 1), 
-        log_count=log_count, 
-        avg_hours=avg_daily, 
-        progress=progress, 
-        recent_activity=processed_logs[:5], 
-        achievements=achievements
-    )
+    template = 'main/profile.html' if is_owner else 'main/public_profile.html'
+    return await render_template(template, **context, recent_activity=target_user_logs[:5])
 
 # --- WEEKLY LOGS ---
 
@@ -392,7 +426,6 @@ async def delete_profile_file(field_name):
         )
         flash(f"{field_name.replace('_img', '').title()} deleted successfully", "success")
     
-    # Use redirect instead of render_template so the view_profile logic runs again
     return redirect(url_for('portfolio.view_profile'))
 
 @portfolio_bp.route('/setup/delete-work-sample/<int:index>')

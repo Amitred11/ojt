@@ -20,7 +20,7 @@ def get_achievements(stats):
         ach.append({"title": "Overtime King", "desc": "Averaging 9.5+ hours. Extreme workflow.", "color": "rose", "icon": "flame"})
     elif avg >= 8:
         ach.append({"title": "Consistent", "desc": "Maintaining a solid 8h/day workflow.", "color": "cyan", "icon": "zap"})
-    elif 7.9 <= avg <= 8.1:
+    elif avg <= 7.9:
         ach.append({"title": "The Perfectionist", "desc": "Hitting the 8-hour mark with surgical precision.", "color": "emerald", "icon": "target"})
     
     if stats.get('max_daily_hours', 0) >= 14:
@@ -28,16 +28,16 @@ def get_achievements(stats):
 
     # 3. Volume & Experience
     logs = stats.get('log_count', 0)
-    if logs >= 200:
-        ach.append({"title": "Godfather", "desc": "200+ logs. You own this company now.", "color": "zinc", "icon": "briefcase"})
-    elif logs >= 150:
-        ach.append({"title": "Grandmaster", "desc": "150+ logs. Unparalleled dedication.", "color": "orange", "icon": "star"})
-    elif logs >= 100:
-        ach.append({"title": "Legend", "desc": "100+ sessions logged. Unstoppable.", "color": "emerald", "icon": "award"})
-    elif logs >= 50:
-        ach.append({"title": "Veteran", "desc": "50+ sessions logged. Serious dedication.", "color": "emerald", "icon": "shield-check"})
+    if logs >= 60:
+        ach.append({"title": "Godfather", "desc": "60+ logs. You own this company now.", "color": "zinc", "icon": "briefcase"})
+    elif logs >= 40:
+        ach.append({"title": "Grandmaster", "desc": "40+ logs. Unparalleled dedication.", "color": "orange", "icon": "star"})
+    elif logs >= 30:
+        ach.append({"title": "Legend", "desc": "30+ sessions logged. Unstoppable.", "color": "emerald", "icon": "award"})
     elif logs >= 10:
-        ach.append({"title": "Rising Star", "desc": "First 10 logs completed.", "color": "blue", "icon": "trending-up"})
+        ach.append({"title": "Veteran", "desc": "10+ sessions logged. Serious dedication.", "color": "emerald", "icon": "shield-check"})
+    elif logs >= 5:
+        ach.append({"title": "Rising Star", "desc": "First 5 logs completed.", "color": "blue", "icon": "trending-up"})
 
     # 4. Milestone Based
     prog = stats.get('progress', 0)
@@ -54,18 +54,7 @@ def get_achievements(stats):
     elif prog >= 25:
         ach.append({"title": "Quarter Century", "desc": "25% of hours completed.", "color": "amber", "icon": "pie-chart"})
 
-    # 5. Streak Based
-    streak = stats.get('streak_days', 0)
-    if streak >= 30:
-        ach.append({"title": "Immovable", "desc": "A full month of perfect attendance.", "color": "fuchsia", "icon": "mountain"})
-    elif streak >= 20:
-        ach.append({"title": "Unbreakable", "desc": "20-day workday streak. Pure discipline.", "color": "red", "icon": "infinity"})
-    elif streak >= 10:
-        ach.append({"title": "The Machine", "desc": "Two weeks of perfect workday attendance.", "color": "violet", "icon": "binary"})
-    elif streak >= 5:
-        ach.append({"title": "Momentum", "desc": "5-day workday streak. Habit formed.", "color": "lime", "icon": "zap"})
-    
-    # 6. Time & Special Grinds
+    # 5. Time & Special Grinds
     early = stats.get('early_logs', 0)
     late = stats.get('late_logs', 0)
     if early >= 30:
@@ -78,7 +67,7 @@ def get_achievements(stats):
     elif late >= 15:
         ach.append({"title": "Last to Leave", "desc": "15 late-night grind sessions.", "color": "purple", "icon": "moon"})
     
-    # 7. Work-Life Balance Logic
+    # 6. Work-Life Balance Logic
     weekends = stats.get('weekend_logs', 0)
     if weekends == 0 and prog >= 20:
         ach.append({"title": "Corporate Pro", "desc": "High progress while strictly keeping weekends for rest.", "color": "teal", "icon": "sun"})
@@ -87,7 +76,7 @@ def get_achievements(stats):
     elif weekends >= 10:
         ach.append({"title": "Weekend Warrior", "desc": "10+ logs recorded on weekends.", "color": "orange", "icon": "swords"})
 
-    # 8. Consistency Logic
+    # 7. Consistency Logic
     if stats.get('total_hours', 0) >= 300 and avg >= 8:
          ach.append({"title": "Iron Pillar", "desc": "Over 300 hours maintained at a high pace.", "color": "stone", "icon": "shield"})
     return ach

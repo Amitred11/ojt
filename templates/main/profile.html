@@ -74,7 +74,7 @@
                 <div class="py-4 border-x border-white/5 hover:bg-white/[0.02] rounded-2xl transition-colors">
                     <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Avg. Daily</p>
                     <p class="text-xl font-black text-white tabular-nums">{{ avg_hours }}<span class="text-xs text-slate-500 ml-0.5">h</span></p>
-                </div>
+                </div>                
                 <div class="py-4 hover:bg-white/[0.02] rounded-2xl transition-colors">
                     <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Total Time</p>
                     <p class="text-xl font-black text-indigo-400 tabular-nums">{{ total_hours }}<span class="text-xs text-slate-500 ml-0.5">h</span></p>
@@ -112,19 +112,37 @@
     {% endif %}
 
     <!-- Achievements Section -->
-    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
-        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Earned Achievements</h3>
-        <div class="flex flex-wrap gap-2">
-            {% for ach in achievements %}
-            <div class="group/tooltip relative">
-                <div class="flex items-center gap-2 bg-{{ ach.color }}-500/10 border border-{{ ach.color }}-500/20 px-4 py-2.5 rounded-xl cursor-help hover:bg-{{ ach.color }}-500/20 transition-all">
-                    <i data-lucide="{{ ach.icon }}" class="w-4 h-4 text-{{ ach.color }}-400"></i>
-                    <span class="text-[11px] font-black text-white uppercase tracking-tight">{{ ach.title }}</span>
-                </div>
+<div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
+    <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Earned Achievements</h3>
+    <div class="flex flex-wrap gap-2">
+        {% for ach in achievements %}
+        <div class="group/tooltip relative">
+            <!-- The Badge -->
+            <div class="flex items-center gap-2 bg-{{ ach.color }}-500/10 border border-{{ ach.color }}-500/20 px-4 py-2.5 rounded-xl cursor-help hover:bg-{{ ach.color }}-500/20 transition-all">
+                <i data-lucide="{{ ach.icon }}" class="w-4 h-4 text-{{ ach.color }}-400"></i>
+                <span class="text-[11px] font-black text-white uppercase tracking-tight">{{ ach.title }}</span>
             </div>
-            {% endfor %}
+
+            <!-- The Tooltip (Visible on Hover) -->
+            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover/tooltip:block w-48 bg-slate-950 border border-white/10 p-3 rounded-xl shadow-2xl z-[1000] pointer-events-none backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2">
+                <!-- Tooltip Header -->
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-6 h-6 rounded-lg bg-{{ ach.color }}-500/20 flex items-center justify-center">
+                        <i data-lucide="{{ ach.icon }}" class="w-3.5 h-3.5 text-{{ ach.color }}-400"></i>
+                    </div>
+                    <p class="text-[10px] text-{{ ach.color }}-400 font-black uppercase tracking-widest">{{ ach.title }}</p>
+                </div>
+                <!-- Tooltip Description -->
+                <p class="text-[10px] text-slate-300 font-medium leading-relaxed italic">
+                    "{{ ach.desc or 'Achievement earned for outstanding performance.' }}"
+                </p>
+                <!-- Tooltip Arrow -->
+                <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-950 border-r border-b border-white/10 rotate-45"></div>
+            </div>
         </div>
+        {% endfor %}
     </div>
+</div>
 
     <!-- Training Environment -->
     <div class="space-y-4">
