@@ -4,10 +4,8 @@ from bson import ObjectId
 from datetime import datetime, date, timedelta
 from utils.achievements import get_achievements
 
-# 1. DEFINE BLUEPRINT FIRST
 leaderboard_bp = Blueprint('leaderboard', __name__)
 
-# Constants
 REQUIRED_HOURS = 486
 PH_HOLIDAYS = [
     "2026-01-01", "2026-02-17", "2026-04-02", "2026-04-03", "2026-04-04", 
@@ -15,7 +13,6 @@ PH_HOLIDAYS = [
     "2026-11-30", "2026-12-08", "2026-12-25", "2026-12-30"
 ]
 
-# --- HELPERS ---
 def normalize_time(t_str):
     if not t_str or ":" not in t_str: return None
     try:
@@ -54,7 +51,6 @@ def calculate_finish_date(remaining_minutes, avg_daily_m):
         loops += 1
     return current_date.strftime("%b %d")
 
-# --- ROUTE ---
 @leaderboard_bp.route("/leaderboard")
 async def index():
     if 'user_id' not in session: 
@@ -62,7 +58,6 @@ async def index():
     
     curr_user_id = str(session['user_id'])
 
-    # Fetch Data
     all_logs = await logs_col.find({}).to_list(None)
     all_profiles = await profiles_col.find({}).to_list(None)
     all_settings = await settings_col.find({}).to_list(None)
@@ -129,10 +124,11 @@ async def index():
         est_finish = calculate_finish_date(rem_m, avg_m)
 
         leaderboard_data.append({
+            "uid": uid, # ADDED UID FOR LINKING
             "name": name, "hours": round(credited_h, 2),
             "sort_val": stats['credited_minutes'], "log_count": stats['log_count'], 
             "avg_daily": avg_daily, "progress": progress, 
-            "achievements": get_achievements({'total_hours': credited_h, 'log_count': stats['log_count'], 'avg_daily': avg_daily, 'progress': progress}),
+            "achievements": [], # Set during ranking loop
             "is_current_user": uid == curr_user_id, "avatar_char": name[0].upper() if name else "?",
             "est_finish": est_finish
         })
@@ -142,6 +138,11 @@ async def index():
     prev_hours, final_data = None, []
     for i, d in enumerate(leaderboard_data, 1):
         d['rank'] = i
+        d['achievements'] = get_achievements({
+            'rank': i, 'total_hours': d['hours'], 
+            'log_count': d['log_count'], 'avg_daily': d['avg_daily'], 
+            'progress': d['progress']
+        })
         d['gap'] = round(prev_hours - d['hours'], 1) if prev_hours else 0
         prev_hours = d['hours']
         final_data.append(d)

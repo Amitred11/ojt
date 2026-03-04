@@ -91,13 +91,17 @@ async def setup_profile():
 from datetime import timedelta
 
 # new
+@portfolio_bp.route('/user/<user_id>')
 @portfolio_bp.route('/my-profile')
 async def view_profile():
     if 'user_id' not in session: 
         return redirect(url_for('auth.login'))
     
     db = get_db()
-    uid = session['user_id']
+    target_uid = user_id if user_id else session['user_id']
+    
+    p = await db.profiles.find_one({'user_id': target_uid}) or {}
+    logs = await db.logs.find({'user_id': target_uid}).sort('log_date', -1).to_list(None)
     
     p = await db.profiles.find_one({'user_id': uid}) or {}
     logs = await db.logs.find({'user_id': uid}).sort('log_date', -1).to_list(None)

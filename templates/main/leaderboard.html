@@ -125,22 +125,26 @@
                 #{{ student.rank }}
             </div>
 
-            <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-black text-sm relative overflow-hidden
-                {% if student.rank == 1 %} bg-gradient-to-br from-amber-300 to-amber-600 text-white shadow-[0_0_10px_rgba(251,191,36,0.3)]
-                {% elif student.rank == 2 %} bg-slate-300 text-slate-900
-                {% elif student.rank == 3 %} bg-orange-500 text-white
-                {% else %} bg-white/5 text-slate-400 border border-white/5 {% endif %}">
-                {{ student.avatar_char }}
-            </div>
+            <a href="{{ url_for('portfolio.view_profile', user_id=student.uid) }}" class="flex-shrink-0">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm relative overflow-hidden
+                    {% if student.rank == 1 %} bg-gradient-to-br from-amber-300 to-amber-600 text-white shadow-[0_0_10px_rgba(251,191,36,0.3)]
+                    {% elif student.rank == 2 %} bg-slate-300 text-slate-900
+                    {% elif student.rank == 3 %} bg-orange-500 text-white
+                    {% else %} bg-white/5 text-slate-400 border border-white/5 {% endif %}">
+                    {{ student.avatar_char }}
+                </div>
+            </a>
 
             <div class="flex-grow min-w-0">
                 <div class="flex justify-between items-center mb-1.5">
-                    <h3 class="font-bold text-xs truncate pr-2 {{ 'text-indigo-300' if student.is_current_user else 'text-slate-200' }}">
-                        {{ student.name }}
-                        {% if student.progress >= 100 %}
-                        <i data-lucide="check-circle-2" class="inline w-3 h-3 text-emerald-400 ml-1"></i>
-                        {% endif %}
-                    </h3>
+                    <a href="{{ url_for('portfolio.view_profile', user_id=student.uid) }}" class="block truncate pr-2 group-hover:underline decoration-indigo-500/30">
+                        <h3 class="font-bold text-xs {{ 'text-indigo-300' if student.is_current_user else 'text-slate-200' }}">
+                            {{ student.name }}
+                            {% if student.progress >= 100 %}
+                            <i data-lucide="check-circle-2" class="inline w-3 h-3 text-emerald-400 ml-1"></i>
+                            {% endif %}
+                        </h3>
+                    </a>
                     
                     <div class="text-right">
                         <span class="text-xs font-black text-white tracking-tighter block">

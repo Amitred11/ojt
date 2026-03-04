@@ -64,7 +64,8 @@ def get_achievements(stats):
         ach.append({"title": "The Machine", "desc": "Two weeks of perfect workday attendance.", "color": "violet", "icon": "binary"})
     elif streak >= 5:
         ach.append({"title": "Momentum", "desc": "5-day workday streak. Habit formed.", "color": "lime", "icon": "zap"})
-     # 6. Time & Special Grinds
+    
+    # 6. Time & Special Grinds
     early = stats.get('early_logs', 0)
     late = stats.get('late_logs', 0)
     if early >= 30:
