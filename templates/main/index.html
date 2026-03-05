@@ -102,17 +102,29 @@
                 </div>
             </div>
 
-            <!-- 4. ETA Calculation Rule (Always Available) -->
-            <div class="space-y-3">
-                <p class="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] ml-2">Calendar Projection</p>
-                <label class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="calendar-days" class="w-4 h-4 text-emerald-400"></i>
-                        <span class="text-[10px] font-black text-white uppercase">Include Weekends in ETA</span>
-                    </div>
-                    <input type="checkbox" name="include_weekends_eta" {% if settings.include_weekends_eta %}checked{% endif %} class="w-5 h-5 accent-emerald-500">
-                </label>
+            <!-- 4. Calendar Projection Rules -->
+<div class="space-y-3">
+    <p class="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] ml-2">Calendar Projection</p>
+    <div class="grid grid-cols-1 gap-2">
+        <!-- Weekends -->
+        <label class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all">
+            <div class="flex items-center gap-3">
+                <i data-lucide="calendar-days" class="w-4 h-4 text-emerald-400"></i>
+                <span class="text-[10px] font-black text-white uppercase">Include Weekends in ETA</span>
             </div>
+            <input type="checkbox" name="include_weekends_eta" onchange="checkDateRestrictions()" {% if settings.include_weekends_eta %}checked{% endif %} class="w-5 h-5 accent-emerald-500">
+        </label>
+        
+        <!-- Holidays -->
+        <label class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all">
+            <div class="flex items-center gap-3">
+                <i data-lucide="palmtree" class="w-4 h-4 text-orange-400"></i>
+                <span class="text-[10px] font-black text-white uppercase">Include Holidays in ETA</span>
+            </div>
+            <input type="checkbox" name="include_holidays_eta" onchange="checkDateRestrictions()" {% if settings.include_holidays_eta %}checked{% endif %} class="w-5 h-5 accent-orange-500">
+        </label>
+    </div>
+</div>
 
             <button type="submit" class="w-full bg-white text-slate-950 font-900 py-5 rounded-3xl shadow-2xl uppercase text-[11px] tracking-[0.2em] transition-transform active:scale-95">
                 Update Calculation Engine
@@ -478,21 +490,29 @@
     const selectedDate = new Date(y, m - 1, d);
     const dayOfWeek = selectedDate.getDay(); 
     
-    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6); // 0 = Sun, 6 = Sat
+    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
     const isHoliday = HOLIDAYS.includes(dateStr);
     
-    // FETCH THE CURRENT SETTING STATE FROM THE CHECKBOX
+    // FETCH THE CURRENT SETTING STATES
     const weekendDutyAllowed = document.querySelector('input[name="include_weekends_eta"]').checked;
+    const holidayDutyAllowed = document.querySelector('input[name="include_holidays_eta"]').checked;
 
     const overlay = document.getElementById('restriction-overlay');
     const badge = document.getElementById('status-badge');
     const controls = document.querySelectorAll('.quick-btn');
 
-    // BLOCKED ONLY IF: (It's a weekend AND duty is NOT allowed) OR (It's a holiday)
-    if ((isWeekend && !weekendDutyAllowed) || isHoliday) {
+    // Logic: Block if (It's weekend AND not allowed) OR (It's holiday AND not allowed)
+    const blockWeekend = isWeekend && !weekendDutyAllowed;
+    const blockHoliday = isHoliday && !holidayDutyAllowed;
+
+    if (blockWeekend || blockHoliday) {
         overlay.classList.remove('hidden'); 
         overlay.classList.add('flex');
-        document.getElementById('restriction-msg').innerText = isWeekend ? "Weekend Logging Blocked" : "Public Holiday: Blocked";
+        
+        let msg = "";
+        if (blockWeekend) msg = "Weekend Logging Blocked";
+        if (blockHoliday) msg = "Public Holiday: Blocked";
+        document.getElementById('restriction-msg').innerText = msg;
         
         badge.innerText = isWeekend ? "Weekend" : "Holiday";
         badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20";
@@ -500,10 +520,18 @@
         
         controls.forEach(b => { b.style.opacity = '0.3'; b.style.pointerEvents = 'none'; });
     } else {
-        // ALLOWED
+        // If it is a weekend/holiday but duty is ALLOWED, we can show a subtle badge but don't block
         overlay.classList.add('hidden'); 
         overlay.classList.remove('flex');
-        badge.classList.add('hidden');
+        
+        if (isWeekend || isHoliday) {
+            badge.innerText = isWeekend ? "Weekend Duty" : "Holiday Duty";
+            badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+        
         controls.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; });
     }
 }

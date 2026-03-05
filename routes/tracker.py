@@ -21,7 +21,8 @@ async def get_user_settings(user_id):
             "count_lunch": False,
             "allow_before_7am": False,
             "allow_after_5pm": True,
-            "include_weekends_eta": False
+            "allow_weekend_duty": False, # Renamed for clarity
+            "allow_holiday_duty": False
         }
     return settings
 
@@ -60,14 +61,14 @@ def calculate_finish_date(remaining_minutes, settings, actual_avg_m):
     if remaining_minutes <= 0: 
         return {"date": "Completed", "days_left": 0, "calendar_days": 0}
     
+    # Projection Pace (minimum 8h if average is too low)
     proj_speed = actual_avg_m if actual_avg_m > 60 else 480 
-    work_days_left = remaining_minutes / proj_speed
     
     current_date = date.today()
     start_date = current_date
     temp_m = remaining_minutes
     
-    max_loops = 1000 
+    max_loops = 2000 
     loops = 0
     
     while temp_m > 0 and loops < max_loops:
@@ -75,18 +76,18 @@ def calculate_finish_date(remaining_minutes, settings, actual_avg_m):
         is_weekend = current_date.weekday() >= 5
         is_holiday = current_date.isoformat() in PH_HOLIDAYS
         
-        # PROJECTION LOGIC: 
-        # We ONLY count weekdays (Mon-Fri) that are not holidays.
-        # If you work a weekend, that is a "bonus" that reduces total hours, 
-        # but the engine will not assume you work EVERY weekend.
-        if not is_holiday and not is_weekend:
+        # PERSISTENT PROJECTION LOGIC:
+        # We ALWAYS skip weekends and holidays for future projection.
+        # This keeps the ETA stable. The date only moves "closer" 
+        # because weekend/holiday logs reduce the 'remaining_minutes' total.
+        if not is_weekend and not is_holiday:
             temp_m -= proj_speed
             
         loops += 1
         
     return {
         "date": current_date.strftime("%b %d, %Y"),
-        "days_left": work_days_left,
+        "days_left": remaining_minutes / proj_speed,
         "calendar_days": (current_date - start_date).days
     }
 
@@ -116,7 +117,8 @@ async def index():
                 "count_lunch": "count_lunch" in form,
                 "allow_before_7am": "allow_before_7am" in form,
                 "allow_after_5pm": "allow_after_5pm" in form,
-                "include_weekends_eta": "include_weekends_eta" in form
+                "allow_weekend_duty": "allow_weekend_duty" in form,
+                "allow_holiday_duty": "allow_holiday_duty" in form
             }
             await settings_col.update_one({"user_id": user_id}, {"$set": settings}, upsert=True)
             # Do NOT return yet, let the code below recalculate everything with the new settings
@@ -145,11 +147,13 @@ async def index():
     processed_logs = []
     
     settings = await get_user_settings(user_id)
-    weekends_allowed = settings.get('include_weekends_eta', False)
+    weekends_allowed = settings.get('allow_weekend_duty', False)
+    holidays_allowed = settings.get('allow_holiday_duty', False)
 
     for rl in raw_logs:
         log_dt = datetime.strptime(rl['log_date'], '%Y-%m-%d')
-        is_weekend = log_dt.weekday() >= 5
+        is_holiday = rl['log_date'] in PH_HOLIDAYS
+        is_weekend = datetime.strptime(rl['log_date'], '%Y-%m-%d').weekday() >= 5
         
         nai = normalize_time(rl.get('am_in'))
         nao = normalize_time(rl.get('am_out'))
@@ -167,7 +171,7 @@ async def index():
         if settings.get('strict_8h'): day_total = min(day_total, 480)
         else: day_total += day_ot
 
-        if is_weekend and not weekends_allowed:
+        if (is_weekend and not weekends_allowed) or (is_holiday and not holidays_allowed):
             day_total = 0
             day_ot = 0
 
