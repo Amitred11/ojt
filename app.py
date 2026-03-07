@@ -20,24 +20,24 @@ app.register_blueprint(tracker_bp)
 app.register_blueprint(portfolio_bp)
 app.register_blueprint(leaderboard_bp)
 
-# Serverless approach: 
-# Instead of before_serving, we run this once at the module level 
-# OR call it inside a route with a check.
+# OPTIMIZED STARTUP: Don't block the user
 @app.before_request
 async def startup():
-    # This is a simple way to ensure indexes are created once per cold start
     if not hasattr(app, 'indexes_created'):
-        await create_indexes()
+        # We use a Task so it runs in the background 
+        # without making the user wait for the DB
+        asyncio.create_task(create_indexes())
         app.indexes_created = True
 
 @app.route("/")
 async def home():
     return redirect(url_for("tracker.index"))
 
-# IMPORTANT: Do not use app.run() for Vercel. 
-# Vercel handles the execution.
+# Manual trigger if you ever need to force index creation
+@app.route("/admin/init-db")
+async def init_db():
+    await create_indexes()
+    return "Database Optimized!"
 
 if __name__ == "__main__":
-    # debug=True for auto-reload and error messages
-    # host='0.0.0.0' allows access from other devices in your network
     app.run(port=5000, debug=True)
