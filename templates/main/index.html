@@ -353,6 +353,51 @@
         </div>
     </div>
 
+    <!-- LIVE PUNCH SYSTEM -->
+<div id="live-tracker" class="bg-indigo-950/30 border border-indigo-500/20 rounded-[2.5rem] p-6 mb-8 backdrop-blur-xl">
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+            <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Live Session Tracker</h2>
+        </div>
+        <p id="live-clock" class="text-xs font-black text-white font-mono"></p>
+    </div>
+
+    <!-- The status values now use Jinja2 to persist after reload -->
+    <div class="grid grid-cols-4 gap-2 mb-6">
+        <div id="status-am_in" class="bg-slate-950/50 border {% if today_log.am_in %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
+            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">AM In</p>
+            <p class="time-val text-xs font-bold text-white">{{ today_log.am_in if today_log.am_in else '--:--' }}</p>
+        </div>
+        <div id="status-am_out" class="bg-slate-950/50 border {% if today_log.am_out %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
+            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">AM Out</p>
+            <p class="time-val text-xs font-bold text-white">{{ today_log.am_out if today_log.am_out else '--:--' }}</p>
+        </div>
+        <div id="status-pm_in" class="bg-slate-950/50 border {% if today_log.pm_in %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
+            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">PM In</p>
+            <p class="time-val text-xs font-bold text-white">{{ today_log.pm_in if today_log.pm_in else '--:--' }}</p>
+        </div>
+        <div id="status-pm_out" class="bg-slate-950/50 border {% if today_log.pm_out %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
+            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">PM Out</p>
+            <p class="time-val text-xs font-bold text-white">{{ today_log.pm_out if today_log.pm_out else '--:--' }}</p>
+        </div>
+    </div>
+
+    <!-- Dynamic Button Text -->
+    <button onclick="handlePunch()" id="punch-btn" 
+        {% if today_log and today_log.pm_out %}disabled{% endif %}
+        class="w-full {% if today_log and today_log.pm_out %}bg-slate-800 text-slate-500 cursor-not-allowed{% else %}bg-indigo-500 hover:bg-indigo-400 text-white{% endif %} font-900 py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3">
+        <i data-lucide="fingerprint" class="w-5 h-5"></i>
+        <span class="uppercase text-xs tracking-widest">
+            {% if not today_log or not today_log.am_in %} Punch AM In
+            {% elif not today_log.am_out %} Punch AM Out
+            {% elif not today_log.pm_in %} Punch PM In
+            {% elif not today_log.pm_out %} Punch PM Out
+            {% else %} Session Completed {% endif %}
+        </span>
+    </button>
+</div>
+
     <!-- 4. LOG FORM -->
     <div class="mb-12" id="log-section">
         <div class="flex flex-col gap-4 mb-5 px-4">
@@ -724,5 +769,57 @@ async function captureSnippet() {
         lucide.createIcons();
     }, 2000);
 }
+
+// 1. Live Clock Function
+function updateClock() {
+    const now = new Date();
+    document.getElementById('live-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+async function handlePunch() {
+    const btn = document.getElementById('punch-btn');
+    const originalContent = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>';
+    lucide.createIcons();
+
+    try {
+        const response = await fetch('/punch', { method: 'POST' });
+        const data = await response.json();
+
+        // Refresh all containers, INCLUDING the live-tracker
+        const refreshRes = await fetch(window.location.href);
+        const html = await refreshRes.text();
+        const doc = (new DOMParser()).parseFromString(html, 'text/html');
+        
+        // ADD 'live-tracker' TO THIS ARRAY
+        ['stats-container', 'intelligence-container', 'eta-container', 'archive-container', 'live-tracker'].forEach(id => {
+            const el = document.getElementById(id);
+            const newEl = doc.getElementById(id);
+            if(el && newEl) el.innerHTML = newEl.innerHTML;
+        });
+
+        lucide.createIcons();
+    } catch (err) {
+        console.error("Punch failed", err);
+    }
+    // Button will be restored by the container refresh
+}
+
+// 3. Optional: Sync the Live Tracker status on page load
+function syncLiveTracker() {
+    const today = new Date().toISOString().split('T')[0];
+    const todayLog = document.querySelector(`.log-item[data-date="${today}"]`);
+    
+    if (todayLog) {
+        // You can extract times from the "archive" log item and show them in the punch card
+        const timeText = todayLog.querySelector('p.text-white').innerText; // e.g., "08:00 - 12:00 • 13:00 - 17:00"
+        // Parsing logic to fill the status boxes...
+    }
+}
+document.addEventListener('DOMContentLoaded', syncLiveTracker);
 </script>
 {% endblock %}

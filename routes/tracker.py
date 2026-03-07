@@ -192,6 +192,9 @@ async def index():
             'am_str': f"{rl.get('am_in')} - {rl.get('am_out')}" if rl.get('am_in') else "-",
             'pm_str': f"{rl.get('pm_in')} - {rl.get('pm_out')}" if rl.get('pm_in') else "-"
         })
+    
+    today_iso = date.today().isoformat()
+    today_log = next((l for l in processed_logs if l['log_date'] == today_iso), None)
 
     target_h = settings.get('required_hours', 486)
     target_m = target_h * 60
@@ -223,7 +226,8 @@ async def index():
         ot_total_str=minutes_to_string(total_ot_m), # REPLACED Raw Total String
         remaining_str=minutes_to_string(rem_m),
         progress=min((total_credited_m/target_m)*100, 100), 
-        today=date.today().isoformat(),
+        today=today_iso,
+        today_log=today_log,
         avg_speed=round(avg_m/60, 1), 
         finish_info=finish_info,
         milestones=milestones, 
@@ -236,6 +240,54 @@ async def index():
         ph_holidays=PH_HOLIDAYS, today_type=get_day_type(date.today().isoformat())
     )
 
+@tracker_bp.route("/punch", methods=["POST"])
+async def punch():
+    if 'user_id' not in session: return {"error": "Unauthorized"}, 401
+    
+    user_id = session['user_id']
+    today_str = date.today().isoformat()
+    now_time = datetime.now().strftime("%H:%M")
+    
+    # Find today's existing log
+    log = await logs_col.find_one({"user_id": user_id, "log_date": today_str})
+    
+    if not log:
+        # First punch of the day
+        new_log = {
+            "user_id": user_id,
+            "log_date": today_str,
+            "am_in": now_time, "am_out": "",
+            "pm_in": "", "pm_out": ""
+        }
+        await logs_col.insert_one(new_log)
+        return {"status": "success", "action": "AM IN", "time": now_time}
+
+    # Sequential Logic: Fill the first empty slot
+    field_to_update = ""
+    action_name = ""
+    
+    if not log.get("am_in"): 
+        field_to_update = "am_in"
+        action_name = "AM IN"
+    elif not log.get("am_out"): 
+        field_to_update = "am_out"
+        action_name = "AM OUT"
+    elif not log.get("pm_in"): 
+        field_to_update = "pm_in"
+        action_name = "PM IN"
+    elif not log.get("pm_out"): 
+        field_to_update = "pm_out"
+        action_name = "PM OUT"
+    else:
+        return {"status": "full", "message": "Day already completed"}
+
+    await logs_col.update_one(
+        {"_id": log["_id"]}, 
+        {"$set": {field_to_update: now_time}}
+    )
+    
+    return {"status": "success", "action": action_name, "time": now_time}
+    
 @tracker_bp.route("/delete_log/<log_id>")
 async def delete_log(log_id):
     if 'user_id' in session: await logs_col.delete_one({"_id": ObjectId(log_id), "user_id": session['user_id']})
