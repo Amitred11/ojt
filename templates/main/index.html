@@ -353,52 +353,63 @@
         </div>
     </div>
 
-    <!-- LIVE PUNCH SYSTEM -->
-<div id="live-tracker" class="bg-indigo-950/30 border border-indigo-500/20 rounded-[2.5rem] p-5 sm:p-6 mb-8 backdrop-blur-xl">
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
-            <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Live Session</h2>
-        </div>
-        <p id="live-clock" class="text-xs font-black text-white font-mono bg-slate-950/50 px-3 py-1 rounded-full border border-white/5"></p>
-    </div>
-
-    <!-- Grid: 2 columns on mobile, 4 on desktop -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
-        <div id="status-am_in" class="bg-slate-950/50 border {% if today_log.am_in %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
-            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">AM In</p>
-            <p class="time-val text-xs font-bold text-white">{{ today_log.am_in if today_log.am_in else '--:--' }}</p>
-        </div>
-        <div id="status-am_out" class="bg-slate-950/50 border {% if today_log.am_out %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
-            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">AM Out</p>
-            <p class="time-val text-xs font-bold text-white">{{ today_log.am_out if today_log.am_out else '--:--' }}</p>
-        </div>
-        <div id="status-pm_in" class="bg-slate-950/50 border {% if today_log.pm_in %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
-            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">PM In</p>
-            <p class="time-val text-xs font-bold text-white">{{ today_log.pm_in if today_log.pm_in else '--:--' }}</p>
-        </div>
-        <div id="status-pm_out" class="bg-slate-950/50 border {% if today_log.pm_out %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
-            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">PM Out</p>
-            <p class="time-val text-xs font-bold text-white">{{ today_log.pm_out if today_log.pm_out else '--:--' }}</p>
+<!-- LOGGING HUB -->
+<div class="mb-12">
+    <!-- MODE SWITCHER -->
+    <div class="flex justify-center mb-6">
+        <div class="bg-slate-950/50 p-1 rounded-2xl border border-white/5 flex gap-1">
+            <button onclick="setLogMode('live')" id="mode-live-btn" class="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-indigo-500 text-white shadow-lg">Automatic</button>
+            <button onclick="setLogMode('manual')" id="mode-manual-btn" class="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500 hover:text-white">Manual</button>
         </div>
     </div>
 
-    <button onclick="handlePunch()" id="punch-btn" 
-        {% if today_log and today_log.pm_out %}disabled{% endif %}
-        class="w-full {% if today_log and today_log.pm_out %}bg-slate-800 text-slate-500{% else %}bg-indigo-500 hover:bg-indigo-400 text-white{% endif %} font-900 py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3">
-        <i data-lucide="fingerprint" class="w-5 h-5"></i>
-        <span class="uppercase text-xs tracking-widest">
-            {% if not today_log or not today_log.am_in %} Punch AM In
-            {% elif not today_log.am_out %} Punch AM Out
-            {% elif not today_log.pm_in %} Punch PM In
-            {% elif not today_log.pm_out %} Punch PM Out
-            {% else %} Day Complete {% endif %}
-        </span>
-    </button>
-</div>
+    <!-- 1. AUTOMATIC MODE (LIVE TRACKER) -->
+    <div id="section-live" class="block animate-in fade-in zoom-in duration-300">
+        <div id="live-tracker" class="bg-indigo-950/30 border border-indigo-500/20 rounded-[2.5rem] p-5 sm:p-6 mb-8 backdrop-blur-xl">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+                    <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Live Session</h2>
+                </div>
+                <p id="live-clock" class="text-xs font-black text-white font-mono bg-slate-950/50 px-3 py-1 rounded-full border border-white/5"></p>
+            </div>
 
-    <!-- 4. LOG FORM -->
-    <div class="mb-12" id="log-section">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+                <div id="status-am_in" class="bg-slate-950/50 border {% if today_log.am_in %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
+                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">AM In</p>
+                    <p class="time-val text-xs font-bold text-white">{{ today_log.am_in if today_log.am_in else '--:--' }}</p>
+                </div>
+                <div id="status-am_out" class="bg-slate-950/50 border {% if today_log.am_out %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
+                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">AM Out</p>
+                    <p class="time-val text-xs font-bold text-white">{{ today_log.am_out if today_log.am_out else '--:--' }}</p>
+                </div>
+                <div id="status-pm_in" class="bg-slate-950/50 border {% if today_log.pm_in %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
+                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">PM In</p>
+                    <p class="time-val text-xs font-bold text-white">{{ today_log.pm_in if today_log.pm_in else '--:--' }}</p>
+                </div>
+                <div id="status-pm_out" class="bg-slate-950/50 border {% if today_log.pm_out %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
+                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">PM Out</p>
+                    <p class="time-val text-xs font-bold text-white">{{ today_log.pm_out if today_log.pm_out else '--:--' }}</p>
+                </div>
+            </div>
+
+            <button onclick="handlePunch()" id="punch-btn" 
+                {% if today_log and today_log.pm_out %}disabled{% endif %}
+                class="w-full {% if today_log and today_log.pm_out %}bg-slate-800 text-slate-500{% else %}bg-indigo-500 hover:bg-indigo-400 text-white{% endif %} font-900 py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3">
+                <i data-lucide="fingerprint" class="w-5 h-5"></i>
+                <span class="uppercase text-xs tracking-widest">
+                    {% if not today_log or not today_log.am_in %} Punch AM In
+                    {% elif not today_log.am_out %} Punch AM Out
+                    {% elif not today_log.pm_in %} Punch PM In
+                    {% elif not today_log.pm_out %} Punch PM Out
+                    {% else %} Day Complete {% endif %}
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. MANUAL MODE (ORIGINAL FORM DESIGN) -->
+    <div id="section-manual" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div class="flex flex-col gap-4 mb-5 px-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -442,6 +453,7 @@
             </div>
         </form>
     </div>
+</div>
 
     <!-- 5. ARCHIVE -->
     <div id="archive-container">
@@ -525,44 +537,60 @@
         }
     });
 
-    function checkDateRestrictions() {
-    // 1. Setup variables
+// --- MODE SWITCHER ---
+function setLogMode(mode) {
+    const liveSec = document.getElementById('section-live');
+    const manualSec = document.getElementById('section-manual');
+    const liveBtn = document.getElementById('mode-live-btn');
+    const manualBtn = document.getElementById('mode-manual-btn');
+
+    if (mode === 'live') {
+        liveSec.classList.remove('hidden');
+        manualSec.classList.add('hidden');
+        liveBtn.className = "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-indigo-500 text-white shadow-lg";
+        manualBtn.className = "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500 hover:text-white";
+    } else {
+        liveSec.classList.add('hidden');
+        manualSec.classList.remove('hidden');
+        manualBtn.className = "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-indigo-500 text-white shadow-lg";
+        liveBtn.className = "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500 hover:text-white";
+    }
+}
+
+// --- RESTRICTION ENGINE (MAINTAINS ORIGINAL DESIGN) ---
+function checkDateRestrictions() {
     const dateInput = document.getElementById('log_date');
-    const dateStr = dateInput.value; // Date from the manual form
-    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format for today
-    
-    // 2. Define the restriction logic as a reusable helper
-    const isRestricted = (targetDateStr) => {
-        const [y, m, d] = targetDateStr.split('-').map(Number);
+    const dateStr = dateInput.value;
+    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+
+    const getBlockStatus = (targetDate) => {
+        const [y, m, d] = targetDate.split('-').map(Number);
         const dateObj = new Date(y, m - 1, d);
-        const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 6 = Saturday
-        
+        const dayOfWeek = dateObj.getDay(); 
         const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-        const isHoliday = HOLIDAYS.includes(targetDateStr);
+        const isHoliday = HOLIDAYS.includes(targetDate);
         
-        // Match these IDs with your checkboxes
         const weekendAllowed = document.querySelector('input[name="allow_weekend_duty"]').checked;
         const holidayAllowed = document.querySelector('input[name="allow_holiday_duty"]').checked;
 
         const blockWeekend = isWeekend && !weekendAllowed;
         const blockHoliday = isHoliday && !holidayAllowed;
-        
-        return { blocked: blockWeekend || blockHoliday, type: isWeekend ? 'Weekend' : 'Holiday' };
+
+        return { blocked: blockWeekend || blockHoliday, type: isWeekend ? "Weekend" : "Holiday" };
     };
 
-    // 3. Handle MANUAL FORM Restrictions (The Date Picker)
+    // 1. ORIGINAL MANUAL FORM RESTRICTIONS
     if (dateStr) {
-        const manualCheck = isRestricted(dateStr);
+        const status = getBlockStatus(dateStr);
         const overlay = document.getElementById('restriction-overlay');
         const badge = document.getElementById('status-badge');
         const controls = document.querySelectorAll('.quick-btn');
 
-        if (manualCheck.blocked) {
+        if (status.blocked) {
             overlay.classList.remove('hidden'); 
             overlay.classList.add('flex');
-            document.getElementById('restriction-msg').innerText = `${manualCheck.type} Logging Blocked`;
-            
-            badge.innerText = manualCheck.type;
+            document.getElementById('restriction-msg').innerText = `${status.type} Logging Blocked`;
+            badge.innerText = status.type;
             badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20";
             badge.classList.remove('hidden');
             controls.forEach(b => { b.style.opacity = '0.3'; b.style.pointerEvents = 'none'; });
@@ -574,21 +602,19 @@
         }
     }
 
-    // 4. Handle LIVE PUNCH Button Restrictions (Check Today)
+    // 2. LIVE PUNCH BUTTON RESTRICTIONS
     const punchBtn = document.getElementById('punch-btn');
     if (punchBtn) {
-        const todayCheck = isRestricted(todayStr);
-        
-        if (todayCheck.blocked) {
+        const todayStatus = getBlockStatus(todayStr);
+        if (todayStatus.blocked) {
             punchBtn.disabled = true;
-            punchBtn.className = "w-full bg-slate-800 text-slate-500 font-900 py-4 rounded-2xl flex items-center justify-center gap-3 cursor-not-allowed opacity-50";
-            punchBtn.querySelector('span').innerText = `${todayCheck.type} Duty Restricted`;
+            punchBtn.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
+            punchBtn.querySelector('span').innerText = "Logging Restricted Today";
         } else {
-            // Only re-enable if the day isn't already fully completed
             const isComplete = document.querySelector('#status-pm_out .time-val').innerText !== '--:--';
             if (!isComplete) {
                 punchBtn.disabled = false;
-                punchBtn.className = "w-full bg-indigo-500 hover:bg-indigo-400 text-white font-900 py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3";
+                punchBtn.classList.remove('opacity-50', 'grayscale', 'cursor-not-allowed');
             }
         }
     }
@@ -614,6 +640,7 @@
     }
 
     function editLog(id, date, amIn, amOut, pmIn, pmOut) {
+        setLogMode('manual');
         document.getElementById('log_id').value = id;
         document.getElementById('log_date').value = date;
         document.getElementById('am_in').value = amIn;
@@ -793,36 +820,39 @@ updateClock();
 
 async function handlePunch() {
     const btn = document.getElementById('punch-btn');
-    const originalContent = btn.innerHTML;
-    
     btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>';
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
     lucide.createIcons();
 
     try {
-        const response = await fetch('/punch', { method: 'POST' });
-        const data = await response.json();
-
-        // Refresh all containers, INCLUDING the live-tracker
-        const refreshRes = await fetch(window.location.href);
-        const html = await refreshRes.text();
+        await fetch('/punch', { method: 'POST' });
+        const response = await fetch(window.location.href);
+        const html = await response.text();
         const doc = (new DOMParser()).parseFromString(html, 'text/html');
-        
-        // ADD 'live-tracker' TO THIS ARRAY
-        ['stats-container', 'intelligence-container', 'eta-container', 'archive-container', 'live-tracker'].forEach(id => {
+
+        ['stats-container', 'intelligence-container', 'eta-container', 'archive-container', 'section-live'].forEach(id => {
             const el = document.getElementById(id);
-            const newEl = doc.getElementById(id);
-            if(el && newEl) el.innerHTML = newEl.innerHTML;
+            if(el) el.innerHTML = doc.getElementById(id).innerHTML;
         });
 
         lucide.createIcons();
-        checkDateRestrictions();
+        checkDateRestrictions(); 
     } catch (err) {
-        console.error("Punch failed", err);
+        console.error(err);
     }
-    // Button will be restored by the container refresh
 }
 
+// Ensure clock and initial restrictions run
+document.addEventListener('DOMContentLoaded', () => {
+    updateClock();
+    checkDateRestrictions();
+});
+
+// Run on boot
+document.addEventListener('DOMContentLoaded', () => {
+    updateClock();
+    checkDateRestrictions();
+});
 // 3. Optional: Sync the Live Tracker status on page load
 function syncLiveTracker() {
     const today = new Date().toISOString().split('T')[0];
