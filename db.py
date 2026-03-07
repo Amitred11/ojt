@@ -36,6 +36,7 @@ weekly_logs_col = db.weekly_logs
 reflections_col = db.reflections
 dtr_uploads_col = db.dtr_uploads
 settings_col = db.settings
+notifications_col = db.notifications
 
 
 async def create_indexes():
@@ -44,4 +45,5 @@ async def create_indexes():
     await weekly_logs_col.create_index([("user_id", 1), ("week_end_date", -1)])
     await dtr_uploads_col.create_index([("user_id", 1), ("uploaded_at", -1)])
     await settings_col.create_index("user_id", unique=True)
+    await notifications_col.create_index([("target_uid", 1), ("created_at", -1)])
     print("⚡ Database Indexes Optimized")

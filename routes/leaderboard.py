@@ -1,8 +1,8 @@
-from quart import Blueprint, render_template, session, redirect, url_for, request
-from db import logs_col, users_col, profiles_col, settings_col
+from quart import Blueprint, render_template, session, redirect, url_for, request, jsonify
+from db import logs_col, users_col, profiles_col, settings_col, notifications_col
 from bson import ObjectId
 from datetime import datetime, date, timedelta
-from utils.achievements import get_achievements
+from utils.achievements import get_achievements 
 
 leaderboard_bp = Blueprint('leaderboard', __name__)
 
@@ -51,13 +51,41 @@ def calculate_finish_date(remaining_minutes, avg_daily_m):
         loops += 1
     return current_date.strftime("%b %d")
 
+@leaderboard_bp.route("/leaderboard/social", methods=["POST"])
+async def social_interaction():
+    if 'user_id' not in session:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    
+    data = await request.get_json()
+    sender_id = str(session['user_id'])
+    target_uid = data.get('target_uid')
+    action_type = data.get('type') # 'cheer' or 'nudge'
+
+    if not target_uid or sender_id == target_uid:
+        return jsonify({"status": "error", "message": "Invalid target"}), 400
+
+    # Get sender name for the notification
+    sender_profile = await profiles_col.find_one({"user_id": ObjectId(sender_id)})
+    sender_name = sender_profile.get('full_name', 'Someone') if sender_profile else "Someone"
+
+    # Save interaction
+    await notifications_col.insert_one({
+        "sender_id": sender_id,
+        "sender_name": sender_name,
+        "target_uid": target_uid,
+        "type": action_type,
+        "created_at": datetime.utcnow(),
+        "is_read": False
+    })
+
+    return jsonify({"status": "success", "type": action_type})
+
 @leaderboard_bp.route("/leaderboard")
 async def index():
     if 'user_id' not in session: 
         return redirect(url_for('auth.login'))
     
     curr_user_id = str(session['user_id'])
-
     all_logs = await logs_col.find({}).to_list(None)
     all_profiles = await profiles_col.find({}).to_list(None)
     all_settings = await settings_col.find({}).to_list(None)
@@ -66,26 +94,18 @@ async def index():
     settings_map = {str(s['user_id']): s for s in all_settings}
     
     user_stats = {}
-
     for log in all_logs:
         uid = str(log.get('user_id'))
         if uid not in user_stats:
             user_stats[uid] = {'credited_minutes': 0, 'log_count': 0}
         
-        u_set = settings_map.get(uid, {
-            "strict_8h": False, "count_lunch": False, 
-            "allow_before_7am": False, "allow_after_5pm": True, "include_weekends_eta": False
-        })
-
+        u_set = settings_map.get(uid, {"strict_8h": False, "count_lunch": False, "allow_before_7am": False, "allow_after_5pm": True, "include_weekends_eta": False})
         log_date = log.get('log_date', "")
         is_weekend = False
-        try:
-            is_weekend = datetime.strptime(log_date, '%Y-%m-%d').weekday() >= 5
+        try: is_weekend = datetime.strptime(log_date, '%Y-%m-%d').weekday() >= 5
         except: pass
 
-        nai, nao, npi, npo = normalize_time(log.get('am_in')), normalize_time(log.get('am_out')), \
-                             normalize_time(log.get('pm_in')), normalize_time(log.get('pm_out'))
-
+        nai, nao, npi, npo = normalize_time(log.get('am_in')), normalize_time(log.get('am_out')), normalize_time(log.get('pm_in')), normalize_time(log.get('pm_out'))
         eff_ai = "08:00" if (not u_set.get('allow_before_7am') and nai and nai < "08:00") else nai
         
         m_am = get_minutes_diff(eff_ai, nao)
@@ -94,56 +114,44 @@ async def index():
         day_ot = calculate_ot_minutes(npo) if u_set.get('allow_after_5pm') else 0
         
         day_credited = m_am + m_pm + m_lunch
-        if u_set.get('strict_8h'):
-            day_credited = min(day_credited, 480)
-        else:
-            day_credited += day_ot
+        if u_set.get('strict_8h'): day_credited = min(day_credited, 480)
+        else: day_credited += day_ot
             
-        if is_weekend and not u_set.get('include_weekends_eta'):
-            day_credited = 0
-
+        if is_weekend and not u_set.get('include_weekends_eta'): day_credited = 0
         user_stats[uid]['credited_minutes'] += day_credited
         if day_credited > 0: user_stats[uid]['log_count'] += 1
 
     leaderboard_data = []
     total_collective_minutes = 0
     finishers_count = 0
+    curr_user_final_hours = 0
 
     for uid, stats in user_stats.items():
         name = profile_map.get(uid, "Unknown Student")
         credited_h = stats['credited_minutes'] / 60
-        
         total_collective_minutes += stats['credited_minutes']
         if credited_h >= REQUIRED_HOURS: finishers_count += 1
+        if uid == curr_user_id: curr_user_final_hours = credited_h
         
         progress = min(int((stats['credited_minutes'] / (REQUIRED_HOURS * 60)) * 100), 100)
         avg_daily = round(credited_h / stats['log_count'], 1) if stats['log_count'] > 0 else 0
-        
         rem_m = max(0, (REQUIRED_HOURS * 60) - stats['credited_minutes'])
         avg_m = stats['credited_minutes'] / stats['log_count'] if stats['log_count'] > 0 else 480
         est_finish = calculate_finish_date(rem_m, avg_m)
 
         leaderboard_data.append({
-            "uid": uid, # ADDED UID FOR LINKING
-            "name": name, "hours": round(credited_h, 2),
+            "uid": uid, "name": name, "hours": round(credited_h, 2),
             "sort_val": stats['credited_minutes'], "log_count": stats['log_count'], 
-            "avg_daily": avg_daily, "progress": progress, 
-            "achievements": [], # Set during ranking loop
-            "is_current_user": uid == curr_user_id, "avatar_char": name[0].upper() if name else "?",
-            "est_finish": est_finish
+            "avg_daily": avg_daily, "progress": progress, "is_current_user": uid == curr_user_id, 
+            "avatar_char": name[0].upper() if name else "?", "est_finish": est_finish
         })
 
     leaderboard_data.sort(key=lambda x: x['sort_val'], reverse=True)
-
     prev_hours, final_data = None, []
     for i, d in enumerate(leaderboard_data, 1):
         d['rank'] = i
-        d['achievements'] = get_achievements({
-            'rank': i, 'total_hours': d['hours'], 
-            'log_count': d['log_count'], 'avg_daily': d['avg_daily'], 
-            'progress': d['progress']
-        })
-        d['gap'] = round(prev_hours - d['hours'], 1) if prev_hours else 0
+        d['achievements'] = get_achievements({'rank': i, 'total_hours': d['hours'], 'log_count': d['log_count'], 'avg_daily': d['avg_daily'], 'progress': d['progress']})
+        d['gap'] = round(prev_hours - d['hours'], 1) if prev_hours is not None else 0
         prev_hours = d['hours']
         final_data.append(d)
 
@@ -154,7 +162,8 @@ async def index():
         "total_hours": round(total_collective_minutes / 60, 1),
         "finishers": finishers_count, "total_students": total_students,
         "class_progress": min(int((total_collective_minutes / class_goal_minutes) * 100), 100) if class_goal_minutes > 0 else 0,
-        "velocity": round((total_collective_minutes / 60) / total_students, 1) if total_students > 0 else 0
+        "velocity": round((total_collective_minutes / 60) / total_students, 1) if total_students > 0 else 0,
+        "user_hours": round(curr_user_final_hours, 1)
     }
 
     return await render_template("main/leaderboard.html", leaders=final_data, stats=global_stats)
