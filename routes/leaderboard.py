@@ -127,6 +127,13 @@ async def index():
         if log_date >= seven_days_ago:
             weekly_gains[uid] = weekly_gains.get(uid, 0) + day_credited
 
+    mvp_data = {"name": "No MVP yet", "gain": 0}
+    if weekly_gains:
+        mvp_uid = max(weekly_gains, key=weekly_gains.get)
+        mvp_data = {
+            "name": profile_map.get(mvp_uid, "Unknown"),
+            "gain": round(weekly_gains[mvp_uid] / 60, 1)
+        }
     leaderboard_data = []
     total_collective_minutes = 0
     finishers_count = 0
