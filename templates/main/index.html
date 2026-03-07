@@ -112,7 +112,7 @@
                 <i data-lucide="calendar-days" class="w-4 h-4 text-emerald-400"></i>
                 <span class="text-[10px] font-black text-white uppercase">Include Weekends in ETA</span>
             </div>
-            <input type="checkbox" name="include_weekends_eta" onchange="checkDateRestrictions()" {% if settings.include_weekends_eta %}checked{% endif %} class="w-5 h-5 accent-emerald-500">
+            <input type="checkbox" name="allow_weekend_duty" id="cfg-weekend" onchange="checkDateRestrictions()" {% if settings.allow_weekend_duty %}checked{% endif %} class="w-5 h-5 accent-emerald-500">
         </label>
         
         <!-- Holidays -->
@@ -121,7 +121,7 @@
                 <i data-lucide="palmtree" class="w-4 h-4 text-orange-400"></i>
                 <span class="text-[10px] font-black text-white uppercase">Include Holidays in ETA</span>
             </div>
-            <input type="checkbox" name="include_holidays_eta" onchange="checkDateRestrictions()" {% if settings.include_holidays_eta %}checked{% endif %} class="w-5 h-5 accent-orange-500">
+            <input type="checkbox" name="allow_holiday_duty" id="cfg-holiday" onchange="checkDateRestrictions()" {% if settings.allow_holiday_duty %}checked{% endif %} class="w-5 h-5 accent-orange-500">
         </label>
     </div>
 </div>
@@ -236,7 +236,7 @@
         <div class="px-7 pb-8 space-y-8">
             
             <!-- Projections -->
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="group relative bg-white/5 rounded-3xl p-5 border border-white/5">
                     <div class="absolute bottom-full mb-3 left-0 hidden group-hover:block w-full p-2 bg-slate-800 border border-white/10 rounded-lg text-[9px] text-center z-50 normal-case shadow-2xl">
                         Calculated work shifts remaining based on your current velocity.
@@ -258,7 +258,7 @@
             </div>
 
             <!-- Pulse and Efficiency -->
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="group relative bg-white/5 rounded-3xl p-5 border border-white/5">
                     <div class="absolute bottom-full mb-3 left-0 hidden group-hover:block w-full p-2 bg-slate-800 border border-white/10 rounded-lg text-[9px] text-center z-50 normal-case shadow-2xl">
                         Compares your last 5 logs to your overall speed. 
@@ -354,17 +354,17 @@
     </div>
 
     <!-- LIVE PUNCH SYSTEM -->
-<div id="live-tracker" class="bg-indigo-950/30 border border-indigo-500/20 rounded-[2.5rem] p-6 mb-8 backdrop-blur-xl">
+<div id="live-tracker" class="bg-indigo-950/30 border border-indigo-500/20 rounded-[2.5rem] p-5 sm:p-6 mb-8 backdrop-blur-xl">
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-3">
             <div class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
-            <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Live Session Tracker</h2>
+            <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Live Session</h2>
         </div>
-        <p id="live-clock" class="text-xs font-black text-white font-mono"></p>
+        <p id="live-clock" class="text-xs font-black text-white font-mono bg-slate-950/50 px-3 py-1 rounded-full border border-white/5"></p>
     </div>
 
-    <!-- The status values now use Jinja2 to persist after reload -->
-    <div class="grid grid-cols-4 gap-2 mb-6">
+    <!-- Grid: 2 columns on mobile, 4 on desktop -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         <div id="status-am_in" class="bg-slate-950/50 border {% if today_log.am_in %}border-indigo-500/50 bg-indigo-500/5{% else %}border-white/5{% endif %} p-3 rounded-2xl text-center transition-all">
             <p class="text-[8px] font-black text-slate-500 uppercase mb-1">AM In</p>
             <p class="time-val text-xs font-bold text-white">{{ today_log.am_in if today_log.am_in else '--:--' }}</p>
@@ -383,17 +383,16 @@
         </div>
     </div>
 
-    <!-- Dynamic Button Text -->
     <button onclick="handlePunch()" id="punch-btn" 
         {% if today_log and today_log.pm_out %}disabled{% endif %}
-        class="w-full {% if today_log and today_log.pm_out %}bg-slate-800 text-slate-500 cursor-not-allowed{% else %}bg-indigo-500 hover:bg-indigo-400 text-white{% endif %} font-900 py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3">
+        class="w-full {% if today_log and today_log.pm_out %}bg-slate-800 text-slate-500{% else %}bg-indigo-500 hover:bg-indigo-400 text-white{% endif %} font-900 py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3">
         <i data-lucide="fingerprint" class="w-5 h-5"></i>
         <span class="uppercase text-xs tracking-widest">
             {% if not today_log or not today_log.am_in %} Punch AM In
             {% elif not today_log.am_out %} Punch AM Out
             {% elif not today_log.pm_in %} Punch PM In
             {% elif not today_log.pm_out %} Punch PM Out
-            {% else %} Session Completed {% endif %}
+            {% else %} Day Complete {% endif %}
         </span>
     </button>
 </div>
@@ -527,57 +526,71 @@
     });
 
     function checkDateRestrictions() {
+    // 1. Setup variables
     const dateInput = document.getElementById('log_date');
-    const dateStr = dateInput.value;
-    if (!dateStr) return;
-
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const selectedDate = new Date(y, m - 1, d);
-    const dayOfWeek = selectedDate.getDay(); 
+    const dateStr = dateInput.value; // Date from the manual form
+    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format for today
     
-    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-    const isHoliday = HOLIDAYS.includes(dateStr);
-    
-    // FETCH THE CURRENT SETTING STATES
-    const weekendDutyAllowed = document.querySelector('input[name="include_weekends_eta"]').checked;
-    const holidayDutyAllowed = document.querySelector('input[name="include_holidays_eta"]').checked;
+    // 2. Define the restriction logic as a reusable helper
+    const isRestricted = (targetDateStr) => {
+        const [y, m, d] = targetDateStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 6 = Saturday
+        
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const isHoliday = HOLIDAYS.includes(targetDateStr);
+        
+        // Match these IDs with your checkboxes
+        const weekendAllowed = document.querySelector('input[name="allow_weekend_duty"]').checked;
+        const holidayAllowed = document.querySelector('input[name="allow_holiday_duty"]').checked;
 
-    const overlay = document.getElementById('restriction-overlay');
-    const badge = document.getElementById('status-badge');
-    const controls = document.querySelectorAll('.quick-btn');
+        const blockWeekend = isWeekend && !weekendAllowed;
+        const blockHoliday = isHoliday && !holidayAllowed;
+        
+        return { blocked: blockWeekend || blockHoliday, type: isWeekend ? 'Weekend' : 'Holiday' };
+    };
 
-    // Logic: Block if (It's weekend AND not allowed) OR (It's holiday AND not allowed)
-    const blockWeekend = isWeekend && !weekendDutyAllowed;
-    const blockHoliday = isHoliday && !holidayDutyAllowed;
+    // 3. Handle MANUAL FORM Restrictions (The Date Picker)
+    if (dateStr) {
+        const manualCheck = isRestricted(dateStr);
+        const overlay = document.getElementById('restriction-overlay');
+        const badge = document.getElementById('status-badge');
+        const controls = document.querySelectorAll('.quick-btn');
 
-    if (blockWeekend || blockHoliday) {
-        overlay.classList.remove('hidden'); 
-        overlay.classList.add('flex');
-        
-        let msg = "";
-        if (blockWeekend) msg = "Weekend Logging Blocked";
-        if (blockHoliday) msg = "Public Holiday: Blocked";
-        document.getElementById('restriction-msg').innerText = msg;
-        
-        badge.innerText = isWeekend ? "Weekend" : "Holiday";
-        badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20";
-        badge.classList.remove('hidden');
-        
-        controls.forEach(b => { b.style.opacity = '0.3'; b.style.pointerEvents = 'none'; });
-    } else {
-        // If it is a weekend/holiday but duty is ALLOWED, we can show a subtle badge but don't block
-        overlay.classList.add('hidden'); 
-        overlay.classList.remove('flex');
-        
-        if (isWeekend || isHoliday) {
-            badge.innerText = isWeekend ? "Weekend Duty" : "Holiday Duty";
-            badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        if (manualCheck.blocked) {
+            overlay.classList.remove('hidden'); 
+            overlay.classList.add('flex');
+            document.getElementById('restriction-msg').innerText = `${manualCheck.type} Logging Blocked`;
+            
+            badge.innerText = manualCheck.type;
+            badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20";
             badge.classList.remove('hidden');
+            controls.forEach(b => { b.style.opacity = '0.3'; b.style.pointerEvents = 'none'; });
         } else {
+            overlay.classList.add('hidden'); 
+            overlay.classList.remove('flex');
             badge.classList.add('hidden');
+            controls.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; });
         }
+    }
+
+    // 4. Handle LIVE PUNCH Button Restrictions (Check Today)
+    const punchBtn = document.getElementById('punch-btn');
+    if (punchBtn) {
+        const todayCheck = isRestricted(todayStr);
         
-        controls.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; });
+        if (todayCheck.blocked) {
+            punchBtn.disabled = true;
+            punchBtn.className = "w-full bg-slate-800 text-slate-500 font-900 py-4 rounded-2xl flex items-center justify-center gap-3 cursor-not-allowed opacity-50";
+            punchBtn.querySelector('span').innerText = `${todayCheck.type} Duty Restricted`;
+        } else {
+            // Only re-enable if the day isn't already fully completed
+            const isComplete = document.querySelector('#status-pm_out .time-val').innerText !== '--:--';
+            if (!isComplete) {
+                punchBtn.disabled = false;
+                punchBtn.className = "w-full bg-indigo-500 hover:bg-indigo-400 text-white font-900 py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3";
+            }
+        }
     }
 }
 
@@ -803,6 +816,7 @@ async function handlePunch() {
         });
 
         lucide.createIcons();
+        checkDateRestrictions();
     } catch (err) {
         console.error("Punch failed", err);
     }
