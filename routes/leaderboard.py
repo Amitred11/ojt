@@ -92,6 +92,9 @@ async def index():
     
     profile_map = {str(p['user_id']): p.get('full_name', 'Anonymous') for p in all_profiles}
     settings_map = {str(s['user_id']): s for s in all_settings}
+
+    seven_days_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    weekly_gains = {} # Stores {uid: minutes_gained}
     
     user_stats = {}
     for log in all_logs:
@@ -120,6 +123,9 @@ async def index():
         if is_weekend and not u_set.get('include_weekends_eta'): day_credited = 0
         user_stats[uid]['credited_minutes'] += day_credited
         if day_credited > 0: user_stats[uid]['log_count'] += 1
+
+        if log_date >= seven_days_ago:
+            weekly_gains[uid] = weekly_gains.get(uid, 0) + day_credited
 
     leaderboard_data = []
     total_collective_minutes = 0
@@ -166,4 +172,4 @@ async def index():
         "user_hours": round(curr_user_final_hours, 1)
     }
 
-    return await render_template("main/leaderboard.html", leaders=final_data, stats=global_stats)
+    return await render_template("main/leaderboard.html", leaders=final_data, stats=global_stats, mvp=mvp_data)
