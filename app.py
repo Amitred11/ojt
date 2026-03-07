@@ -10,8 +10,11 @@ from routes.leaderboard import leaderboard_bp
 
 # Import DB Init
 from db import create_indexes
+base_dir = os.path.dirname(os.path.abspath(__file__))
 
-app = Quart(__name__)
+app = Quart(__name__, 
+            template_folder=os.path.join(base_dir, 'templates'),
+            static_folder=os.path.join(base_dir, 'static'))
 app.config.from_object(Config)
 
 # Register Blueprints

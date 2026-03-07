@@ -3,3 +3,4 @@ motor
 dnspython
 bcrypt
 Pillow
+werkzeug
