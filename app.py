@@ -24,14 +24,19 @@ app.register_blueprint(leaderboard_bp)
 @app.before_request
 async def startup():
     if not hasattr(app, 'indexes_created'):
-        # We use a Task so it runs in the background 
-        # without making the user wait for the DB
-        asyncio.create_task(create_indexes())
+        # asyncio.create_task runs this in the background 
+        # so the website loads IMMEDIATELY without waiting for the DB
+        asyncio.create_task(create_indexes()) 
         app.indexes_created = True
 
 @app.route("/")
 async def home():
-    return redirect(url_for("tracker.index"))
+    from quart import session
+    # If logged in, go to tracker. If not, go straight to login.
+    # This avoids the middle "302" redirect.
+    if 'user_id' in session:
+        return redirect(url_for("tracker.index"))
+    return redirect(url_for("auth.login"))
 
 # Manual trigger if you ever need to force index creation
 @app.route("/admin/init-db")
