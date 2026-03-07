@@ -4,3 +4,4 @@ dnspython
 bcrypt
 Pillow
 werkzeug
+lucide-jinja
