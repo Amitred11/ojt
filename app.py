@@ -38,6 +38,3 @@ async def home():
 async def init_db():
     await create_indexes()
     return "Database Optimized!"
-
-if __name__ == "__main__":
-    app.run(port=5000, debug=True)
