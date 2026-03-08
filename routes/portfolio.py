@@ -151,7 +151,13 @@ async def view_profile(user_id=None):
     all_logs = await db.logs.find({}).to_list(None)
     all_settings = await db.settings.find({}).to_list(None)
     p = await db.profiles.find_one({'user_id': target_uid}) or {}
-    
+    received_hype = await db.notifications.find({
+        "target_uid": target_uid 
+    }).sort("created_at", -1).limit(5).to_list(None)
+    for hype in received_hype:
+        if 'created_at' in hype:
+            # Add 8 hours to the UTC time stored in DB
+            hype['ph_time'] = hype['created_at'] + timedelta(hours=8)
     settings_map = {str(s['user_id']): s for s in all_settings}
     
     # 2. Process ALL users to determine Rank (The Leaderboard Logic)
@@ -162,6 +168,7 @@ async def view_profile(user_id=None):
     early_logs = 0
     late_logs = 0
     weekend_logs = 0
+    
 
     for log in all_logs:
         uid = str(log['user_id'])
@@ -238,6 +245,7 @@ async def view_profile(user_id=None):
         'achievements': achievements, 
         'rank': actual_rank,
         'is_owner': is_owner,
+        'received_hype': received_hype,
     }
 
     template = 'main/profile.html' if is_owner else 'main/public_profile.html'

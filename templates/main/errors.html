@@ -1,0 +1,299 @@
+{% extends "main/base.html" %}
+{% block content %}
+<div id="game-scene" class="min-h-[85vh] flex flex-col items-center justify-center px-4 py-10 max-w-lg mx-auto select-none overflow-hidden">
+    
+    <!-- RANK UP NOTIFICATION -->
+    <div id="system-alert" class="fixed top-12 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-700 opacity-0 -translate-y-4">
+        <div class="bg-white text-slate-950 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl border-b-4 border-slate-200">
+            Reached: <span id="alert-text">Skilled</span>
+        </div>
+    </div>
+
+    <!-- Error Status Header -->
+    <div id="error-header" class="text-center mb-8 transition-opacity duration-1000">
+        <div class="inline-flex p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-4">
+            <i data-lucide="wifi-off" class="w-6 h-6 text-amber-500"></i>
+        </div>
+        <h1 class="text-6xl font-900 text-white italic tracking-tighter mb-2">{{ code }}</h1>
+        <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Status: Connection Lost</p>
+    </div>
+
+    <!-- GAME CONTAINER -->
+    <div id="game-container" class="relative w-full group">
+        <!-- Floating Steam Particles -->
+        <div id="steam-container" class="absolute inset-0 pointer-events-none z-20"></div>
+
+        <div id="main-card" class="w-full bg-slate-900/40 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-8 text-center relative overflow-hidden shadow-2xl transition-all duration-500">
+            
+            <!-- Dynamic BG Color -->
+            <div id="bg-glow" class="absolute inset-0 opacity-10 transition-all duration-1000 bg-indigo-500 blur-3xl"></div>
+            
+            <!-- Header Stats -->
+            <div class="flex justify-between items-center mb-10 relative z-30">
+                <div class="text-left">
+                    <p class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Current Level</p>
+                    <span id="rank-text" class="text-sm font-black text-white uppercase tracking-tight">Novice</span>
+                </div>
+                <div class="text-right">
+                    <p class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Record</p>
+                    <p id="high-score-val" class="text-sm font-black text-indigo-400">0</p>
+                </div>
+            </div>
+
+            <!-- CORE BUTTON -->
+            <div class="relative mb-12">
+                <!-- Combo Badge -->
+                <div id="combo-badge" class="absolute -top-4 -right-2 z-30 opacity-0 scale-50 transition-all duration-300">
+                    <div class="bg-amber-500 text-slate-950 px-3 py-1 rounded-lg font-black italic text-xl shadow-lg">
+                        x<span id="combo-count">0</span>
+                    </div>
+                </div>
+
+                <button id="main-btn" class="relative z-10 w-36 h-36 md:w-44 md:h-44 outline-none cursor-pointer group">
+                    <!-- Physical Shadow -->
+                    <div class="absolute inset-0 rounded-full bg-black/40 translate-y-4 blur-lg"></div>
+                    <!-- Button Body -->
+                    <div id="btn-body" class="absolute inset-0 rounded-full bg-gradient-to-b from-slate-800 to-slate-950 border-2 border-white/10 shadow-2xl flex items-center justify-center transition-transform duration-75">
+                        <span id="main-emoji" class="text-6xl select-none">☕</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- SCORING & PROGRESS -->
+            <div class="relative z-30 space-y-4">
+                <div class="flex justify-center items-baseline gap-2">
+                    <span class="text-5xl font-black text-white" id="score-display">0</span>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Points</span>
+                </div>
+                
+                <div class="relative">
+                    <div class="h-4 bg-slate-950 rounded-full p-1 border border-white/5 overflow-hidden">
+                        <div id="hype-fill" class="h-full w-0 bg-gradient-to-r from-indigo-600 to-amber-500 rounded-full transition-all duration-300"></div>
+                    </div>
+                    <div class="flex justify-between mt-2">
+                        <p id="footer-msg" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Focusing...</p>
+                        <p id="next-rank-info" class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Next: 50</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECONNECT ACTION -->
+    <a href="{{ url_for('home') }}" class="mt-8 w-full max-w-xs py-4 bg-white text-slate-950 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] text-center shadow-lg hover:bg-slate-50 active:scale-95 transition-all">
+        Attempt Reconnection
+    </a>
+</div>
+
+<style>
+    .steam-particle {
+        position: absolute;
+        background: white;
+        border-radius: 50%;
+        filter: blur(6px);
+        pointer-events: none;
+        animation: steam-up 1.5s ease-out forwards;
+    }
+
+    @keyframes steam-up {
+        0% { transform: translateY(0) scale(1); opacity: 0.3; }
+        100% { transform: translateY(-120px) scale(2.5); opacity: 0; }
+    }
+
+    .hit-text {
+        position: absolute;
+        font-weight: 900;
+        pointer-events: none;
+        z-index: 100;
+        animation: hit-float 0.5s ease-out forwards;
+    }
+
+    @keyframes hit-float {
+        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+        50% { opacity: 1; }
+        100% { transform: translate(var(--x), var(--y)) scale(1.2); opacity: 0; }
+    }
+
+    .overclock-mode {
+        animation: flash 1s infinite alternate;
+    }
+    @keyframes flash {
+        0% { box-shadow: 0 0 20px rgba(245,158,11,0); }
+        100% { box-shadow: 0 0 40px rgba(245,158,11,0.2); }
+    }
+</style>
+
+<script>
+const Game = {
+    score: 0,
+    hype: 0,
+    combo: 0,
+    best: localStorage.getItem('coffee_record') || 0,
+    isOverclocked: false,
+    comboTimer: null,
+    
+    // Simple, Normal Words for Ranks
+    ranks: [
+        { min: 0, label: "Novice", icon: "☕" },
+        { min: 100, label: "Skilled", icon: "🥤" },
+        { min: 500, label: "Expert", icon: "🍵" },
+        { min: 1500, label: "Master", icon: "🔥" },
+        { min: 5000, label: "Legend", icon: "⚡" },
+        { min: 7000, label: "Transcendence", icon: "🌌" },
+        { min: 10000, label: "Saint", icon: "😇" },
+        { min: 15000, label: "God", icon: "👑" }
+    ],
+
+    init() {
+        this.cacheDOM();
+        this.bindEvents();
+        this.updateUI();
+        this.loop();
+    },
+
+    cacheDOM() {
+        this.dom = {
+            card: document.getElementById('main-card'),
+            btn: document.getElementById('btn-body'),
+            clickArea: document.getElementById('main-btn'),
+            emoji: document.getElementById('main-emoji'),
+            score: document.getElementById('score-display'),
+            hype: document.getElementById('hype-fill'),
+            combo: document.getElementById('combo-count'),
+            comboBadge: document.getElementById('combo-badge'),
+            rank: document.getElementById('rank-text'),
+            nextRank: document.getElementById('next-rank-info'),
+            steam: document.getElementById('steam-container'),
+            alert: document.getElementById('system-alert'),
+            alertText: document.getElementById('alert-text'),
+            pb: document.getElementById('high-score-val'),
+            header: document.getElementById('error-header'),
+            msg: document.getElementById('footer-msg')
+        };
+    },
+
+    bindEvents() {
+        const handle = (e) => { e.preventDefault(); this.tap(e); };
+        this.dom.clickArea.addEventListener('mousedown', handle);
+        this.dom.clickArea.addEventListener('touchstart', handle, {passive: false});
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') handle(e); });
+    },
+
+    tap(e) {
+        this.combo++;
+        const bonus = Math.floor(this.combo / 10);
+        const mult = this.isOverclocked ? 2 : 1;
+        const gain = (1 + bonus) * mult;
+
+        this.score += gain;
+        this.hype = Math.min(this.hype + 6, 100);
+        
+        if(this.score > this.best) {
+            this.best = this.score;
+            localStorage.setItem('coffee_record', this.best);
+        }
+
+        clearTimeout(this.comboTimer);
+        this.comboTimer = setTimeout(() => this.resetCombo(), 1200);
+
+        this.fx(gain);
+        this.updateUI();
+        this.checkRank();
+    },
+
+    fx(gain) {
+        // Physical Button Push
+        this.dom.btn.style.transform = 'scale(0.92) translateY(6px)';
+        setTimeout(() => this.dom.btn.style.transform = 'scale(1) translateY(0)', 80);
+
+        // Rising Text
+        const t = document.createElement('div');
+        t.className = 'hit-text text-white text-xs italic';
+        t.style.left = '50%'; t.style.top = '50%';
+        t.style.setProperty('--x', `${(Math.random()-0.5)*150}px`);
+        t.style.setProperty('--y', `-120px`);
+        t.innerText = `+${gain}`;
+        this.dom.card.appendChild(t);
+        setTimeout(() => t.remove(), 500);
+
+        // Steam
+        if (this.hype > 40) {
+            const s = document.createElement('div');
+            s.className = 'steam-particle';
+            s.style.width = s.style.height = '15px';
+            s.style.left = `${Math.random()*40 + 30}%`;
+            s.style.top = `50%`;
+            this.dom.steam.appendChild(s);
+            setTimeout(() => s.remove(), 1500);
+        }
+    },
+
+    resetCombo() {
+        this.combo = 0;
+        this.dom.comboBadge.style.opacity = '0';
+        this.updateUI();
+    },
+
+    checkRank() {
+        const cur = [...this.ranks].reverse().find(r => this.score >= r.min);
+        if (this.dom.rank.innerText !== cur.label) {
+            this.dom.rank.innerText = cur.label;
+            this.triggerAlert(cur.label);
+        }
+    },
+
+    triggerAlert(text) {
+        this.dom.alertText.innerText = text;
+        this.dom.alert.classList.replace('opacity-0', 'opacity-100');
+        this.dom.alert.classList.replace('-translate-y-4', 'translate-y-0');
+        setTimeout(() => {
+            this.dom.alert.classList.replace('opacity-100', 'opacity-0');
+            this.dom.alert.classList.replace('translate-y-0', '-translate-y-4');
+        }, 2000);
+    },
+
+    updateUI() {
+        const curRank = [...this.ranks].reverse().find(r => this.score >= r.min);
+        const nxtRank = this.ranks.find(r => r.min > this.score);
+
+        this.dom.score.innerText = this.score;
+        this.dom.pb.innerText = this.best;
+        this.dom.hype.style.width = `${this.hype}%`;
+        this.dom.emoji.innerText = this.isOverclocked ? "⚡" : curRank.icon;
+        
+        if(nxtRank) this.dom.nextRank.innerText = `Next: ${nxtRank.min}`;
+        else this.dom.nextRank.innerText = `Max Level`;
+
+        if (this.combo > 1) {
+            this.dom.combo.innerText = this.combo;
+            this.dom.comboBadge.style.opacity = '1';
+            this.dom.comboBadge.style.transform = `scale(${Math.min(1 + this.combo/100, 1.5)})`;
+        }
+
+        this.isOverclocked = this.hype >= 100;
+        if(this.isOverclocked) {
+            this.dom.card.classList.add('overclock-mode');
+            this.dom.header.style.opacity = '0.3';
+            this.dom.msg.innerText = "OVERCLOCKED 2X";
+            this.dom.msg.classList.add('text-amber-500');
+        } else {
+            this.dom.card.classList.remove('overclock-mode');
+            this.dom.header.style.opacity = '1';
+            this.dom.msg.innerText = this.combo > 5 ? "STREAKING!" : "FOCUSING...";
+            this.dom.msg.classList.remove('text-amber-500');
+        }
+    },
+
+    loop() {
+        setInterval(() => {
+            if (this.hype > 0) {
+                this.hype = Math.max(0, this.hype - (this.isOverclocked ? 2 : 1));
+                this.updateUI();
+            }
+        }, 200);
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => Game.init());
+</script>
+{% endblock %}

@@ -64,21 +64,45 @@ async def social_interaction():
     if not target_uid or sender_id == target_uid:
         return jsonify({"status": "error", "message": "Invalid target"}), 400
 
-    # Get sender name for the notification
-    sender_profile = await profiles_col.find_one({"user_id": ObjectId(sender_id)})
-    sender_name = sender_profile.get('full_name', 'Someone') if sender_profile else "Someone"
+    # --- 1. RATE LIMITER (5 PER DAY) ---
+    # Calculate the start of today in Philippine Time (PHT)
+    ph_now = datetime.utcnow() + timedelta(hours=8)
+    today_start = ph_now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # Save interaction
+    # Count how many interactions this user sent today
+    usage_count = await notifications_col.count_documents({
+        "sender_id": sender_id,
+        "created_at": {"$gte": today_start}
+    })
+
+    if usage_count >= 5:
+        return jsonify({
+            "status": "error", 
+            "message": "Daily hype limit reached! (5/5). Come back tomorrow to spread more energy."
+        }), 429  # 429 is the HTTP code for "Too Many Requests"
+
+    # --- 2. FETCH SENDER NAME ---
+    sender_profile = await profiles_col.find_one({"user_id": sender_id})
+    if not sender_profile:
+        sender_profile = await profiles_col.find_one({"user_id": ObjectId(sender_id)})
+    
+    sender_name = sender_profile.get('full_name') if sender_profile else "Someone"
+
+    # --- 3. SAVE INTERACTION ---
     await notifications_col.insert_one({
         "sender_id": sender_id,
         "sender_name": sender_name,
         "target_uid": target_uid,
         "type": action_type,
-        "created_at": datetime.utcnow(),
+        "created_at": ph_now, # PHT Time
         "is_read": False
     })
 
-    return jsonify({"status": "success", "type": action_type})
+    return jsonify({
+        "status": "success", 
+        "type": action_type, 
+        "remaining": 5 - (usage_count + 1)
+    })
 
 @leaderboard_bp.route("/leaderboard")
 async def index():

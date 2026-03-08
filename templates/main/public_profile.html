@@ -2,120 +2,251 @@
 {% block content %}
 <div class="max-w-2xl mx-auto px-4 pt-10 pb-32">
     
-    <!-- Back Button -->
-    <a href="{{ url_for('leaderboard.index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors mb-8 group">
-        <i data-lucide="arrow-left" class="w-4 h-4 transition-transform group-hover:-translate-x-1"></i>
-        <span class="text-[10px] font-black uppercase tracking-widest">Back to Leaderboard</span>
-    </a>
+    <!-- Top Nav / Back Button -->
+    <div class="flex items-center justify-between mb-8">
+        <a href="{{ url_for('leaderboard.index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors group">
+            <i data-lucide="arrow-left" class="w-4 h-4 transition-transform group-hover:-translate-x-1"></i>
+            <span class="text-[10px] font-black uppercase tracking-widest">Global Board</span>
+        </a>
+        <button onclick="copyProfileLink()" class="p-2 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all active:scale-90">
+            <i data-lucide="share-2" class="w-4 h-4"></i>
+        </button>
+    </div>
 
-    <!-- Profile Hero -->
+    <!-- Profile Hero Card -->
     <div class="relative overflow-hidden bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] p-8 mb-6 border border-white/10 shadow-2xl">
-        <div class="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full"></div>
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full"></div>
         
         <div class="flex flex-col items-center text-center relative z-10">
+            <!-- Rank & Avatar -->
             <div class="relative mb-6">
-                <!-- Rank Badge -->
-                <div class="absolute -top-2 -left-2 bg-amber-500 text-amber-950 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-4 border-[#020617] z-20">
-                    #{{ rank }}
+                <div class="absolute -top-2 -left-2 bg-amber-500 text-amber-950 w-9 h-9 rounded-full flex flex-col items-center justify-center border-4 border-[#020617] z-20 shadow-xl">
+                    <span class="text-[7px] font-black leading-none uppercase">Rank</span>
+                    <span class="text-xs font-black leading-none italic">#{{ rank }}</span>
                 </div>
                 
                 <div class="relative w-28 h-28 rounded-[2.2rem] bg-gradient-to-br from-slate-800 to-slate-900 p-1 shadow-2xl border border-white/10">
-                    <div class="w-full h-full rounded-[1.8rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-5xl font-black text-white">
+                    <div class="w-full h-full rounded-[1.8rem] bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-700 flex items-center justify-center text-5xl font-black text-white italic">
                         {{ p.full_name[0] if p.full_name else '?' }}
                     </div>
                 </div>
             </div>
 
+            <!-- Identity -->
             <div class="space-y-1">
                 <h2 class="text-3xl font-900 text-white tracking-tightest uppercase italic">
                     {{ p.full_name or 'Anonymous Student' }}
                 </h2>
-                <p class="text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em]">
-                    {{ p.course or 'Intern' }}
-                </p>
-            </div>
-            
-            <!-- Progress Section -->
-            <div class="w-full mt-8 px-2">
-                <div class="flex justify-between items-end mb-3">
-                    <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Training Completion</p>
-                    <span class="text-2xl font-black text-white tabular-nums">{{ progress }}%</span>
-                </div>
-                <div class="w-full h-3 bg-slate-950 rounded-full p-0.5 border border-white/5 overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-indigo-600 to-cyan-400 rounded-full transition-all duration-1000" style="width: {{ progress }}%"></div>
+                <div class="flex items-center justify-center gap-2">
+                    <p class="text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em]">
+                        {{ p.course or 'Intern' }}
+                    </p>
+                    <span class="w-1.5 h-1.5 bg-slate-800 rounded-full"></span>
+                    <span class="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Verified Trainee</span>
                 </div>
             </div>
 
-            <!-- Public Stats Grid -->
-            <div class="grid grid-cols-3 gap-2 w-full mt-10 p-2 bg-slate-950/50 rounded-[1.5rem] border border-white/5">
+            <!-- Social Interactions -->
+            <div class="flex gap-3 mt-8">
+                <button onclick="sendInteraction('{{ p.user_id }}', 'cheer')" class="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-amber-950 rounded-2xl transition-all active:scale-95 shadow-lg shadow-amber-500/20 group">
+                    <i data-lucide="zap" class="w-4 h-4 fill-current group-hover:animate-pulse"></i>
+                    <span class="text-[10px] font-black uppercase tracking-wider">Hype Cheer</span>
+                </button>
+                <button onclick="sendInteraction('{{ p.user_id }}', 'nudge')" class="flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl border border-white/5 transition-all active:scale-95">
+                    <i data-lucide="bell" class="w-4 h-4"></i>
+                    <span class="text-[10px] font-black uppercase tracking-wider">Send Nudge</span>
+                </button>
+            </div>
+            
+            <!-- Milestone Bar -->
+            <div class="w-full mt-10 px-2">
+                <div class="flex justify-between items-end mb-3">
+                    <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest italic">Training Milestone</p>
+                    <span class="text-3xl font-black text-white tabular-nums tracking-tighter">{{ progress }}%</span>
+                </div>
+                <div class="w-full h-3.5 bg-slate-950 rounded-full p-1 border border-white/5 overflow-hidden shadow-inner">
+                    <div class="h-full bg-gradient-to-r from-indigo-600 via-purple-500 to-cyan-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.3)]" style="width: {{ progress }}%"></div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-3 gap-2 w-full mt-10 p-2 bg-slate-950/50 rounded-[2rem] border border-white/5 backdrop-blur-md">
                 <div class="py-4">
                     <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Sessions</p>
                     <p class="text-xl font-black text-white">{{ log_count }}</p>
                 </div>
                 <div class="py-4 border-x border-white/5">
                     <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Efficiency</p>
-                    <p class="text-xl font-black text-white">{{ avg_hours }}<span class="text-xs text-slate-500 ml-0.5">h</span></p>
+                    <p class="text-xl font-black text-white">{{ avg_hours }}<span class="text-[10px] text-slate-500 ml-0.5">h</span></p>
                 </div>
                 <div class="py-4">
                     <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter mb-1">Total Time</p>
-                    <p class="text-xl font-black text-amber-500">{{ total_hours }}<span class="text-xs text-slate-500 ml-0.5">h</span></p>
+                    <p class="text-xl font-black text-amber-500">{{ total_hours }}<span class="text-[10px] text-slate-500 ml-0.5">h</span></p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Achievements Section with Fixed Tooltips -->
-    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
-        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <i data-lucide="award" class="w-4 h-4"></i> Earned Badges
-        </h3>
-        <div class="flex flex-wrap gap-2">
-            {% for ach in achievements %}
-            <div class="group/tooltip relative">
-                <!-- Badge Pill -->
-                <div class="flex items-center gap-2 bg-{{ ach.color }}-500/10 border border-{{ ach.color }}-500/20 px-4 py-2 rounded-xl cursor-help transition-all hover:bg-{{ ach.color }}-500/20">
-                    <i data-lucide="{{ ach.icon }}" class="w-3.5 h-3.5 text-{{ ach.color }}-400"></i>
-                    <span class="text-[10px] font-black text-white uppercase tracking-tight">{{ ach.title }}</span>
+    <!-- REFACTORED HYPE FEED -->
+    <div class="bg-slate-900/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 mb-6 relative overflow-hidden">
+        <!-- Live Indicator Decor -->
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/5 blur-[50px] rounded-full"></div>
+
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-amber-400"></i>
+                    <span class="absolute -top-1 -right-1 flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                </div>
+                <h3 class="text-[11px] font-black text-white uppercase tracking-[0.2em]">Wall of Hype</h3>
+            </div>
+            <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                {{ received_hype|length }} Activities
+            </span>
+        </div>
+
+        <div class="space-y-4 relative z-10">
+            {% for hype in received_hype %}
+            <div class="group relative flex items-start gap-4 p-4 rounded-[1.8rem] transition-all duration-300 hover:bg-white/5 border border-transparent hover:border-white/10">
+                
+                <!-- Action Icon -->
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3
+                        {% if hype.type == 'cheer' %}
+                            bg-amber-500/10 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.1)]
+                        {% else %}
+                            bg-indigo-500/10 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.1)]
+                        {% endif %}">
+                        <i data-lucide="{% if hype.type == 'cheer' %}zap{% else %}bell-ring{% endif %}" class="w-5 h-5 {% if hype.type == 'cheer' %}fill-current{% endif %}"></i>
+                    </div>
                 </div>
 
-                <!-- Tooltip Popup -->
-                <div class="absolute bottom-full left-0 mb-3 hidden group-hover/tooltip:block w-48 bg-slate-950 border border-white/10 p-3 rounded-xl shadow-2xl z-[1000] pointer-events-none backdrop-blur-xl animate-in fade-in slide-in-from-bottom-1">
-                    <div class="flex items-center gap-2 mb-1">
-                        <div class="w-5 h-5 rounded-lg bg-{{ ach.color }}-500/20 flex items-center justify-center">
-                            <i data-lucide="{{ ach.icon }}" class="w-3 h-3 text-{{ ach.color }}-400"></i>
-                        </div>
-                        <p class="text-[10px] text-{{ ach.color }}-400 font-black uppercase tracking-widest">{{ ach.title }}</p>
+                <!-- Content -->
+                <div class="flex-grow pt-0.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-[13px] font-black text-white tracking-tight">
+                            {{ hype.sender_name }}
+                        </p>
+                        <span class="text-[8px] font-black text-slate-500 uppercase tabular-nums">
+                            {{ hype.ph_time.strftime('%I:%M %p') if hype.ph_time else 'Recently' }}
+                        </span>
                     </div>
-                    <p class="text-[9px] text-slate-300 font-medium leading-relaxed italic">"{{ ach.desc }}"</p>
+                    
+                    <p class="text-[11px] font-medium leading-relaxed 
+                        {% if hype.type == 'cheer' %} text-amber-200/60 {% else %} text-indigo-200/60 {% endif %}">
+                        {% if hype.type == 'cheer' %}
+                            Dropped a <span class="text-amber-400 font-black italic">Hype Cheer</span> to keep the energy up!
+                        {% else %}
+                            Sent a <span class="text-indigo-400 font-black italic">Nudge</span> to keep the grind going.
+                        {% endif %}
+                    </p>
                 </div>
             </div>
             {% endfor %}
-            {% if not achievements %}
-            <p class="text-xs text-slate-600 italic">No badges earned yet.</p>
+
+            {% if not received_hype %}
+            <div class="py-12 flex flex-col items-center justify-center text-center px-6 border-2 border-dashed border-white/5 rounded-[2.5rem]">
+                <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4 text-slate-600">
+                    <i data-lucide="ghost" class="w-6 h-6"></i>
+                </div>
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">The wall is silent...</p>
+                <p class="text-[9px] text-slate-600 font-medium italic mt-1">Send some hype above to start the feed!</p>
+            </div>
             {% endif %}
         </div>
     </div>
 
-    <!-- Training Venue -->
+    <!-- Badges Section -->
+    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
+        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <i data-lucide="award" class="w-4 h-4 text-indigo-400"></i> Earned Badges
+        </h3>
+        <div class="flex flex-wrap gap-2">
+            {% for ach in achievements %}
+            <div class="group/tooltip relative">
+                <div class="flex items-center gap-2 bg-{{ ach.color }}-500/10 border border-{{ ach.color }}-500/20 px-4 py-2 rounded-xl cursor-help hover:bg-{{ ach.color }}-500/20 transition-all">
+                    <i data-lucide="{{ ach.icon }}" class="w-3.5 h-3.5 text-{{ ach.color }}-400"></i>
+                    <span class="text-[10px] font-black text-white uppercase tracking-tight">{{ ach.title }}</span>
+                </div>
+                <!-- Tooltip Popup -->
+                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover/tooltip:block w-48 bg-slate-950 border border-white/10 p-3 rounded-xl shadow-2xl z-[1000] pointer-events-none backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2">
+                    <p class="text-[10px] text-{{ ach.color }}-400 font-black uppercase mb-1">{{ ach.title }}</p>
+                    <p class="text-[9px] text-slate-300 italic leading-relaxed">"{{ ach.desc }}"</p>
+                    <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-950 rotate-45 border-r border-b border-white/10"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Venue Card -->
     <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6">
         <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
                 <i data-lucide="building-2"></i>
             </div>
             <div>
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Currently Hosting</p>
-                <p class="text-white font-bold">{{ p.hte_name or 'Host Training Establishment' }}</p>
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Training Venue</p>
+                <p class="text-white font-bold">{{ p.hte_name or 'HTE Venue Not Set' }}</p>
             </div>
         </div>
     </div>
 
-    <p class="text-center text-slate-600 text-[9px] uppercase font-black mt-12 tracking-[0.3em]">
-        Verified OJT Portfolio • Digital Identity Secure
+    <p class="text-center text-slate-600 text-[9px] uppercase font-black mt-12 tracking-[0.4em]">
+        Verified Portfolio • OJT Digital Identity Secure
     </p>
 
 </div>
 
+<!-- Global Interaction Feedback Toast -->
+<div id="socialToast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[2000] hidden">
+    <div class="bg-indigo-600 text-white px-6 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3 animate-in slide-in-from-bottom-5">
+        <i data-lucide="zap" class="w-4 h-4 text-amber-300"></i>
+        <span id="toastMsg" class="text-[10px] font-black uppercase tracking-widest"></span>
+    </div>
+</div>
+
 <script>
     lucide.createIcons();
+
+    async function sendInteraction(targetUid, type) {
+    try {
+        const response = await fetch('/leaderboard/social', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_uid: targetUid, type: type })
+        });
+        
+        const data = await response.json();
+        
+        if (response.status === 429) {
+            // Show the "Daily limit reached" message from the server
+            showToast(data.message); 
+            return;
+        }
+
+        if (data.status === 'success') {
+            showToast(type === 'cheer' ? "🔥 Hype Cheer Sent!" : "🔔 Nudge Delivered!");
+            setTimeout(() => location.reload(), 1200);
+        }
+    } catch (e) {
+        showToast("Connection Error");
+    }
+}
+
+    function showToast(msg) {
+        const toast = document.getElementById('socialToast');
+        document.getElementById('toastMsg').innerText = msg;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    function copyProfileLink() {
+        navigator.clipboard.writeText(window.location.href);
+        showToast("Profile Link Copied!");
+    }
 </script>
 {% endblock %}

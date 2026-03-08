@@ -1,4 +1,4 @@
-from quart import Quart, redirect, url_for
+from quart import Quart, redirect, url_for, render_template # Add render_template
 from config import Config
 import asyncio
 
@@ -13,6 +13,38 @@ from db import create_indexes
 
 app = Quart(__name__)
 app.config.from_object(Config)
+
+# --- CUSTOM ERROR HANDLERS ---
+
+@app.route("/offline")
+async def offline():
+    return await render_template('main/errors.html', 
+        code="OFFLINE", 
+        message="Connection lost. Your training progress is paused until you're back online.")
+
+@app.errorhandler(404)
+async def error_404(e):
+    return await render_template('main/errors.html', 
+        code=404, 
+        message="The page you are looking for has been moved to another dimension or never existed."), 404
+
+@app.errorhandler(429)
+async def error_429(e):
+    return await render_template('main/errors.html', 
+        code=429, 
+        message="Slow down, Trainee! You're sending requests too fast. Please wait a moment."), 429
+
+@app.errorhandler(400)
+async def error_400(e):
+    return await render_template('main/errors.html', 
+        code=400, 
+        message="The server couldn't understand that request. Try clearing your cache or logging in again."), 400
+
+@app.errorhandler(500)
+async def error_500(e):
+    return await render_template('main/errors.html', 
+        code=500, 
+        message="Our systems hit a snag. We've notified the admins to check the logs."), 500
 
 # Register Blueprints
 app.register_blueprint(auth_bp)
