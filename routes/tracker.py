@@ -1,6 +1,6 @@
 from datetime import datetime, date, timedelta, timezone
 from quart import Blueprint, render_template, request, redirect, url_for, session
-from db import logs_col, db, settings_col
+from db import logs_col, db, settings_col, notifications_col
 from bson.objectid import ObjectId
 
 tracker_bp = Blueprint('tracker', __name__)
@@ -99,12 +99,35 @@ def get_day_type(date_str):
         return "Work Day"
     except: return "Unknown"
 
+@tracker_bp.route("/notifications/mark-read", methods=["POST"])
+async def mark_notifications_read():
+    if 'user_id' not in session: return {"error": "Unauthorized"}, 401
+    user_id = str(session['user_id'])
+    
+    await notifications_col.update_many(
+        {"target_uid": user_id, "is_read": False},
+        {"$set": {"is_read": True}}
+    )
+    return {"status": "success"}
+
 @tracker_bp.route("/tracker", methods=["GET", "POST"])
 async def index():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     user_id = session['user_id']
     settings = await get_user_settings(user_id)
-    
+    unread_count = await notifications_col.count_documents({
+        "target_uid": str(user_id),
+        "is_read": False
+    })
+
+    # 2. Get the actual list (last 10) for the Wall
+    notifications = await notifications_col.find({
+        "target_uid": str(user_id) 
+    }).sort("created_at", -1).limit(10).to_list(None)
+
+    for hype in notifications:
+        hype['ph_time'] = hype['created_at'] + timedelta(hours=8)
+
     if request.method == "POST":
         form = await request.form
         
@@ -227,6 +250,8 @@ async def index():
         remaining_str=minutes_to_string(rem_m),
         progress=min((total_credited_m/target_m)*100, 100), 
         today=today_iso,
+        notifications=notifications,
+        unread_count=unread_count,
         today_log=today_log,
         avg_speed=round(avg_m/60, 1), 
         finish_info=finish_info,

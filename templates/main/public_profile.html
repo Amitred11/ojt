@@ -87,78 +87,6 @@
         </div>
     </div>
 
-    <!-- REFACTORED HYPE FEED -->
-    <div class="bg-slate-900/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 mb-6 relative overflow-hidden">
-        <!-- Live Indicator Decor -->
-        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/5 blur-[50px] rounded-full"></div>
-
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-                <div class="relative">
-                    <i data-lucide="sparkles" class="w-5 h-5 text-amber-400"></i>
-                    <span class="absolute -top-1 -right-1 flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                    </span>
-                </div>
-                <h3 class="text-[11px] font-black text-white uppercase tracking-[0.2em]">Wall of Hype</h3>
-            </div>
-            <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-lg border border-white/5">
-                {{ received_hype|length }} Activities
-            </span>
-        </div>
-
-        <div class="space-y-4 relative z-10">
-            {% for hype in received_hype %}
-            <div class="group relative flex items-start gap-4 p-4 rounded-[1.8rem] transition-all duration-300 hover:bg-white/5 border border-transparent hover:border-white/10">
-                
-                <!-- Action Icon -->
-                <div class="flex-shrink-0">
-                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3
-                        {% if hype.type == 'cheer' %}
-                            bg-amber-500/10 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.1)]
-                        {% else %}
-                            bg-indigo-500/10 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.1)]
-                        {% endif %}">
-                        <i data-lucide="{% if hype.type == 'cheer' %}zap{% else %}bell-ring{% endif %}" class="w-5 h-5 {% if hype.type == 'cheer' %}fill-current{% endif %}"></i>
-                    </div>
-                </div>
-
-                <!-- Content -->
-                <div class="flex-grow pt-0.5">
-                    <div class="flex items-center justify-between mb-1">
-                        <p class="text-[13px] font-black text-white tracking-tight">
-                            {{ hype.sender_name }}
-                        </p>
-                        <span class="text-[8px] font-black text-slate-500 uppercase tabular-nums">
-                            {{ hype.ph_time.strftime('%I:%M %p') if hype.ph_time else 'Recently' }}
-                        </span>
-                    </div>
-                    
-                    <p class="text-[11px] font-medium leading-relaxed 
-                        {% if hype.type == 'cheer' %} text-amber-200/60 {% else %} text-indigo-200/60 {% endif %}">
-                        {% if hype.type == 'cheer' %}
-                            Dropped a <span class="text-amber-400 font-black italic">Hype Cheer</span> to keep the energy up!
-                        {% else %}
-                            Sent a <span class="text-indigo-400 font-black italic">Nudge</span> to keep the grind going.
-                        {% endif %}
-                    </p>
-                </div>
-            </div>
-            {% endfor %}
-
-            {% if not received_hype %}
-            <div class="py-12 flex flex-col items-center justify-center text-center px-6 border-2 border-dashed border-white/5 rounded-[2.5rem]">
-                <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4 text-slate-600">
-                    <i data-lucide="ghost" class="w-6 h-6"></i>
-                </div>
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">The wall is silent...</p>
-                <p class="text-[9px] text-slate-600 font-medium italic mt-1">Send some hype above to start the feed!</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
     <!-- Badges Section -->
     <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
         <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -222,15 +150,18 @@
         
         const data = await response.json();
         
+        // Check if the limit was reached (HTTP 429)
         if (response.status === 429) {
-            // Show the "Daily limit reached" message from the server
             showToast(data.message); 
             return;
         }
 
         if (data.status === 'success') {
             showToast(type === 'cheer' ? "🔥 Hype Cheer Sent!" : "🔔 Nudge Delivered!");
+            // Reload so the user sees the activity added to the "Wall of Hype"
             setTimeout(() => location.reload(), 1200);
+        } else {
+            showToast("Could not send interaction.");
         }
     } catch (e) {
         showToast("Connection Error");

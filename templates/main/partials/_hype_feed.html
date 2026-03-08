@@ -1,0 +1,44 @@
+<!-- templates/main/partials/_hype_feed.html -->
+<div class="space-y-4 relative z-10">
+    {% for hype in notifications %}
+    <div class="group relative flex items-start gap-4 p-4 rounded-[1.8rem] transition-all duration-300 hover:bg-white/5 border border-transparent hover:border-white/10">
+        <!-- Action Icon -->
+        <div class="flex-shrink-0">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3
+                {% if hype.type == 'cheer' %}
+                    bg-amber-500/10 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.1)]
+                {% else %}
+                    bg-indigo-500/10 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.1)]
+                {% endif %}">
+                <i data-lucide="{% if hype.type == 'cheer' %}zap{% else %}bell-ring{% endif %}" class="w-5 h-5 {% if hype.type == 'cheer' %}fill-current{% endif %}"></i>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-grow pt-0.5">
+            <div class="flex items-center justify-between mb-1">
+                <p class="text-[13px] font-black text-white tracking-tight">
+                    {{ hype.sender_name }}
+                </p>
+                <span class="text-[8px] font-black text-slate-500 uppercase tabular-nums">
+                    {{ hype.ph_time.strftime('%I:%M %p') if hype.ph_time else 'Recently' }}
+                </span>
+            </div>
+            <p class="text-[11px] font-medium leading-relaxed 
+                {% if hype.type == 'cheer' %} text-amber-200/60 {% else %} text-indigo-200/60 {% endif %}">
+                {% if hype.type == 'cheer' %}
+                    Dropped a <span class="text-amber-400 font-black italic">Hype Cheer</span>!
+                {% else %}
+                    Sent a <span class="text-indigo-400 font-black italic">Nudge</span> to keep the grind going.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not notifications %}
+    <div class="py-8 flex flex-col items-center justify-center text-center px-6">
+        <p class="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">No new notifications</p>
+    </div>
+    {% endif %}
+</div>

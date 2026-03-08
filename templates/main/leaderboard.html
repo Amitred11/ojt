@@ -385,16 +385,17 @@
     try {
         const response = await fetch('/leaderboard/social', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                target_uid: targetUid,
-                type: type
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_uid: targetUid, type: type })
         });
 
         const data = await response.json();
+
+        // Check if the limit was reached (HTTP 429)
+        if (response.status === 429) {
+            showToast(data.message); // Displays the "Daily hype limit reached" message
+            return;
+        }
 
         if (data.status === 'success') {
             if (type === 'cheer') {
@@ -403,7 +404,7 @@
                 showToast(`⚡ Nudged ${firstName} to keep grinding!`);
             }
         } else {
-            showToast("Failed to send interaction.");
+            showToast("Action could not be completed.");
         }
     } catch (error) {
         console.error('Error:', error);
