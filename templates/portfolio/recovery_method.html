@@ -1,0 +1,73 @@
+{% extends "main/base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto px-6 pt-12 pb-32">
+    
+    <!-- Header -->
+    <div class="mb-10 text-center">
+        <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-4 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
+            <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <h1 class="text-3xl font-900 text-white uppercase italic tracking-tighter">Security Protocol</h1>
+        <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Manage Account Recovery</p>
+    </div>
+
+    <!-- Info Card -->
+    <div class="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-4 mb-8 flex items-start gap-3">
+        <i data-lucide="info" class="w-5 h-5 text-indigo-400 mt-0.5"></i>
+        <p class="text-[11px] text-slate-300 leading-relaxed font-medium">
+            Setting a recovery question allows you to reset your password if you get locked out. Choose a question that only you can answer.
+        </p>
+    </div>
+
+    <form method="POST" class="space-y-6">
+        <!-- Identity Verification -->
+        <div class="space-y-1">
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Confirm Current Password</label>
+            <div class="relative">
+                <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600"></i>
+                <input type="password" name="current_password" required placeholder="Verify your identity"
+                       class="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all">
+            </div>
+        </div>
+
+        <div class="h-px bg-white/5 my-4"></div>
+
+        <!-- Recovery Question -->
+        <div class="space-y-1">
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Select Security Question</label>
+            <select name="security_question" required class="w-full bg-slate-900 border border-white/10 rounded-xl py-4 px-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none">
+                <option value="" disabled {{ 'selected' if not u.security_question }}>Choose a challenge...</option>
+                <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                <option value="In what city were you born?">In what city were you born?</option>
+                <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+                <option value="What was the model of your first car?">What was the model of your first car?</option>
+            </select>
+        </div>
+
+        <!-- Recovery Answer -->
+        <div class="space-y-1">
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Secret Answer</label>
+            <div class="relative">
+                <i data-lucide="key" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600"></i>
+                <input type="text" name="security_answer" required placeholder="Your answer (case-insensitive)"
+                       class="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-4">
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-900 py-4 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-indigo-900/20 uppercase text-xs tracking-[0.2em]">
+                Save Recovery Method
+            </button>
+            <a href="{{ url_for('portfolio.view_profile') }}" class="block text-center mt-4 text-[10px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors">
+                Cancel and Return
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

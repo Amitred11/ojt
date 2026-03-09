@@ -1,7 +1,7 @@
 from quart import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from db import logs_col, users_col, profiles_col, settings_col, notifications_col
 from bson import ObjectId
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from utils.achievements import get_achievements 
 
 leaderboard_bp = Blueprint('leaderboard', __name__)
@@ -12,6 +12,9 @@ PH_HOLIDAYS = [
     "2026-04-09", "2026-05-01", "2026-06-12", "2026-08-31", "2026-11-01", 
     "2026-11-30", "2026-12-08", "2026-12-25", "2026-12-30"
 ]
+
+def get_ph_now():
+    return datetime.now(timezone.utc) + timedelta(hours=8)
 
 def normalize_time(t_str):
     if not t_str or ":" not in t_str: return None
@@ -28,12 +31,16 @@ def get_minutes_diff(t_in, t_out):
         return int((t2 - t1).total_seconds() // 60) if t2 > t1 else 0
     except: return 0
 
-def calculate_ot_minutes(pm_out):
-    if not pm_out: return 0
+def calculate_ot_minutes(pm_in, pm_out):
+    if not pm_in or not pm_out: return 0
     try:
+        if get_minutes_diff(pm_in, pm_out) <= 0: return 0
+        in_time = datetime.strptime(normalize_time(pm_in), "%H:%M")
         out_time = datetime.strptime(normalize_time(pm_out), "%H:%M")
         threshold = datetime.strptime("17:00", "%H:%M")
-        return int((out_time - threshold).total_seconds() // 60) if out_time > threshold else 0
+        if out_time <= threshold: return 0
+        actual_ot_start = max(in_time, threshold)
+        return int((out_time - actual_ot_start).total_seconds() // 60)
     except: return 0
 
 def calculate_finish_date(remaining_minutes, avg_daily_m):
@@ -117,39 +124,62 @@ async def index():
     profile_map = {str(p['user_id']): p.get('full_name', 'Anonymous') for p in all_profiles}
     settings_map = {str(s['user_id']): s for s in all_settings}
 
-    seven_days_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
-    weekly_gains = {} # Stores {uid: minutes_gained}
-    
+    seven_days_ago = (get_ph_now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    weekly_gains = {} 
     user_stats = {}
+
     for log in all_logs:
         uid = str(log.get('user_id'))
         if uid not in user_stats:
             user_stats[uid] = {'credited_minutes': 0, 'log_count': 0}
         
-        u_set = settings_map.get(uid, {"strict_8h": False, "count_lunch": False, "allow_before_7am": False, "allow_after_5pm": True, "include_weekends_eta": False})
+        # Get settings for this specific student
+        u_set = settings_map.get(uid, {
+            "strict_8h": False, "count_lunch": False, 
+            "allow_before_7am": False, "allow_after_5pm": True, 
+            "allow_weekend_duty": False, "allow_holiday_duty": False
+        })
+        
         log_date = log.get('log_date', "")
+        is_holiday = log_date in PH_HOLIDAYS
         is_weekend = False
         try: is_weekend = datetime.strptime(log_date, '%Y-%m-%d').weekday() >= 5
         except: pass
 
-        nai, nao, npi, npo = normalize_time(log.get('am_in')), normalize_time(log.get('am_out')), normalize_time(log.get('pm_in')), normalize_time(log.get('pm_out'))
-        eff_ai = "08:00" if (not u_set.get('allow_before_7am') and nai and nai < "08:00") else nai
+        # --- THE CALCULATION ENGINE (MATCHES TRACKER) ---
+        manual_val = log.get('manual_credit')
         
-        m_am = get_minutes_diff(eff_ai, nao)
-        m_pm = get_minutes_diff(npi, npo)
-        m_lunch = 60 if (u_set.get('count_lunch') and nao and npi and "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15") else 0
-        day_ot = calculate_ot_minutes(npo) if u_set.get('allow_after_5pm') else 0
-        
-        day_credited = m_am + m_pm + m_lunch
-        if u_set.get('strict_8h'): day_credited = min(day_credited, 480)
-        else: day_credited += day_ot
+        if manual_val is not None:
+            day_total = int(manual_val * 60)
+        else:
+            nai, nao, npi, npo = normalize_time(log.get('am_in')), normalize_time(log.get('am_out')), normalize_time(log.get('pm_in')), normalize_time(log.get('pm_out'))
             
-        if is_weekend and not u_set.get('include_weekends_eta'): day_credited = 0
-        user_stats[uid]['credited_minutes'] += day_credited
-        if day_credited > 0: user_stats[uid]['log_count'] += 1
+            # Apply 8AM restriction
+            eff_ai = "08:00" if (not u_set.get('allow_before_7am') and nai and nai < "08:00") else nai
+            
+            m_am = get_minutes_diff(eff_ai, nao)
+            m_pm = get_minutes_diff(npi, npo)
+            m_lunch = 60 if (u_set.get('count_lunch') and nao and npi and "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15") else 0
+            
+            day_total = m_am + m_pm + m_lunch
+            
+            if u_set.get('strict_8h'): 
+                day_total = min(day_total, 480)
+            # Variable mode: No changes needed as m_pm already includes OT duration
 
-        if log_date >= seven_days_ago:
-            weekly_gains[uid] = weekly_gains.get(uid, 0) + day_credited
+        # Apply Global Date Restrictions for this student
+        weekends_allowed = u_set.get('allow_weekend_duty', False)
+        holidays_allowed = u_set.get('allow_holiday_duty', False)
+        
+        if (is_weekend and not weekends_allowed) or (is_holiday and not holidays_allowed):
+            day_total = 0
+
+        # Update stats
+        user_stats[uid]['credited_minutes'] += day_total
+        if day_total > 0: 
+            user_stats[uid]['log_count'] += 1
+            if log_date >= seven_days_ago:
+                weekly_gains[uid] = weekly_gains.get(uid, 0) + day_total
 
     mvp_data = {"name": "No MVP yet", "gain": 0}
     if weekly_gains:

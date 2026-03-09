@@ -12,6 +12,10 @@ PH_HOLIDAYS = [
     "2026-11-30", "2026-12-08", "2026-12-25", "2026-12-30"
 ]
 
+def get_ph_now():
+    """Returns the current datetime in Philippine Time (UTC+8)"""
+    return datetime.now(timezone.utc) + timedelta(hours=8)
+
 async def get_user_settings(user_id):
     settings = await settings_col.find_one({"user_id": user_id})
     if not settings:
@@ -49,12 +53,18 @@ def get_minutes_diff(t_in, t_out):
         return int((t2 - t1).total_seconds() // 60) if t2 > t1 else 0
     except: return 0
 
-def calculate_ot_minutes(pm_out):
-    if not pm_out: return 0
+def calculate_ot_minutes(pm_in, pm_out):
+    if not pm_in or not pm_out: return 0
     try:
-        out_time = datetime.strptime(pm_out, "%H:%M")
+        if get_minutes_diff(pm_in, pm_out) <= 0: return 0
+        
+        in_time = datetime.strptime(normalize_time(pm_in), "%H:%M")
+        out_time = datetime.strptime(normalize_time(pm_out), "%H:%M")
         threshold = datetime.strptime("17:00", "%H:%M")
-        return int((out_time - threshold).total_seconds() // 60) if out_time > threshold else 0
+        
+        if out_time <= threshold: return 0
+        actual_ot_start = max(in_time, threshold)
+        return int((out_time - actual_ot_start).total_seconds() // 60)
     except: return 0
 
 def calculate_finish_date(remaining_minutes, settings, actual_avg_m):
@@ -149,10 +159,12 @@ async def index():
         # 2. Add/Edit Log Entry
         elif "log_date" in form:
             log_id, log_date = form.get("log_id"), form.get("log_date")
+            manual_credit = form.get("manual_credit", "")
             log_data = {
                 "user_id": user_id, "log_date": log_date, 
                 "am_in": form.get("am_in", ""), "am_out": form.get("am_out", ""), 
-                "pm_in": form.get("pm_in", ""), "pm_out": form.get("pm_out", "")
+                "pm_in": form.get("pm_in", ""), "pm_out": form.get("pm_out", ""),
+                "manual_credit": float(manual_credit) if manual_credit else None # Save as float
             }
             if log_id: await logs_col.update_one({"_id": ObjectId(log_id)}, {"$set": log_data})
             else: await logs_col.update_one({"log_date": log_date, "user_id": user_id}, {"$set": log_data}, upsert=True)
@@ -163,7 +175,6 @@ async def index():
     raw_logs = await logs_col.find({"user_id": user_id}).sort("log_date", -1).to_list(None)
     
     total_credited_m = 0
-    total_raw_m = 0 # Kept for internal logic if needed, but not displayed
     total_ot_m = 0
     am_total_m = 0 
     pm_total_m = 0 
@@ -176,39 +187,58 @@ async def index():
     for rl in raw_logs:
         log_dt = datetime.strptime(rl['log_date'], '%Y-%m-%d')
         is_holiday = rl['log_date'] in PH_HOLIDAYS
-        is_weekend = datetime.strptime(rl['log_date'], '%Y-%m-%d').weekday() >= 5
+        is_weekend = log_dt.weekday() >= 5
         
-        nai = normalize_time(rl.get('am_in'))
-        nao = normalize_time(rl.get('am_out'))
-        npi = normalize_time(rl.get('pm_in'))
-        npo = normalize_time(rl.get('pm_out'))
+        manual_val = rl.get('manual_credit')
+        
+        if manual_val is not None:
+            day_total = int(manual_val * 60)
+            day_ot = 0 
+            m_am = day_total 
+            m_pm = 0
+        else:
+            nai = normalize_time(rl.get('am_in'))
+            nao = normalize_time(rl.get('am_out'))
+            npi = normalize_time(rl.get('pm_in'))
+            npo = normalize_time(rl.get('pm_out'))
 
-        effective_ai = "08:00" if (not settings.get('allow_before_7am') and nai and nai < "08:00") else nai
-        
-        m_am = get_minutes_diff(effective_ai, nao)
-        m_pm = get_minutes_diff(npi, npo)
-        m_lunch = 60 if (settings.get('count_lunch') and nao and npi and "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15") else 0
-        day_ot = calculate_ot_minutes(npo) if settings.get('allow_after_5pm') else 0
-        
-        day_total = m_am + m_pm + m_lunch
-        if settings.get('strict_8h'): day_total = min(day_total, 480)
-        else: day_total += day_ot
+            # 1. Calculate base durations
+            # Apply 8AM restriction to AM In if setting is active
+            effective_ai = "08:00" if (not settings.get('allow_before_7am') and nai and nai < "08:00") else nai
+            
+            m_am = get_minutes_diff(effective_ai, nao)
+            m_pm = get_minutes_diff(npi, npo)
+            m_lunch = 60 if (settings.get('count_lunch') and nao and npi and "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15") else 0
+            
+            # 2. day_total is the simple sum of time spent
+            day_total = m_am + m_pm + m_lunch
+            
+            # 3. Calculate OT strictly for the "OT Stats" display
+            day_ot = calculate_ot_minutes(npi, npo) if settings.get('allow_after_5pm') else 0
+            
+            # 4. Apply System Modes
+            if settings.get('strict_8h'): 
+                day_total = min(day_total, 480) # Cap at 8 hours
+                day_ot = 0 # No OT recorded in strict mode
+            # NOTE: We NO LONGER do "day_total += day_ot" here. 
+            # Because m_pm already includes those minutes.
 
+        # 5. Apply Global Date Restrictions (Weekends/Holidays)
         if (is_weekend and not weekends_allowed) or (is_holiday and not holidays_allowed):
-            day_total = 0
-            day_ot = 0
+            day_total, day_ot, m_am, m_pm = 0, 0, 0, 0
 
         total_credited_m += day_total
-        total_raw_m += (get_minutes_diff(nai, nao) + get_minutes_diff(npi, npo))
         total_ot_m += day_ot
         
         if day_total > 0:
             am_total_m += m_am
-            pm_total_m += (m_pm + day_ot)
+            pm_total_m += (m_pm) # m_pm already contains the OT minutes
         
         processed_logs.append({
-            **rl, 'id': str(rl['_id']), 'credited_m': day_total,
+            **rl, 'id': str(rl['_id']), 
+            'credited_m': day_total,
             'credited_str': minutes_to_string(day_total),
+            'manual_credit': manual_val,
             'month_key': log_dt.strftime('%B %Y'),
             'display_day': log_dt.strftime('%d'),
             'display_weekday': log_dt.strftime('%A'),
@@ -216,7 +246,8 @@ async def index():
             'pm_str': f"{rl.get('pm_in')} - {rl.get('pm_out')}" if rl.get('pm_in') else "-"
         })
     
-    today_iso = date.today().isoformat()
+    ph_now = get_ph_now()
+    today_iso = ph_now.date().isoformat()
     today_log = next((l for l in processed_logs if l['log_date'] == today_iso), None)
 
     target_h = settings.get('required_hours', 486)
@@ -262,7 +293,7 @@ async def index():
         session_count=len(worked_days), # REPLACED Efficiency Index with Session Count
         next_ms=next_ms, ms_progress=ms_p, 
         pulse_trend="up", log_count=len(processed_logs),
-        ph_holidays=PH_HOLIDAYS, today_type=get_day_type(date.today().isoformat())
+        ph_holidays=PH_HOLIDAYS, today_type=get_day_type(today_iso)
     )
 
 @tracker_bp.route("/punch", methods=["POST"])
@@ -270,8 +301,9 @@ async def punch():
     if 'user_id' not in session: return {"error": "Unauthorized"}, 401
     
     user_id = session['user_id']
-    today_str = date.today().isoformat()
-    now_time = datetime.now().strftime("%H:%M")
+    ph_now = get_ph_now()
+    today_str = ph_now.strftime("%Y-%m-%d")
+    now_time = ph_now.strftime("%H:%M")
     
     # Find today's existing log
     log = await logs_col.find_one({"user_id": user_id, "log_date": today_str})

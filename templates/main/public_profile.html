@@ -4,10 +4,10 @@
     
     <!-- Top Nav / Back Button -->
     <div class="flex items-center justify-between mb-8">
-        <a href="{{ url_for('leaderboard.index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors group">
+        <button onclick="handleBack()" class="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors group bg-transparent border-none p-0 cursor-pointer">
             <i data-lucide="arrow-left" class="w-4 h-4 transition-transform group-hover:-translate-x-1"></i>
-            <span class="text-[10px] font-black uppercase tracking-widest">Global Board</span>
-        </a>
+            <span class="text-[10px] font-black uppercase tracking-widest">Back to Board</span>
+        </button>
         <button onclick="copyProfileLink()" class="p-2 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all active:scale-90">
             <i data-lucide="share-2" class="w-4 h-4"></i>
         </button>
@@ -178,6 +178,14 @@
     function copyProfileLink() {
         navigator.clipboard.writeText(window.location.href);
         showToast("Profile Link Copied!");
+    }
+
+    function handleBack() {
+        if (document.referrer && document.referrer.includes(window.location.host)) {
+            window.location.href = document.referrer;
+        } else {
+            window.location.href = "{{ url_for('leaderboard.index') }}";
+        }
     }
 </script>
 {% endblock %}

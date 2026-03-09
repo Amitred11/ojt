@@ -475,6 +475,20 @@
                         <input type="time" name="pm_out" id="pm_out" class="w-full bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-center text-white">
                     </div>
                 </div>
+                <!-- index.html - Inside <form id="log-form"> -->
+                <div class="bg-indigo-500/5 border border-indigo-500/10 rounded-2xl p-5 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Manual Credit Override</label>
+                        <span class="text-[8px] bg-indigo-500 text-white px-2 py-0.5 rounded font-black">OPTIONAL</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <input type="number" step="0.5" name="manual_credit" id="manual_credit" placeholder="0.0" 
+                            class="w-24 bg-slate-950 border border-white/10 rounded-xl p-3 text-white font-black text-xl outline-none focus:border-indigo-500">
+                        <p class="text-[9px] text-slate-500 font-bold uppercase leading-tight">
+                            Entering a value here <span class="text-indigo-400">ignores</span> the time fields above and forces this amount of hours.
+                        </p>
+                    </div>
+                </div>
                 <button type="submit" id="submit-btn" class="w-full bg-white text-slate-950 font-900 py-5 rounded-2xl shadow-xl mt-6">Log Session</button>
             </div>
         </form>
@@ -512,7 +526,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="editLog('{{ log.id }}', '{{ log.log_date }}', '{{ log.am_in }}', '{{ log.am_out }}', '{{ log.pm_in }}', '{{ log.pm_out }}', '{{ log.manual_credit or '' }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-400"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
                                 <button onclick="confirmDelete(event, '{{ url_for('tracker.delete_log', log_id=log.id) }}')" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                             </div>
                         </div>
@@ -587,7 +601,7 @@ function setLogMode(mode) {
 function checkDateRestrictions() {
     const dateInput = document.getElementById('log_date');
     const dateStr = dateInput.value;
-    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const todayStr = "{{ today }}";
 
     const getBlockStatus = (targetDate) => {
         const [y, m, d] = targetDate.split('-').map(Number);
@@ -665,7 +679,7 @@ function checkDateRestrictions() {
         ['am_in', 'am_out', 'pm_in', 'pm_out'].forEach(id => document.getElementById(id).value = "");
     }
 
-    function editLog(id, date, amIn, amOut, pmIn, pmOut) {
+    function editLog(id, date, amIn, amOut, pmIn, pmOut, manualCredit) {
         setLogMode('manual');
         document.getElementById('log_id').value = id;
         document.getElementById('log_date').value = date;
@@ -673,6 +687,7 @@ function checkDateRestrictions() {
         document.getElementById('am_out').value = amOut;
         document.getElementById('pm_in').value = pmIn;
         document.getElementById('pm_out').value = pmOut;
+        document.getElementById('manual_credit').value = manualCredit || ""; 
         document.getElementById('form-title').innerText = "Update Session";
         document.getElementById('submit-btn').innerText = "Update Session";
         document.getElementById('cancel-edit').classList.remove('hidden');
@@ -685,6 +700,7 @@ function checkDateRestrictions() {
         document.getElementById('log-form').reset();
         document.getElementById('log_date').value = "{{ today }}";
         document.getElementById('form-title').innerText = "New Entry";
+        document.getElementById('manual_credit').value = "";
         document.getElementById('submit-btn').innerText = "Log Session";
         document.getElementById('cancel-edit').classList.add('hidden');
         checkDateRestrictions();

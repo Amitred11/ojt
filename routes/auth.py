@@ -120,6 +120,13 @@ async def login():
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 async def register():
+    # Check if registration is locked
+    config = await settings_col.find_one({"type": "global_config"})
+    reg_open = config.get('registration_open', True) if config else True
+    
+    if not reg_open:
+        await flash("Registration Protocol is currently LOCKED.", "error")
+        return redirect(url_for('auth.login'))
     if request.method == "POST":
         form = await request.form
         username = form.get("username").lower().strip()
@@ -146,6 +153,21 @@ async def register():
     return await render_template("auth/register.html")
 
 import re # Add this import at the top of your file
+
+@auth_bp.route("/admin/toggle-reg", methods=["POST"])
+async def toggle_registration():
+    if not is_admin(): return {"status": "unauthorized"}, 403
+    
+    config = await settings_col.find_one({"type": "global_config"})
+    current_status = config.get('registration_open', True) if config else True
+    new_status = not current_status
+    
+    await settings_col.update_one(
+        {"type": "global_config"},
+        {"$set": {"registration_open": new_status}},
+        upsert=True
+    )
+    return {"status": "success", "is_open": new_status}
 
 @auth_bp.route("/fix-account", methods=["GET", "POST"])
 async def fix_account():
@@ -202,6 +224,10 @@ async def manage_users():
     if not is_admin():
         await flash("Access Denied.", "error")
         return redirect(url_for('tracker.index'))
+
+    # Fetch global config
+    config = await settings_col.find_one({"type": "global_config"})
+    reg_open = config.get('registration_open', True) if config else True
     
     users_cursor = users_col.find().sort("username", 1)
     all_users = await users_cursor.to_list(length=500)
@@ -240,7 +266,8 @@ async def manage_users():
         "auth/admin_users.html", 
         pending=pending, 
         active=active, 
-        admin_id=ADMIN_ID
+        admin_id=ADMIN_ID,
+        reg_open=reg_open
     )
 
 @auth_bp.route("/admin/approve/<user_id>")
@@ -262,3 +289,53 @@ async def delete_user(user_id):
     await users_col.delete_one({"_id": ObjectId(user_id)})
     await flash("User Removed.", "error")
     return redirect(url_for('auth.manage_users'))
+
+# --- FORGOT PASSWORD SYSTEM ---
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+async def forgot_password():
+    if request.method == "POST":
+        form = await request.form
+        username = form.get("username").lower().strip()
+        user = await users_col.find_one({"username": username})
+
+        if user:
+            session['reset_user'] = username
+            return redirect(url_for('auth.verify_recovery'))
+        
+        await flash("Identity not found in records.", "error")
+    return await render_template("auth/forgot_password.html")
+
+@auth_bp.route("/verify-recovery", methods=["GET", "POST"])
+async def verify_recovery():
+    username = session.get('reset_user')
+    if not username:
+        return redirect(url_for('auth.forgot_password'))
+
+    user = await users_col.find_one({"username": username})
+    
+    # In your registration, you should add a 'security_answer' field.
+    # If they don't have one (old accounts), we use a default or redirect to fix-account.
+    if not user.get('security_answer'):
+        await flash("No recovery method set for this account. Use Migration Tool.", "info")
+        return redirect(url_for('auth.fix_account'))
+
+    if request.method == "POST":
+        form = await request.form
+        answer = form.get("answer").lower().strip()
+        new_password = form.get("password")
+
+        # Check if the recovery answer matches (stored as a hash for security)
+        if check_password_hash(user['security_answer'], answer):
+            new_hashed_pw = generate_password_hash(new_password)
+            await users_col.update_one(
+                {"_id": user['_id']},
+                {"$set": {"password": new_hashed_pw}}
+            )
+            session.pop('reset_user', None)
+            await flash("Security Override Successful. Password Updated.", "success")
+            return redirect(url_for('auth.login'))
+        else:
+            await flash("Recovery answer is incorrect.", "error")
+
+    return await render_template("auth/verify_recovery.html", question=user.get('security_question', "What is your secret recovery key?"))

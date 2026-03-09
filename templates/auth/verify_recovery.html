@@ -1,0 +1,32 @@
+{% extends "main/base.html" %}
+{% block content %}
+<div class="h-[80vh] flex flex-col justify-center max-w-md mx-auto px-6">
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 mx-auto mb-4 border border-indigo-500/20">
+            <i data-lucide="shield-question" class="w-8 h-8"></i>
+        </div>
+        <h1 class="text-2xl font-black text-white uppercase italic">Security Challenge</h1>
+    </div>
+
+    <form method="POST" class="space-y-5 bg-slate-900/50 p-8 rounded-[2.5rem] border border-white/10">
+        <div class="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl">
+            <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Your Question</p>
+            <p class="text-white font-bold italic">"{{ question }}"</p>
+        </div>
+
+        <div class="space-y-1">
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Your Secret Answer</label>
+            <input type="text" name="answer" required class="w-full bg-black/40 border border-white/5 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="space-y-1">
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">New Password</label>
+            <input type="password" name="password" required placeholder="••••••••" class="w-full bg-black/40 border border-white/5 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <button class="w-full bg-indigo-600 text-white font-black py-4 rounded-xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 transition-all uppercase text-xs tracking-widest">
+            Reset Password
+        </button>
+    </form>
+</div>
+{% endblock %}

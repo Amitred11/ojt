@@ -4,65 +4,59 @@ from db import get_db
 from datetime import datetime, timedelta
 from util import process_multiple_images
 from bson import ObjectId
+from werkzeug.security import generate_password_hash, check_password_hash
 # new
 from utils.achievements import get_achievements
 from routes.tracker import PH_HOLIDAYS
 import re
 
-def calculate_credited_minutes(log, settings):
-    """Matches the exact logic used in the Leaderboard route."""
-    def normalize_time(t_str):
-        if not t_str or ":" not in t_str: return None
-        try:
-            parts = t_str.split(':')
-            return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
-        except: return None
+def get_minutes_diff(t_in, t_out):
+    if not t_in or not t_out: return 0
+    try:
+        t1 = datetime.strptime(normalize_time(t_in), "%H:%M")
+        t2 = datetime.strptime(normalize_time(t_out), "%H:%M")
+        return int((t2 - t1).total_seconds() // 60) if t2 > t1 else 0
+    except: return 0
 
+def calculate_credited_minutes(log, settings):
+    """
+    MATCHES TRACKER/LEADERBOARD LOGIC:
+    Handles Manual Override, 19:50 bug, and double-counting.
+    """
+    # 1. Handle Manual Override (PRIORITY)
+    manual_val = log.get('manual_credit')
+    if manual_val is not None:
+        return int(manual_val * 60)
+
+    # 2. Automatic Calculation
     nai = normalize_time(log.get('am_in'))
     nao = normalize_time(log.get('am_out'))
     npi = normalize_time(log.get('pm_in'))
     npo = normalize_time(log.get('pm_out'))
 
-    # Start time logic (e.g., 7am vs 8am)
+    # Start time restriction (e.g. 8am)
     eff_ai = "08:00" if (not settings.get('allow_before_7am') and nai and nai < "08:00") else nai
     
-    # Calculate durations
-    def get_diff(t1_str, t2_str):
-        if not t1_str or not t2_str: return 0
-        try:
-            t1 = datetime.strptime(t1_str, "%H:%M")
-            t2 = datetime.strptime(t2_str, "%H:%M")
-            return int((t2 - t1).total_seconds() // 60) if t2 > t1 else 0
-        except: return 0
-
-    m_am = get_diff(eff_ai, nao)
-    m_pm = get_diff(npi, npo)
+    m_am = get_minutes_diff(eff_ai, nao)
+    m_pm = get_minutes_diff(npi, npo)
     
     # Lunch Logic
     m_lunch = 60 if (settings.get('count_lunch') and nao and npi and 
                     "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15") else 0
     
-    # OT Logic
-    day_ot = 0
-    if settings.get('allow_after_5pm') and npo:
-        try:
-            out_time = datetime.strptime(npo, "%H:%M")
-            threshold = datetime.strptime("17:00", "%H:%M")
-            day_ot = int((out_time - threshold).total_seconds() // 60) if out_time > threshold else 0
-        except: pass
-
     total = m_am + m_pm + m_lunch
     
     if settings.get('strict_8h'):
         return min(total, 480)
     
-    return total + day_ot
+    # In Variable mode, m_pm already includes the duration worked after 5pm.
+    # We NO LONGER add day_ot separately to avoid double-counting.
+    return total
 
 def normalize_time(t_str):
     if not t_str or ":" not in t_str: return None
     try:
         parts = t_str.split(':')
-        # This ensures "8:30" becomes "08:30", making string comparison ("<") work!
         return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
     except: return None
 
@@ -147,54 +141,56 @@ async def view_profile(user_id=None):
     target_uid = user_id if user_id else curr_uid
     is_owner = (target_uid == curr_uid)
 
-    # 1. Fetch All Data for Ranking (Sync with Leaderboard)
+    # 1. Fetch Data
     all_logs = await db.logs.find({}).to_list(None)
     all_settings = await db.settings.find({}).to_list(None)
     p = await db.profiles.find_one({'user_id': target_uid}) or {}
-    received_hype = await db.notifications.find({
-        "target_uid": target_uid 
-    }).sort("created_at", -1).limit(5).to_list(None)
+    
+    # Handle Hype Notifications
+    received_hype = await db.notifications.find({"target_uid": target_uid}).sort("created_at", -1).limit(5).to_list(None)
     for hype in received_hype:
         if 'created_at' in hype:
-            # Add 8 hours to the UTC time stored in DB
             hype['ph_time'] = hype['created_at'] + timedelta(hours=8)
-    settings_map = {str(s['user_id']): s for s in all_settings}
+            
+    settings_map = {str(s['user_id']): s for s in all_settings if 'user_id' in s}
     
-    # 2. Process ALL users to determine Rank (The Leaderboard Logic)
+    # 2. Process ALL users to determine Rank (Sync with Leaderboard)
     user_totals = {} 
     target_user_logs = []
+    early_logs, late_logs, weekend_logs = 0, 0, 0
     
-    # Achievement-specific counters for target user
-    early_logs = 0
-    late_logs = 0
-    weekend_logs = 0
-    
-
     for log in all_logs:
         uid = str(log['user_id'])
-        # Get settings or default
         u_set = settings_map.get(uid, {
             "strict_8h": False, "count_lunch": False, 
             "allow_before_7am": False, "allow_after_5pm": True, 
-            "include_weekends_eta": False
+            "allow_weekend_duty": False, "allow_holiday_duty": False
         })
         
-        # Calculate minutes using the EXACT same logic as leaderboard
+        # Calculate Credited Minutes
         credited_m = calculate_credited_minutes(log, u_set)
         
-        # Add to global totals for ranking
+        # Apply Date Restrictions
+        log_date_str = log.get('log_date', "")
+        is_holiday = log_date_str in PH_HOLIDAYS
+        is_weekend = False
+        try:
+            log_date_obj = datetime.strptime(log_date_str, '%Y-%m-%d')
+            is_weekend = log_date_obj.weekday() >= 5
+        except:
+            log_date_obj = datetime.now()
+
+        if (is_weekend and not u_set.get('allow_weekend_duty')) or \
+           (is_holiday and not u_set.get('allow_holiday_duty')):
+            credited_m = 0
+
+        # Update global totals for ranking
         user_totals[uid] = user_totals.get(uid, 0) + credited_m
         
-        # If this log belongs to the profile we are viewing, track extra stats
+        # If this is the target user, track their specific history and achievement stats
         if uid == target_uid:
-            log_date_str = log.get('log_date', "")
-            try:
-                log_date_obj = datetime.strptime(log_date_str, '%Y-%m-%d')
-                if log_date_obj.weekday() >= 5: weekend_logs += 1
-            except: 
-                log_date_obj = datetime.now()
-
-            # Early Bird / Night Owl checks
+            if is_weekend and credited_m > 0: weekend_logs += 1
+            
             nai = normalize_time(log.get('am_in'))
             npo = normalize_time(log.get('pm_out'))
             if nai and nai < "08:00": early_logs += 1
@@ -204,26 +200,22 @@ async def view_profile(user_id=None):
             log['display_hours'] = round(credited_m / 60, 2)
             target_user_logs.append(log)
 
-    # 3. Determine Rank (Sort everyone by total minutes)
-    sorted_ranking = sorted(user_totals.items(), key=lambda x: x[1], reverse=True)
-    
-    actual_rank = 0
-    for i, (uid, total) in enumerate(sorted_ranking, 1):
-        if uid == target_uid:
-            actual_rank = i
-            break
-
-    # 4. Final Calculations for the Target User
+    # 3. Final Calculations (AFTER the loop)
     total_minutes = user_totals.get(target_uid, 0)
     total_hours = total_minutes / 60
-    log_count = len(target_user_logs)
+    # Only count logs that actually contributed time as "sessions"
+    log_count = len([l for l in target_user_logs if l['display_hours'] > 0])
     
-    # Goal logic
+    # Determine Rank
+    sorted_ranking = sorted(user_totals.items(), key=lambda x: x[1], reverse=True)
+    actual_rank = next((i for i, (uid, total) in enumerate(sorted_ranking, 1) if uid == target_uid), 0)
+
+    # Goal and Velocity logic
     target_goal = 486
     progress = min(int((total_hours / target_goal) * 100), 100)
     avg_daily = round(total_hours / log_count, 1) if log_count > 0 else 0
 
-    # 5. Sync Achievements with stats
+    # 4. Achievements
     stats = {
         'rank': actual_rank, 
         'total_hours': total_hours,
@@ -455,3 +447,37 @@ async def delete_work_sample(index):
             flash("Work sample removed", "success")
             
     return redirect(url_for('portfolio.view_profile'))
+
+@portfolio_bp.route('/security/recovery', methods=['GET', 'POST'])
+async def manage_recovery():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    uid = ObjectId(session['user_id'])
+    user = await db.users.find_one({'_id': uid})
+
+    if request.method == 'POST':
+        form = await request.form
+        current_password = form.get('current_password')
+        new_question = form.get('security_question')
+        new_answer = form.get('security_answer')
+
+        # 1. Verify user identity before allowing security changes
+        if not check_password_hash(user['password'], current_password):
+            await flash("Identity verification failed. Incorrect password.", "error")
+            return redirect(url_for('portfolio.manage_recovery'))
+
+        # 2. Hash and save the new recovery method
+        hashed_answer = generate_password_hash(new_answer.lower().strip())
+        await db.users.update_one(
+            {'_id': uid},
+            {'$set': {
+                'security_question': new_question,
+                'security_answer': hashed_answer
+            }}
+        )
+        
+        await flash("Recovery Protocol successfully updated.", "success")
+        return redirect(url_for('portfolio.view_profile'))
+
+    return await render_template('portfolio/recovery_method.html', u=user)

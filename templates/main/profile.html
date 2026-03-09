@@ -12,6 +12,10 @@
             <button onclick="copyProfileLink()" class="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all">
                 <i data-lucide="share-2" class="w-5 h-5"></i>
             </button>
+            <!-- NEW RECOVERY LINK -->
+            <a href="{{ url_for('portfolio.manage_recovery') }}" class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </a>
             <a href="{{ url_for('portfolio.setup_profile') }}" class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-all">
                 <i data-lucide="edit-3" class="w-5 h-5"></i>
             </a>
