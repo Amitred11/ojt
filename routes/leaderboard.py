@@ -119,10 +119,10 @@ async def index():
     curr_user_id = str(session['user_id'])
     all_logs = await logs_col.find({}).to_list(None)
     all_profiles = await profiles_col.find({}).to_list(None)
-    all_settings = await settings_col.find({}).to_list(None)
+    all_settings = await settings_col.find({"user_id": {"$exists": True}}).to_list(None)
     
     profile_map = {str(p['user_id']): p.get('full_name', 'Anonymous') for p in all_profiles}
-    settings_map = {str(s['user_id']): s for s in all_settings}
+    settings_map = {str(s['user_id']): s for s in all_settings if 'user_id' in s}
 
     seven_days_ago = (get_ph_now() - timedelta(days=7)).strftime('%Y-%m-%d')
     weekly_gains = {} 

@@ -233,7 +233,7 @@ async def manage_users():
     all_users = await users_cursor.to_list(length=500)
     
     # Pre-fetch all settings to reduce database queries
-    all_settings_list = await settings_col.find().to_list(length=500)
+    all_settings_list = await settings_col.find({"user_id": {"$exists": True}}).to_list(length=500)
     settings_map = {str(s['user_id']): s for s in all_settings_list}
     
     pending = []
