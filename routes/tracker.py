@@ -22,10 +22,11 @@ async def get_user_settings(user_id):
         return {
             "required_hours": 486,
             "strict_8h": False,
+            "is_10h_mode": False,
             "count_lunch": False,
             "allow_before_7am": False,
             "allow_after_5pm": True,
-            "allow_weekend_duty": False, # Renamed for clarity
+            "allow_weekend_duty": False,
             "allow_holiday_duty": False
         }
     return settings
@@ -47,7 +48,6 @@ def normalize_time(t_str):
 def get_minutes_diff(t_in, t_out):
     if not t_in or not t_out: return 0
     try:
-        # Normalize to HH:MM
         t1 = datetime.strptime(normalize_time(t_in), "%H:%M")
         t2 = datetime.strptime(normalize_time(t_out), "%H:%M")
         return int((t2 - t1).total_seconds() // 60) if t2 > t1 else 0
@@ -57,11 +57,9 @@ def calculate_ot_minutes(pm_in, pm_out):
     if not pm_in or not pm_out: return 0
     try:
         if get_minutes_diff(pm_in, pm_out) <= 0: return 0
-        
         in_time = datetime.strptime(normalize_time(pm_in), "%H:%M")
         out_time = datetime.strptime(normalize_time(pm_out), "%H:%M")
         threshold = datetime.strptime("17:00", "%H:%M")
-        
         if out_time <= threshold: return 0
         actual_ot_start = max(in_time, threshold)
         return int((out_time - actual_ot_start).total_seconds() // 60)
@@ -71,33 +69,37 @@ def calculate_finish_date(remaining_minutes, settings, actual_avg_m):
     if remaining_minutes <= 0: 
         return {"date": "Completed", "days_left": 0, "calendar_days": 0}
     
-    # Projection Pace (minimum 8h if average is too low)
-    proj_speed = actual_avg_m if actual_avg_m > 60 else 480 
-    
+    transition_date = date(2026, 3, 16)
     current_date = date.today()
     start_date = current_date
     temp_m = remaining_minutes
     
     max_loops = 2000 
     loops = 0
+    work_days_left = 0
     
     while temp_m > 0 and loops < max_loops:
         current_date += timedelta(days=1)
-        is_weekend = current_date.weekday() >= 5
+        weekday = current_date.weekday()
         is_holiday = current_date.isoformat() in PH_HOLIDAYS
         
-        # PERSISTENT PROJECTION LOGIC:
-        # We ALWAYS skip weekends and holidays for future projection.
-        # This keeps the ETA stable. The date only moves "closer" 
-        # because weekend/holiday logs reduce the 'remaining_minutes' total.
-        if not is_weekend and not is_holiday:
+        if settings.get('is_10h_mode') and current_date >= transition_date:
+            is_work_day = weekday <= 3 
+            default_pace = 600         
+        else:
+            is_work_day = weekday <= 4 
+            default_pace = 480         
+
+        proj_speed = actual_avg_m if actual_avg_m > default_pace else default_pace 
+        
+        if is_work_day and not is_holiday:
             temp_m -= proj_speed
-            
+            work_days_left += 1
         loops += 1
         
     return {
         "date": current_date.strftime("%b %d, %Y"),
-        "days_left": remaining_minutes / proj_speed,
+        "days_left": work_days_left,
         "calendar_days": (current_date - start_date).days
     }
 
@@ -113,7 +115,6 @@ def get_day_type(date_str):
 async def mark_notifications_read():
     if 'user_id' not in session: return {"error": "Unauthorized"}, 401
     user_id = str(session['user_id'])
-    
     await notifications_col.update_many(
         {"target_uid": user_id, "is_read": False},
         {"$set": {"is_read": True}}
@@ -125,12 +126,13 @@ async def index():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     user_id = session['user_id']
     settings = await get_user_settings(user_id)
+    transition_date = date(2026, 3, 16)
+    
     unread_count = await notifications_col.count_documents({
         "target_uid": str(user_id),
         "is_read": False
     })
 
-    # 2. Get the actual list (last 10) for the Wall
     notifications = await notifications_col.find({
         "target_uid": str(user_id) 
     }).sort("created_at", -1).limit(10).to_list(None)
@@ -140,13 +142,12 @@ async def index():
 
     if request.method == "POST":
         form = await request.form
-        
-        # 1. Update Configuration
         if "update_configs" in form:
             settings = {
                 "user_id": user_id,
                 "required_hours": int(form.get("required_hours", 486)),
                 "strict_8h": "strict_8h" in form,
+                "is_10h_mode": "is_10h_mode" in form,
                 "count_lunch": "count_lunch" in form,
                 "allow_before_7am": "allow_before_7am" in form,
                 "allow_after_5pm": "allow_after_5pm" in form,
@@ -154,9 +155,7 @@ async def index():
                 "allow_holiday_duty": "allow_holiday_duty" in form
             }
             await settings_col.update_one({"user_id": user_id}, {"$set": settings}, upsert=True)
-            # Do NOT return yet, let the code below recalculate everything with the new settings
 
-        # 2. Add/Edit Log Entry
         elif "log_date" in form:
             log_id, log_date = form.get("log_id"), form.get("log_date")
             manual_credit = form.get("manual_credit", "")
@@ -164,14 +163,13 @@ async def index():
                 "user_id": user_id, "log_date": log_date, 
                 "am_in": form.get("am_in", ""), "am_out": form.get("am_out", ""), 
                 "pm_in": form.get("pm_in", ""), "pm_out": form.get("pm_out", ""),
-                "manual_credit": float(manual_credit) if manual_credit else None # Save as float
+                "manual_credit": float(manual_credit) if manual_credit else None
             }
             if log_id: await logs_col.update_one({"_id": ObjectId(log_id)}, {"$set": log_data})
             else: await logs_col.update_one({"log_date": log_date, "user_id": user_id}, {"$set": log_data}, upsert=True)
             if not request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return redirect(url_for("tracker.index"))
 
-    # 3. THE RECALCULATION ENGINE
     raw_logs = await logs_col.find({"user_id": user_id}).sort("log_date", -1).to_list(None)
     
     total_credited_m = 0
@@ -180,59 +178,57 @@ async def index():
     pm_total_m = 0 
     processed_logs = []
     
-    settings = await get_user_settings(user_id)
     weekends_allowed = settings.get('allow_weekend_duty', False)
     holidays_allowed = settings.get('allow_holiday_duty', False)
+    is_10h_mode = settings.get('is_10h_mode', False)
 
     for rl in raw_logs:
         log_dt = datetime.strptime(rl['log_date'], '%Y-%m-%d')
+        log_date_obj = log_dt.date()
         is_holiday = rl['log_date'] in PH_HOLIDAYS
         is_weekend = log_dt.weekday() >= 5
-        
         manual_val = rl.get('manual_credit')
         
         if manual_val is not None:
             day_total = int(manual_val * 60)
             day_ot = 0 
-            m_am = day_total 
-            m_pm = 0
+            m_am, m_pm = day_total, 0
         else:
             nai = normalize_time(rl.get('am_in'))
             nao = normalize_time(rl.get('am_out'))
             npi = normalize_time(rl.get('pm_in'))
             npo = normalize_time(rl.get('pm_out'))
 
-            # 1. Calculate base durations
-            # Apply 8AM restriction to AM In if setting is active
-            effective_ai = "08:00" if (not settings.get('allow_before_7am') and nai and nai < "08:00") else nai
+            effective_start = "07:00" if (is_10h_mode and log_date_obj >= transition_date) else "08:00"
             
-            m_am = get_minutes_diff(effective_ai, nao)
+            if not settings.get('allow_before_7am') and nai and nai < effective_start:
+                nai = effective_start
+
+            m_am = get_minutes_diff(nai, nao)
             m_pm = get_minutes_diff(npi, npo)
             m_lunch = 60 if (settings.get('count_lunch') and nao and npi and "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15") else 0
             
-            # 2. day_total is the simple sum of time spent
             day_total = m_am + m_pm + m_lunch
-            
-            # 3. Calculate OT strictly for the "OT Stats" display
             day_ot = calculate_ot_minutes(npi, npo) if settings.get('allow_after_5pm') else 0
             
-            # 4. Apply System Modes
-            if settings.get('strict_8h'): 
-                day_total = min(day_total, 480) # Cap at 8 hours
-                day_ot = 0 # No OT recorded in strict mode
-            # NOTE: We NO LONGER do "day_total += day_ot" here. 
-            # Because m_pm already includes those minutes.
+            if is_10h_mode:
+                if log_date_obj < transition_date:
+                    day_total = min(day_total, 480)
+                else:
+                    day_total = min(day_total, 600)
+                day_ot = 0
+            elif settings.get('strict_8h'): 
+                day_total = min(day_total, 480)
+                day_ot = 0
 
-        # 5. Apply Global Date Restrictions (Weekends/Holidays)
         if (is_weekend and not weekends_allowed) or (is_holiday and not holidays_allowed):
             day_total, day_ot, m_am, m_pm = 0, 0, 0, 0
 
         total_credited_m += day_total
         total_ot_m += day_ot
-        
         if day_total > 0:
             am_total_m += m_am
-            pm_total_m += (m_pm) # m_pm already contains the OT minutes
+            pm_total_m += m_pm
         
         processed_logs.append({
             **rl, 'id': str(rl['_id']), 
@@ -249,15 +245,12 @@ async def index():
     ph_now = get_ph_now()
     today_iso = ph_now.date().isoformat()
     today_log = next((l for l in processed_logs if l['log_date'] == today_iso), None)
-
     target_h = settings.get('required_hours', 486)
     target_m = target_h * 60
     rem_m = max(0, target_m - total_credited_m)
-    
     worked_days = [l for l in processed_logs if l['credited_m'] > 0]
     avg_m = total_credited_m / len(worked_days) if worked_days else 480
     finish_info = calculate_finish_date(rem_m, settings, avg_m)
-    
     cur_h = total_credited_m / 60
     milestones = [
         {"label": "The Start", "target": 1, "done": cur_h >= 1},
@@ -267,7 +260,6 @@ async def index():
     ]
     next_ms = next((m for m in milestones if not m['done']), milestones[-1])
     ms_p = min((cur_h / next_ms['target']) * 100, 100) if next_ms['target'] > 0 else 100
-
     grouped = {}
     for l in processed_logs:
         if l['month_key'] not in grouped: grouped[l['month_key']] = {'logs': [], 'month_total_m': 0}
@@ -277,7 +269,7 @@ async def index():
     return await render_template(
         "main/index.html", grouped_logs=grouped, settings=settings, 
         total_str=minutes_to_string(total_credited_m),
-        ot_total_str=minutes_to_string(total_ot_m), # REPLACED Raw Total String
+        ot_total_str=minutes_to_string(total_ot_m),
         remaining_str=minutes_to_string(rem_m),
         progress=min((total_credited_m/target_m)*100, 100), 
         today=today_iso,
@@ -290,7 +282,7 @@ async def index():
         am_perc=round((am_total_m/((am_total_m+pm_total_m) or 1))*100),
         pm_perc=round((pm_total_m/((am_total_m+pm_total_m) or 1))*100),
         ot_str=minutes_to_string(total_ot_m),
-        session_count=len(worked_days), # REPLACED Efficiency Index with Session Count
+        session_count=len(worked_days),
         next_ms=next_ms, ms_progress=ms_p, 
         pulse_trend="up", log_count=len(processed_logs),
         ph_holidays=PH_HOLIDAYS, today_type=get_day_type(today_iso)
@@ -299,50 +291,23 @@ async def index():
 @tracker_bp.route("/punch", methods=["POST"])
 async def punch():
     if 'user_id' not in session: return {"error": "Unauthorized"}, 401
-    
     user_id = session['user_id']
     ph_now = get_ph_now()
     today_str = ph_now.strftime("%Y-%m-%d")
     now_time = ph_now.strftime("%H:%M")
-    
-    # Find today's existing log
     log = await logs_col.find_one({"user_id": user_id, "log_date": today_str})
-    
     if not log:
-        # First punch of the day
-        new_log = {
-            "user_id": user_id,
-            "log_date": today_str,
-            "am_in": now_time, "am_out": "",
-            "pm_in": "", "pm_out": ""
-        }
+        new_log = {"user_id": user_id, "log_date": today_str, "am_in": now_time, "am_out": "", "pm_in": "", "pm_out": ""}
         await logs_col.insert_one(new_log)
         return {"status": "success", "action": "AM IN", "time": now_time}
-
-    # Sequential Logic: Fill the first empty slot
     field_to_update = ""
     action_name = ""
-    
-    if not log.get("am_in"): 
-        field_to_update = "am_in"
-        action_name = "AM IN"
-    elif not log.get("am_out"): 
-        field_to_update = "am_out"
-        action_name = "AM OUT"
-    elif not log.get("pm_in"): 
-        field_to_update = "pm_in"
-        action_name = "PM IN"
-    elif not log.get("pm_out"): 
-        field_to_update = "pm_out"
-        action_name = "PM OUT"
-    else:
-        return {"status": "full", "message": "Day already completed"}
-
-    await logs_col.update_one(
-        {"_id": log["_id"]}, 
-        {"$set": {field_to_update: now_time}}
-    )
-    
+    if not log.get("am_in"): field_to_update, action_name = "am_in", "AM IN"
+    elif not log.get("am_out"): field_to_update, action_name = "am_out", "AM OUT"
+    elif not log.get("pm_in"): field_to_update, action_name = "pm_in", "PM IN"
+    elif not log.get("pm_out"): field_to_update, action_name = "pm_out", "PM OUT"
+    else: return {"status": "full", "message": "Day already completed"}
+    await logs_col.update_one({"_id": log["_id"]}, {"$set": {field_to_update: now_time}})
     return {"status": "success", "action": action_name, "time": now_time}
     
 @tracker_bp.route("/delete_log/<log_id>")
