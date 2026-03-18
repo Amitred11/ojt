@@ -199,24 +199,37 @@ async def index():
             npi = normalize_time(rl.get('pm_in'))
             npo = normalize_time(rl.get('pm_out'))
 
+            # --- IMPROVED CALCULATION ENGINE ---
             effective_start = "07:00" if (is_10h_mode and log_date_obj >= transition_date) else "08:00"
             
-            if not settings.get('allow_before_7am') and nai and nai < effective_start:
-                nai = effective_start
+            # If AM In is empty, it's an absent period
+            if not nai:
+                m_am = 0
+            else:
+                # Apply the "Allow before 7/8AM" rule
+                if not settings.get('allow_before_7am') and nai < effective_start:
+                    nai = effective_start
+                m_am = get_minutes_diff(nai, nao)
 
-            m_am = get_minutes_diff(nai, nao)
-            m_pm = get_minutes_diff(npi, npo)
+            # If PM In is empty, it's an absent period
+            if not npi:
+                m_pm = 0
+            else:
+                m_pm = get_minutes_diff(npi, npo)
+
+            # Lunch Logic
             m_lunch = 60 if (settings.get('count_lunch') and nao and npi and "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15") else 0
             
             day_total = m_am + m_pm + m_lunch
             day_ot = calculate_ot_minutes(npi, npo) if settings.get('allow_after_5pm') else 0
             
+            # Apply Caps based on Mode
             if is_10h_mode:
                 if log_date_obj < transition_date:
-                    day_total = min(day_total, 480)
+                    day_total = min(day_total, 480) # 8h cap before March 16
                 else:
-                    day_total = min(day_total, 600)
-                day_ot = 0
+                    day_total = min(day_total, 600) # 10h cap after March 16
+                day_ot = 0 # No extra OT credit in compressed mode
             elif settings.get('strict_8h'): 
                 day_total = min(day_total, 480)
                 day_ot = 0

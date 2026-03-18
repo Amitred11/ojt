@@ -133,48 +133,63 @@ async def index():
         if uid not in user_stats:
             user_stats[uid] = {'credited_minutes': 0, 'log_count': 0}
         
-        # Get settings for this specific student
         u_set = settings_map.get(uid, {
-            "strict_8h": False, "count_lunch": False, 
+            "strict_8h": False, "is_10h_mode": False, "count_lunch": False, 
             "allow_before_7am": False, "allow_after_5pm": True, 
             "allow_weekend_duty": False, "allow_holiday_duty": False
         })
         
         log_date = log.get('log_date', "")
-        is_holiday = log_date in PH_HOLIDAYS
-        is_weekend = False
-        try: is_weekend = datetime.strptime(log_date, '%Y-%m-%d').weekday() >= 5
-        except: pass
+        try:
+            log_date_obj = datetime.strptime(log_date, '%Y-%m-%d').date()
+            is_weekend = log_date_obj.weekday() >= 5
+        except:
+            continue
 
-        # --- THE CALCULATION ENGINE (MATCHES TRACKER) ---
+        is_holiday = log_date in PH_HOLIDAYS
+        transition_date = date(2026, 3, 16)
+        is_10h_mode = u_set.get('is_10h_mode', False)
+
+        # --- THE SYNCED CALCULATION ENGINE ---
         manual_val = log.get('manual_credit')
-        
         if manual_val is not None:
             day_total = int(manual_val * 60)
         else:
-            nai, nao, npi, npo = normalize_time(log.get('am_in')), normalize_time(log.get('am_out')), normalize_time(log.get('pm_in')), normalize_time(log.get('pm_out'))
+            nai, nao = normalize_time(log.get('am_in')), normalize_time(log.get('am_out'))
+            npi, npo = normalize_time(log.get('pm_in')), normalize_time(log.get('pm_out'))
             
-            # Apply 8AM restriction
-            eff_ai = "08:00" if (not u_set.get('allow_before_7am') and nai and nai < "08:00") else nai
+            effective_start = "07:00" if (is_10h_mode and log_date_obj >= transition_date) else "08:00"
             
-            m_am = get_minutes_diff(eff_ai, nao)
-            m_pm = get_minutes_diff(npi, npo)
+            # AM Calculation
+            if not nai or not nao: 
+                m_am = 0
+            else:
+                calc_ai = effective_start if (not u_set.get('allow_before_7am') and nai < effective_start) else nai
+                m_am = get_minutes_diff(calc_ai, nao)
+            
+            # PM Calculation
+            m_pm = get_minutes_diff(npi, npo) if (npi and npo) else 0
+            
+            # Lunch Calculation
             m_lunch = 60 if (u_set.get('count_lunch') and nao and npi and "11:45" <= nao <= "12:15" and "12:45" <= npi <= "13:15") else 0
             
             day_total = m_am + m_pm + m_lunch
             
-            if u_set.get('strict_8h'): 
+            # Apply Mode Caps
+            if is_10h_mode:
+                cap = 600 if log_date_obj >= transition_date else 480
+                day_total = min(day_total, cap)
+            elif u_set.get('strict_8h'): 
                 day_total = min(day_total, 480)
-            # Variable mode: No changes needed as m_pm already includes OT duration
 
-        # Apply Global Date Restrictions for this student
-        weekends_allowed = u_set.get('allow_weekend_duty', False)
-        holidays_allowed = u_set.get('allow_holiday_duty', False)
-        
-        if (is_weekend and not weekends_allowed) or (is_holiday and not holidays_allowed):
+        # Date Restrictions
+        if (is_weekend and not u_set.get('allow_weekend_duty')) or (is_holiday and not u_set.get('allow_holiday_duty')):
+            day_total = 0
+            
+        # Specific 10h Mode Rule: No Fridays after transition
+        if is_10h_mode and log_date_obj >= transition_date and log_date_obj.weekday() == 4:
             day_total = 0
 
-        # Update stats
         user_stats[uid]['credited_minutes'] += day_total
         if day_total > 0: 
             user_stats[uid]['log_count'] += 1

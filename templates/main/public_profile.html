@@ -111,7 +111,7 @@
     </div>
 
     <!-- Venue Card -->
-    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6">
+    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 mb-6">
         <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
                 <i data-lucide="building-2"></i>
@@ -123,11 +123,130 @@
         </div>
     </div>
 
+    <!-- TRAINING CALENDAR SECTION -->
+    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 mb-12">
+        <div class="flex items-center justify-between mb-8">
+            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <i data-lucide="calendar-days" class="w-4 h-4 text-indigo-400"></i> Training Calendar
+            </h3>
+            <div class="flex gap-4">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    <span class="text-[8px] font-black text-slate-500 uppercase">Worked</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span class="text-[8px] font-black text-slate-500 uppercase">OT</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Containers -->
+        <div class="space-y-10">
+            {% set current_month = namespace(value="") %}
+            
+            {% for log in student_logs %}
+                <!-- Month Header (Shows only when month changes) -->
+                {% if log.month_key != current_month.value %}
+                    {% if not loop.first %} </div> </div> {% endif %} <!-- Close previous month grid -->
+                    {% set current_month.value = log.month_key %}
+                    <div class="month-group">
+                        <h4 class="text-xs font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center gap-3">
+                            {{ log.month_key }}
+                            <span class="h-px flex-1 bg-white/5"></span>
+                        </h4>
+                        <!-- 7-Column Grid (Calendar Style) -->
+                        <div class="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                {% endif %}
+
+                <!-- Daily Calendar Card -->
+                <div class="relative group/day min-h-[70px] rounded-2xl border transition-all duration-300
+                    {% if log.has_time %}
+                        {% if log.is_ot %}
+                            bg-amber-500/10 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.05)]
+                        {% else %}
+                            bg-indigo-500/10 border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.05)]
+                        {% endif %}
+                    {% else %}
+                        bg-slate-950/40 border-white/5 opacity-40
+                    {% endif %}">
+                    
+                    <!-- Date Number -->
+                    <div class="absolute top-2 left-2.5">
+                        <span class="text-[10px] font-black {% if log.has_time %}text-white{% else %}text-slate-600{% endif %}">
+                            {{ log.display_day }}
+                        </span>
+                    </div>
+
+                    <!-- Weekday Tag -->
+                    <div class="absolute top-2 right-2.5">
+                        <span class="text-[7px] font-black uppercase tracking-tighter text-slate-500">
+                            {{ log.display_weekday[:3] }}
+                        </span>
+                    </div>
+
+                    <!-- Time indicators -->
+                    <div class="mt-7 px-2.5 pb-2">
+                        {% if log.has_time %}
+                            <div class="flex flex-col gap-0.5">
+                                <p class="text-[7px] font-black text-slate-400 uppercase leading-none truncate">
+                                    {{ log.am_str.split(' ')[0] }} 
+                                </p>
+                                <p class="text-[7px] font-black text-indigo-400 uppercase leading-none">
+                                    {{ log.credited_str.replace('h', 'H').replace('m', 'M') }}
+                                </p>
+                            </div>
+                        {% else %}
+                            <div class="h-1 w-4 bg-white/5 rounded-full mt-2"></div>
+                        {% endif %}
+                    </div>
+
+                    <!-- HOVER TOOLTIP (Shows full details) -->
+                    {% if log.has_time %}
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/day:block w-32 bg-slate-950 border border-white/10 p-2.5 rounded-xl shadow-2xl z-50 pointer-events-none backdrop-blur-xl">
+                        <p class="text-[8px] font-black text-white uppercase mb-1">{{ log.display_weekday }}, {{ log.display_day }}</p>
+                        <div class="space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-[7px] text-slate-500 font-bold uppercase">Morning:</span>
+                                <span class="text-[7px] text-white font-black">{{ log.am_str }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-[7px] text-slate-500 font-bold uppercase">Afternoon:</span>
+                                <span class="text-[7px] text-white font-black">{{ log.pm_str }}</span>
+                            </div>
+                        </div>
+                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-950 rotate-45 border-r border-b border-white/10"></div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if loop.last %} </div> </div> {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
     <p class="text-center text-slate-600 text-[9px] uppercase font-black mt-12 tracking-[0.4em]">
         Verified Portfolio • OJT Digital Identity Secure
     </p>
 
 </div>
+
+<style>
+    /* Clean custom scrollbar for the log list */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+</style>
 
 <!-- Global Interaction Feedback Toast -->
 <div id="socialToast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[2000] hidden">

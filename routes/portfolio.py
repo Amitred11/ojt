@@ -1,7 +1,7 @@
 import asyncio
 from quart import Blueprint, render_template, request, redirect, url_for, flash,  session
 from db import get_db
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date # Add date here
 from util import process_multiple_images
 from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -21,24 +21,44 @@ def get_minutes_diff(t_in, t_out):
 def calculate_credited_minutes(log, settings):
     """
     MATCHES TRACKER/LEADERBOARD LOGIC:
-    Handles Manual Override, 19:50 bug, and double-counting.
+    Handles Manual Override, 10h Transitions, and absence (empty logs).
     """
-    # 1. Handle Manual Override (PRIORITY)
+    # 1. Handle Manual Override
     manual_val = log.get('manual_credit')
     if manual_val is not None:
         return int(manual_val * 60)
 
-    # 2. Automatic Calculation
+    # 2. Setup Variables
+    log_date_str = log.get('log_date', "")
+    try:
+        log_date_obj = datetime.strptime(log_date_str, '%Y-%m-%d').date()
+    except:
+        log_date_obj = date.today()
+
+    transition_date = date(2026, 3, 16)
+    is_10h_mode = settings.get('is_10h_mode', False)
+    
     nai = normalize_time(log.get('am_in'))
     nao = normalize_time(log.get('am_out'))
     npi = normalize_time(log.get('pm_in'))
     npo = normalize_time(log.get('pm_out'))
 
-    # Start time restriction (e.g. 8am)
-    eff_ai = "08:00" if (not settings.get('allow_before_7am') and nai and nai < "08:00") else nai
+    # 3. Absence Check
+    if not (nai or npi):
+        return 0
+
+    # 4. Start time restriction
+    effective_start = "07:00" if (is_10h_mode and log_date_obj >= transition_date) else "08:00"
     
-    m_am = get_minutes_diff(eff_ai, nao)
-    m_pm = get_minutes_diff(npi, npo)
+    # AM Calc
+    if not nai or not nao:
+        m_am = 0
+    else:
+        calc_ai = effective_start if (not settings.get('allow_before_7am') and nai < effective_start) else nai
+        m_am = get_minutes_diff(calc_ai, nao)
+    
+    # PM Calc
+    m_pm = get_minutes_diff(npi, npo) if (npi and npo) else 0
     
     # Lunch Logic
     m_lunch = 60 if (settings.get('count_lunch') and nao and npi and 
@@ -46,12 +66,19 @@ def calculate_credited_minutes(log, settings):
     
     total = m_am + m_pm + m_lunch
     
-    if settings.get('strict_8h'):
-        return min(total, 480)
+    # 5. Apply Caps
+    if is_10h_mode:
+        cap = 600 if log_date_obj >= transition_date else 480
+        total = min(total, cap)
+    elif settings.get('strict_8h'):
+        total = min(total, 480)
     
-    # In Variable mode, m_pm already includes the duration worked after 5pm.
-    # We NO LONGER add day_ot separately to avoid double-counting.
     return total
+
+def minutes_to_str(m):
+    h = int(m // 60)
+    minutes = int(m % 60)
+    return f"{h}h {minutes}m"
 
 def normalize_time(t_str):
     if not t_str or ":" not in t_str: return None
@@ -130,7 +157,6 @@ async def setup_profile():
 
 # new
 # routes/portfolio.py
-
 @portfolio_bp.route('/user/<user_id>')
 @portfolio_bp.route('/my-profile')
 async def view_profile(user_id=None):
@@ -154,23 +180,26 @@ async def view_profile(user_id=None):
             
     settings_map = {str(s['user_id']): s for s in all_settings if 'user_id' in s}
     
-    # 2. Process ALL users to determine Rank (Sync with Leaderboard)
+    # 2. Process ALL users for Ranking and TARGET user for History
     user_totals = {} 
-    target_user_logs = []
+    student_logs = [] # This is for the "Training Activity Log" UI
     early_logs, late_logs, weekend_logs = 0, 0, 0
     
+    # Sort all logs by date descending so history shows newest first
+    all_logs.sort(key=lambda x: x.get('log_date', ""), reverse=False)
+
     for log in all_logs:
         uid = str(log['user_id'])
         u_set = settings_map.get(uid, {
-            "strict_8h": False, "count_lunch": False, 
+            "strict_8h": False, "is_10h_mode": False, "count_lunch": False, 
             "allow_before_7am": False, "allow_after_5pm": True, 
             "allow_weekend_duty": False, "allow_holiday_duty": False
         })
         
-        # Calculate Credited Minutes
+        # Calculate Credited Minutes using your fixed engine
         credited_m = calculate_credited_minutes(log, u_set)
         
-        # Apply Date Restrictions
+        # Date Restrictions
         log_date_str = log.get('log_date', "")
         is_holiday = log_date_str in PH_HOLIDAYS
         is_weekend = False
@@ -187,30 +216,38 @@ async def view_profile(user_id=None):
         # Update global totals for ranking
         user_totals[uid] = user_totals.get(uid, 0) + credited_m
         
-        # If this is the target user, track their specific history and achievement stats
+        # POPULATE LOG HISTORY FOR THE TARGET USER
         if uid == target_uid:
+            # Achievement Stats
             if is_weekend and credited_m > 0: weekend_logs += 1
-            
             nai = normalize_time(log.get('am_in'))
             npo = normalize_time(log.get('pm_out'))
             if nai and nai < "08:00": early_logs += 1
-            if npo and npo >= "20:00": late_logs += 1
+            if npo and npo >= "18:00": late_logs += 1
 
-            log['log_date_obj'] = log_date_obj
-            log['display_hours'] = round(credited_m / 60, 2)
-            target_user_logs.append(log)
+            # Format entry for the UI list
+            student_logs.append({
+                'display_day': log_date_obj.strftime('%d'),
+                'display_weekday': log_date_obj.strftime('%A'),
+                'month_key': log_date_obj.strftime('%B %Y'),
+                'am_str': f"{log.get('am_in') or '--'} - {log.get('am_out') or '--'}",
+                'pm_str': f"{log.get('pm_in') or '--'} - {log.get('pm_out') or '--'}",
+                'credited_str': minutes_to_str(credited_m),
+                'is_ot': npo and npo > "17:00" and not u_set.get('is_10h_mode'),
+                'has_time': credited_m > 0
+            })
 
-    # 3. Final Calculations (AFTER the loop)
+    # 3. Final Profile Stats
     total_minutes = user_totals.get(target_uid, 0)
     total_hours = total_minutes / 60
-    # Only count logs that actually contributed time as "sessions"
-    log_count = len([l for l in target_user_logs if l['display_hours'] > 0])
+    # Count only days where time was actually earned
+    log_count = len([l for l in student_logs if l['has_time']])
     
     # Determine Rank
     sorted_ranking = sorted(user_totals.items(), key=lambda x: x[1], reverse=True)
     actual_rank = next((i for i, (uid, total) in enumerate(sorted_ranking, 1) if uid == target_uid), 0)
 
-    # Goal and Velocity logic
+    # Goal logic
     target_goal = 486
     progress = min(int((total_hours / target_goal) * 100), 100)
     avg_daily = round(total_hours / log_count, 1) if log_count > 0 else 0
@@ -230,7 +267,7 @@ async def view_profile(user_id=None):
     
     context = {
         'p': p, 
-        'total_hours': round(total_hours, 2), 
+        'total_hours': round(total_hours, 1), 
         'log_count': log_count, 
         'avg_hours': avg_daily, 
         'progress': progress, 
@@ -238,10 +275,11 @@ async def view_profile(user_id=None):
         'rank': actual_rank,
         'is_owner': is_owner,
         'received_hype': received_hype,
+        'student_logs': student_logs # Passed to HTML
     }
 
     template = 'main/profile.html' if is_owner else 'main/public_profile.html'
-    return await render_template(template, **context, recent_activity=target_user_logs[:5])
+    return await render_template(template, **context)
 
 # --- WEEKLY LOGS ---
 
