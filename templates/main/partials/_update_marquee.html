@@ -1,0 +1,106 @@
+<!-- ULTRA-MODERN SYSTEM HUD -->
+<div id="global-system-hud" class="hidden sticky top-0 z-[100] w-full border-b border-white/10 bg-slate-950/50 backdrop-blur-2xl select-none pointer-events-none overflow-hidden">
+    
+    <!-- Background Layer 1: Animated Mesh Glow -->
+    <div class="absolute inset-0 opacity-30">
+        <div class="absolute -top-[100%] -left-[50%] w-[200%] h-[300%] bg-[radial-gradient(circle_at_center,#6366f1_0%,transparent_35%),radial-gradient(circle_at_80%_20%,#06b6d4_0%,transparent_20%)] animate-[spin_20s_linear_infinite]"></div>
+    </div>
+
+    <!-- Background Layer 2: Moving Laser Scanline -->
+    <div class="absolute inset-0 w-full overflow-hidden">
+        <div class="h-full w-[100px] bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-[45deg] animate-laser-sweep"></div>
+    </div>
+
+    <div class="relative flex items-center h-10 px-4">
+        <!-- Static System Badge -->
+        <div class="flex items-center gap-3 px-3 py-1 bg-white/5 border border-white/10 rounded-md backdrop-blur-md shadow-2xl z-20">
+            <div class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </div>
+            <span class="text-[10px] font-black text-white uppercase tracking-[0.2em] font-mono">System.v4</span>
+        </div>
+
+        <!-- Scrolling Newsfeed with Masking -->
+        <div class="flex-1 overflow-hidden relative mx-8 [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
+            <div class="animate-marquee-continuous whitespace-nowrap flex items-center gap-24">
+                <div class="flex items-center gap-24">
+                    <span class="hud-item"><b class="text-indigo-400">CORE_ENGINE:</b> Logic precision improved by 40%</span>
+                    <span class="hud-item"><b class="text-indigo-400">SHIFTS:</b> Manual Credit Overrides restored for non-standard hours</span>
+                    <span class="hud-item"><b class="text-indigo-400">PROTOCOL:</b> March 20 Friday Policy officially active</span>
+                    <span class="hud-item"><b class="text-indigo-400">INTERFACE:</b> High-density glass architecture initialized</span>
+                </div>
+                <!-- Duplicate for Loop -->
+                <div class="flex items-center gap-24">
+                    <span class="hud-item"><b class="text-indigo-400">CORE_ENGINE:</b> Logic precision improved by 40%</span>
+                    <span class="hud-item"><b class="text-indigo-400">SHIFTS:</b> Manual Credit Overrides restored for non-standard hours</span>
+                    <span class="hud-item"><b class="text-indigo-400">PROTOCOL:</b> March 20 Friday Policy officially active</span>
+                    <span class="hud-item"><b class="text-indigo-400">INTERFACE:</b> High-density glass architecture initialized</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hud-item {
+        @apply text-[10px] font-medium text-slate-200 uppercase tracking-[0.1em] font-mono flex items-center gap-2;
+    }
+
+    /* Infinite Scroll */
+    @keyframes marquee-continuous {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+
+    /* Laser Sweep Animation */
+    @keyframes laser-sweep {
+        0% { transform: translateX(-200%) skewX(-45deg); }
+        20% { transform: translateX(300%) skewX(-45deg); }
+        100% { transform: translateX(300%) skewX(-45deg); }
+    }
+
+    .animate-marquee-continuous {
+        animation: marquee-continuous 40s linear infinite;
+        width: max-content;
+    }
+
+    .animate-laser-sweep {
+        animation: laser-sweep 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    /* Smooth Slide In */
+    #global-system-hud:not(.hidden) {
+        animation: hud-entrance 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes hud-entrance {
+        from { transform: translateY(-100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+
+<script>
+    (function() {
+        const UPDATE_ID = "v4_modern_final_stream"; 
+        const hud = document.getElementById('global-system-hud');
+        if (!hud) return;
+
+        const firstSeen = localStorage.getItem(`seen_${UPDATE_ID}`);
+        const now = Date.now();
+        const oneWeek = 7 * 24 * 60 * 60 * 1000;
+
+        if (!firstSeen) {
+            // First time opening the website
+            localStorage.setItem(`seen_${UPDATE_ID}`, now.toString());
+            hud.classList.remove('hidden');
+        } else {
+            // Check if 24 hours have passed
+            if (now - parseInt(firstSeen) < oneWeek) {
+                hud.classList.remove('hidden');
+            } else {
+                hud.remove(); // Cleanup DOM
+            }
+        }
+    })();
+</script>

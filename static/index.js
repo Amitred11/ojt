@@ -105,29 +105,89 @@ window.setLogMode = function(mode) {
     }
 };
 
-window.checkDateRestrictions = function() {
-    const dateInput = document.getElementById('log_date');
-    const dateStr = dateInput?.value;
-    const todayStr = TODAY_STR;
-    const is10hMode = document.getElementById('cfg-10h')?.checked;
+window.handleDateChange = function() {
+    const logIdInput = document.getElementById('log_id');
+    
+    // If log_id has a value, it means we WERE in Edit Mode
+    if (logIdInput && logIdInput.value !== "") {
+        console.log("Date changed during Edit: Switching to New Entry mode.");
+        
+        // 1. Clear the Edit Mode "Master Key"
+        logIdInput.value = "";
 
-    const getBlockStatus = (targetDate) => {
-        if (!targetDate) return { blocked: false };
-        const [y, m, d] = targetDate.split('-').map(Number);
-        const dateObj = new Date(y, m - 1, d);
-        const dayOfWeek = dateObj.getDay();
+        // Clear the manual credit field when switching from Edit to New
+        const manualInput = document.getElementById('manual_credit');
+        if (manualInput) manualInput.value = "";
         
-        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-        const isFriday = (dayOfWeek === 5); // Fixed: Defined variable
-        const isHoliday = HOLIDAYS.includes(targetDate);
+        // 2. Revert UI Labels
+        const title = document.getElementById('form-title');
+        if (title) title.innerText = "New Entry";
         
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) submitBtn.innerText = "Log Session";
+
+        const cancelBtn = document.getElementById('cancel-edit');
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+    }
+
+    // 3. Now run the standard restriction check for the new date
+    checkDateRestrictions();
+};
+
+window.checkDateRestrictions = function(forceUnblock = false) {
+    const dateInput = document.getElementById('log_date');
+    const logIdInput = document.getElementById('log_id');
+    const overlay = document.getElementById('restriction-overlay');
+    const submitBtn = document.getElementById('submit-btn');
+    const punchBtn = document.getElementById('punch-btn');
+    
+    // 1. EDIT MODE BYPASS
+    // Only bypass if we currently have an ID (meaning we haven't switched to New Entry)
+    const isEditing = forceUnblock === true || (logIdInput && logIdInput.value.trim() !== "");
+
+    if (isEditing) {
+        if (overlay) {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }
+        if (submitBtn) submitBtn.disabled = false;
+        return; 
+    }
+
+    const dateStr = dateInput?.value;
+    if (!dateStr) return;
+
+    // 2. LOGIC ENGINE (March 20+ Friday Block)
+    const getBlockStatus = (targetDateStr) => {
+        const parts = targetDateStr.split('-');
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        const d = parseInt(parts[2], 10);
+        
+        const dateObj = new Date(y, m - 1, d, 12, 0, 0);
+        const dayOfWeek = dateObj.getDay(); 
+        
+        const targetNumeric = (y * 10000) + (m * 100) + d;
+        const transitionNumeric = 20260320; // Block begins Friday, March 20
+
+        const is10hMode = document.getElementById('cfg-10h')?.checked;
         const weekendAllowed = document.querySelector('input[name="allow_weekend_duty"]')?.checked;
         const holidayAllowed = document.querySelector('input[name="allow_holiday_duty"]')?.checked;
 
-        let blocked = (isWeekend && !weekendAllowed) || (isHoliday && !holidayAllowed);
-        let type = isWeekend ? "Weekend" : "Holiday";
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const isFriday = (dayOfWeek === 5);
+        const isHoliday = (window.OJT_CONFIG?.holidays || []).includes(targetDateStr);
 
-        if (is10hMode && isFriday) {
+        let blocked = false;
+        let type = "";
+
+        if (isWeekend && !weekendAllowed) {
+            blocked = true;
+            type = "Weekend";
+        } else if (isHoliday && !holidayAllowed) {
+            blocked = true;
+            type = "Holiday";
+        } else if (is10hMode && isFriday && targetNumeric >= transitionNumeric) {
             blocked = true;
             type = "Friday (Compressed)";
         }
@@ -135,47 +195,78 @@ window.checkDateRestrictions = function() {
         return { blocked, type };
     };
 
-    if (dateStr) {
-        const status = getBlockStatus(dateStr);
-        const overlay = document.getElementById('restriction-overlay');
-        const badge = document.getElementById('status-badge');
-        const controls = document.querySelectorAll('.quick-btn');
+    const status = getBlockStatus(dateStr);
 
-        if (status.blocked) {
-            overlay?.classList.remove('hidden'); 
-            overlay?.classList.add('flex');
-            const msgEl = document.getElementById('restriction-msg');
-            if(msgEl) msgEl.innerText = `${status.type} Logging Blocked`;
-            if(badge) {
-                badge.innerText = status.type;
-                badge.className = "px-3 py-1 rounded-full text-[9px] font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20";
-                badge.classList.remove('hidden');
-            }
-            controls.forEach(b => { b.style.opacity = '0.3'; b.style.pointerEvents = 'none'; });
-        } else {
-            overlay?.classList.add('hidden'); 
-            overlay?.classList.remove('flex');
-            if(badge) badge.classList.add('hidden');
-            controls.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; });
-        }
+    // 3. APPLY UI CHANGES
+    if (status.blocked) {
+        overlay?.classList.remove('hidden'); 
+        overlay?.classList.add('flex');
+        const msgEl = document.getElementById('restriction-msg');
+        if(msgEl) msgEl.innerText = `${status.type} Logging Blocked`;
+        if(submitBtn) submitBtn.disabled = true;
+    } else {
+        overlay?.classList.add('hidden'); 
+        overlay?.classList.remove('flex');
+        if(submitBtn) submitBtn.disabled = false;
     }
+};
 
-    const punchBtn = document.getElementById('punch-btn');
-    if (punchBtn) {
-        const todayStatus = getBlockStatus(todayStr);
-        if (todayStatus.blocked) {
-            punchBtn.disabled = true;
-            punchBtn.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
-            const span = punchBtn.querySelector('span');
-            if(span) span.innerText = "Logging Restricted Today";
-        } else {
-            const pmOutVal = document.querySelector('#status-pm_out .time-val')?.innerText;
-            if (pmOutVal === '--:--' || !pmOutVal) {
-                punchBtn.disabled = false;
-                punchBtn.classList.remove('opacity-50', 'grayscale', 'cursor-not-allowed');
-            }
-        }
-    }
+window.editLog = function(id, date, amIn, amOut, pmIn, pmOut, manualCredit) {
+    setLogMode('manual');
+
+    const safeSet = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || "";
+    };
+
+    // 1. Set the values
+    safeSet('log_id', id);
+    safeSet('log_date', date);
+    safeSet('am_in', amIn);
+    safeSet('am_out', amOut);
+    safeSet('pm_in', pmIn);
+    safeSet('pm_out', pmOut);
+    safeSet('manual_credit', manualCredit);
+    
+    // 2. Update UI
+    const title = document.getElementById('form-title');
+    if (title) title.innerText = "Update Session";
+    
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) submitBtn.innerText = "Update Session";
+
+    const cancelBtn = document.getElementById('cancel-edit');
+    if (cancelBtn) cancelBtn.classList.remove('hidden');
+
+    // 3. Force Unblock: Since log_id is now set, this will hide the overlay
+    checkDateRestrictions();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.resetForm = function() {
+    const form = document.getElementById('log-form');
+    if(form) form.reset();
+    
+    const idInput = document.getElementById('log_id');
+    if (idInput) idInput.value = "";
+
+    const manualInput = document.getElementById('manual_credit');
+    if (manualInput) manualInput.value = "";
+
+    const dateInput = document.getElementById('log_date');
+    if (dateInput) dateInput.value = window.OJT_CONFIG?.today || "";
+
+    const title = document.getElementById('form-title');
+    if (title) title.innerText = "New Entry";
+
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) submitBtn.innerText = "Log Session";
+
+    const cancelBtn = document.getElementById('cancel-edit');
+    if (cancelBtn) cancelBtn.classList.add('hidden');
+    
+    checkDateRestrictions();
 };
 
 window.quickFill = function() {
@@ -208,46 +299,29 @@ window.setAbsent = function() {
     ['am_in', 'am_out', 'pm_in', 'pm_out'].forEach(id => document.getElementById(id).value = "");
 };
 
-window.editLog = function(id, date, amIn, amOut, pmIn, pmOut, manualCredit) {
-    setLogMode('manual');
-    document.getElementById('log_id').value = id;
-    document.getElementById('log_date').value = date;
-    document.getElementById('am_in').value = amIn;
-    document.getElementById('am_out').value = amOut;
-    document.getElementById('pm_in').value = pmIn;
-    document.getElementById('pm_out').value = pmOut;
-    document.getElementById('manual_credit').value = manualCredit || ""; 
-    document.getElementById('form-title').innerText = "Update Session";
-    document.getElementById('submit-btn').innerText = "Update Session";
-    document.getElementById('cancel-edit').classList.remove('hidden');
-    checkDateRestrictions();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-};
-
-window.resetForm = function() {
-    const form = document.getElementById('log-form');
-    if(form) form.reset();
-    document.getElementById('log_id').value = "";
-    document.getElementById('log_date').value = TODAY_STR;
-    document.getElementById('form-title').innerText = "New Entry";
-    document.getElementById('manual_credit').value = "";
-    document.getElementById('submit-btn').innerText = "Log Session";
-    document.getElementById('cancel-edit').classList.add('hidden');
-    checkDateRestrictions();
-};
-
-window.confirmDelete = function(e, url) {
+window.confirmDelete = async function(e, url) {
     e.preventDefault();
-    if(confirm("Delete this record permanently?")) {
-        fetch(url).then(() => {
-            fetch(window.location.href).then(r => r.text()).then(html => {
-                const doc = (new DOMParser()).parseFromString(html, 'text/html');
-                ['stats-container', 'intelligence-container', 'eta-container', 'archive-container'].forEach(id => {
-                    document.getElementById(id).innerHTML = doc.getElementById(id).innerHTML;
-                });
-                lucide.createIcons();
+    e.stopPropagation(); // Prevents tooltip from triggering
+
+    if (confirm("Permanently delete this session log?")) {
+        try {
+            await fetch(url);
+            // Refresh components
+            const response = await fetch(window.location.href);
+            const html = await response.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+
+            ['stats-container', 'archive-container', 'intelligence-container'].forEach(id => {
+                const oldEl = document.getElementById(id);
+                const newEl = doc.getElementById(id);
+                if (oldEl && newEl) oldEl.innerHTML = newEl.innerHTML;
             });
-        });
+
+            lucide.createIcons();
+            // Re-apply collapse state logic if needed
+        } catch (err) {
+            alert("Error deleting record.");
+        }
     }
 };
 

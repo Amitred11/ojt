@@ -185,7 +185,7 @@
     </style>
 </head>
 <body class="min-h-screen pb-24 relative">
-
+    {% include "main/partials/_update_marquee.html" %}
     <!-- NAVIGATION -->
     {% if session.get('user_id') %}
 <nav class="fixed bottom-0 w-full z-50 card-glass border-t border-white/10 px-6 py-4 flex justify-around items-center rounded-t-3xl backdrop-blur-xl">
