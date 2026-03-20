@@ -108,18 +108,20 @@ window.setLogMode = function(mode) {
 window.handleDateChange = function() {
     const logIdInput = document.getElementById('log_id');
     
-    // If log_id has a value, it means we WERE in Edit Mode
+    // 1. DETECT IF WE ARE EXITING EDIT MODE
+    // If log_id has a value, it means the user was editing an existing record.
+    // Changing the date should "break" the edit link to prevent overwriting.
     if (logIdInput && logIdInput.value !== "") {
-        console.log("Date changed during Edit: Switching to New Entry mode.");
+        console.log("Date changed: Switching from Edit Mode to New Entry.");
         
-        // 1. Clear the Edit Mode "Master Key"
+        // Clear the ID so the backend creates a NEW record instead of updating an old one
         logIdInput.value = "";
 
-        // Clear the manual credit field when switching from Edit to New
+        // Clear manual override value
         const manualInput = document.getElementById('manual_credit');
         if (manualInput) manualInput.value = "";
         
-        // 2. Revert UI Labels
+        // Reset UI Labels
         const title = document.getElementById('form-title');
         if (title) title.innerText = "New Entry";
         
@@ -128,9 +130,17 @@ window.handleDateChange = function() {
 
         const cancelBtn = document.getElementById('cancel-edit');
         if (cancelBtn) cancelBtn.classList.add('hidden');
+
+        // OPTIONAL: Clear the time fields so the user starts fresh
+        // Remove these lines if you prefer to keep the times when switching dates
+        document.getElementById('am_in').value = "";
+        document.getElementById('am_out').value = "";
+        document.getElementById('pm_in').value = "";
+        document.getElementById('pm_out').value = "";
     }
 
-    // 3. Now run the standard restriction check for the new date
+    // 2. CHECK RESTRICTIONS
+    // This will show the "Blocked" overlay if the new date is a weekend/holiday/Fri
     checkDateRestrictions();
 };
 
