@@ -1,6 +1,7 @@
-from quart import Quart, redirect, url_for, render_template # Add render_template
+from quart import Quart, redirect, url_for, render_template, session
 from config import Config
 import asyncio
+import os
 
 # Import Blueprints
 from routes.auth import auth_bp
@@ -75,6 +76,28 @@ async def home():
 async def init_db():
     await create_indexes()
     return "Database Optimized!"
+
+@app.context_processor
+def override_url_for():
+    # We pass the function itself to the template context
+    return dict(url_for=dated_url_for)
+
+def dated_url_for(endpoint, **values):
+    """
+    Standard url_for wrapper that adds a version query string (?v=...) 
+    based on the file's last modified timestamp.
+    """
+    if endpoint == 'static':
+        filename = values.get('filename')
+        if filename:
+            # Construct path: root/static/filename
+            file_path = os.path.join(app.root_path, 'static', filename)
+            if os.path.exists(file_path):
+                # Add a version timestamp (v=123456789)
+                values['v'] = int(os.path.getmtime(file_path))
+    
+    # Use Quart's built-in url_for to generate the final string
+    return url_for(endpoint, **values)
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)

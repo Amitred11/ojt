@@ -107,40 +107,28 @@ window.setLogMode = function(mode) {
 
 window.handleDateChange = function() {
     const logIdInput = document.getElementById('log_id');
+    const manualInput = document.getElementById('manual_credit');
+    const title = document.getElementById('form-title');
+    const submitBtn = document.getElementById('submit-btn');
+    const cancelBtn = document.getElementById('cancel-edit');
     
-    // 1. DETECT IF WE ARE EXITING EDIT MODE
-    // If log_id has a value, it means the user was editing an existing record.
-    // Changing the date should "break" the edit link to prevent overwriting.
+    // If log_id has a value, we are currently in EDIT mode. 
+    // Changing the date should FORCE a reset to "New Entry" mode.
     if (logIdInput && logIdInput.value !== "") {
-        console.log("Date changed: Switching from Edit Mode to New Entry.");
-        
-        // Clear the ID so the backend creates a NEW record instead of updating an old one
-        logIdInput.value = "";
-
-        // Clear manual override value
-        const manualInput = document.getElementById('manual_credit');
+        logIdInput.value = ""; // Clear the ID
         if (manualInput) manualInput.value = "";
-        
-        // Reset UI Labels
-        const title = document.getElementById('form-title');
         if (title) title.innerText = "New Entry";
-        
-        const submitBtn = document.getElementById('submit-btn');
         if (submitBtn) submitBtn.innerText = "Log Session";
-
-        const cancelBtn = document.getElementById('cancel-edit');
         if (cancelBtn) cancelBtn.classList.add('hidden');
-
-        // OPTIONAL: Clear the time fields so the user starts fresh
-        // Remove these lines if you prefer to keep the times when switching dates
+        
+        // Optional: Clear times so you don't accidentally log previous day's times
         document.getElementById('am_in').value = "";
         document.getElementById('am_out').value = "";
         document.getElementById('pm_in').value = "";
         document.getElementById('pm_out').value = "";
     }
 
-    // 2. CHECK RESTRICTIONS
-    // This will show the "Blocked" overlay if the new date is a weekend/holiday/Fri
+    // Now run the restriction check for the fresh "New Entry"
     checkDateRestrictions();
 };
 
