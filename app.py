@@ -1,4 +1,4 @@
-from quart import Quart, redirect, url_for, render_template, session
+from quart import Quart, redirect, url_for, render_template, session, request
 from config import Config
 import asyncio
 import os
@@ -98,6 +98,30 @@ def dated_url_for(endpoint, **values):
     
     # Use Quart's built-in url_for to generate the final string
     return url_for(endpoint, **values)
+
+@app.before_request
+async def check_maintenance_mode():
+    # Allow admin to always access, and allow login/logout/admin pages
+    if request.endpoint in ['auth.login', 'auth.logout', 'init_db'] or \
+       request.path.startswith('/admin') or \
+       request.path.startswith('/static'):
+        return
+
+    from db import settings_col
+    config = await settings_col.find_one({"type": "global_config"})
+    if config and config.get('maintenance_mode'):
+        return await render_template('main/errors.html', 
+            code="MAINTENANCE", 
+            message="The system is currently undergoing a core update. Please standby.")
+
+@app.context_processor
+async def inject_global_settings():
+    from db import settings_col
+    config = await settings_col.find_one({"type": "global_config"})
+    return {
+        "system_broadcast": config.get('system_broadcast'),
+        "maintenance_mode": config.get('maintenance_mode', False) if config else False
+    }
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)

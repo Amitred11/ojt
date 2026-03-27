@@ -1,13 +1,18 @@
-from quart import Blueprint, render_template, request, redirect, url_for, session, flash
+from quart import Blueprint, render_template, request, redirect, url_for, session, flash, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import users_col, get_db, settings_col
 from bson import ObjectId
 from datetime import datetime
+import time 
+import json
+import io
+import zipfile
 
 auth_bp = Blueprint('auth', __name__)
 
 # Constants
 ADMIN_ID = "6979fc7f59b791fd5fcbf90f"
+APP_START_TIME = time.time()
 
 # Helper to check if user is the specific admin
 def is_admin():
@@ -225,9 +230,7 @@ async def manage_users():
         await flash("Access Denied.", "error")
         return redirect(url_for('tracker.index'))
 
-    # Fetch global config
-    config = await settings_col.find_one({"type": "global_config"})
-    reg_open = config.get('registration_open', True) if config else True
+    # REMOVED: global_config and reg_open logic here
     
     users_cursor = users_col.find().sort("username", 1)
     all_users = await users_cursor.to_list(length=500)
@@ -242,19 +245,11 @@ async def manage_users():
     for u in all_users:
         uid_str = str(u['_id'])
         u['id_str'] = uid_str
-        
-        # Get user specific logs
         user_logs = await get_db().logs.find({"user_id": uid_str}).to_list(None)
-        
-        # Get user specific settings (falls back to empty dict if not found)
         user_settings = settings_map.get(uid_str, {})
         
-        # Calculate hours using the Tracker's actual rules
         total_minutes = calculate_user_official_minutes(user_logs, user_settings)
         u['total_hours'] = round(total_minutes / 60, 1)
-        
-        # Fetch the required hours from their settings for the progress bar
-        # Fallback to 486 if they haven't set a custom goal
         u['goal_hours'] = user_settings.get('required_hours', 486)
         
         if u.get('status') == 'pending':
@@ -266,8 +261,8 @@ async def manage_users():
         "auth/admin_users.html", 
         pending=pending, 
         active=active, 
-        admin_id=ADMIN_ID,
-        reg_open=reg_open
+        admin_id=ADMIN_ID
+        # REMOVED: reg_open=reg_open
     )
 
 @auth_bp.route("/admin/approve/<user_id>")
@@ -339,3 +334,191 @@ async def verify_recovery():
             await flash("Recovery answer is incorrect.", "error")
 
     return await render_template("auth/verify_recovery.html", question=user.get('security_question', "What is your secret recovery key?"))
+
+# --- SYSTEM LOGGING HELPER ---
+async def log_event(message, level="info", user=None):
+    """Logs a system event to MongoDB for the Admin Dashboard"""
+    log_entry = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "message": message,
+        "level": level,
+        "user": user or "System",
+        "created_at": datetime.utcnow()
+    }
+    await get_db().system_logs.insert_one(log_entry)
+
+# --- SYSTEM DIAGNOSTICS ROUTES ---
+
+@auth_bp.route("/admin/system", methods=["GET", "POST"])
+async def system_diagnostics():
+    if not is_admin(): return redirect(url_for('tracker.index'))
+    
+    db = get_db()
+
+    if request.method == "POST":
+        form = await request.form
+        broadcast_msg = form.get("broadcast_msg")
+        await settings_col.update_one(
+            {"type": "global_config"},
+            {"$set": {"system_broadcast": broadcast_msg}},
+            upsert=True
+        )
+        await log_event(f"Broadcast Updated: {broadcast_msg[:20]}", level="warn")
+        await flash("Broadcast deployed.", "success")
+
+    stats = await db.command("dbStats")
+    used_mb = round(stats.get('dataSize', 0) / (1024 * 1024), 2)
+    
+    # GET CURRENT CONFIG STATES
+    config = await settings_col.find_one({"type": "global_config"}) or {}
+    
+    db_stats = {
+        "used_mb": used_mb,
+        "limit_mb": 512,
+        "percent": round((used_mb / 512) * 100, 1),
+        "uptime": f"{int((time.time() - APP_START_TIME)//3600)}h {int(((time.time() - APP_START_TIME)%3600)//60)}m",
+        "broadcast": config.get('system_broadcast', ""),
+        # ADD THESE TWO LINES BELOW:
+        "maintenance_mode": config.get('maintenance_mode', False),
+        "reg_open": config.get('registration_open', True),
+        "collections": [
+            {"name": "Personnel", "count": await users_col.count_documents({})},
+            {"name": "Time Logs", "count": await db.logs.count_documents({})},
+            {"name": "Security Logs", "count": await db.system_logs.count_documents({})}
+        ]
+    }
+
+    logs = await db.system_logs.find().sort("created_at", -1).limit(100).to_list(100)
+    logs.reverse()
+
+    return await render_template("auth/admin_system.html", db_stats=db_stats, logs=logs)
+
+@auth_bp.route("/admin/system/clear-logs", methods=["POST"])
+async def clear_logs():
+    if not is_admin(): return "Unauthorized", 403
+    await get_db().system_logs.delete_many({})
+    await log_event("System log history purged by Administrator", level="warn")
+    await flash("Log history cleared.", "success")
+    return redirect(url_for('auth.system_diagnostics'))
+
+@auth_bp.route("/admin/system/toggle-<feature>", methods=["POST"])
+async def toggle_system_feature(feature):
+    if not is_admin(): return {"status": "unauthorized"}, 403
+    
+    config = await settings_col.find_one({"type": "global_config"}) or {}
+    # Handles both 'maintenance_mode' and 'registration_open'
+    field = "maintenance_mode" if feature == "maintenance" else "registration_open"
+    current = config.get(field, False)
+    
+    await settings_col.update_one(
+        {"type": "global_config"},
+        {"$set": {field: not current}},
+        upsert=True
+    )
+    await log_event(f"SYSTEM OVERRIDE: {field} set to {not current}", level="error")
+    return {"status": "success", "new_state": not current}
+
+@auth_bp.route("/admin/system/export-backup")
+async def export_db():
+    if not is_admin(): return "Unauthorized", 403
+    
+    db = get_db()
+    data = {
+        "users": await db.users.find().to_list(None),
+        "logs": await db.logs.find().to_list(None),
+        "settings": await db.settings.find().to_list(None)
+    }
+    
+    # Convert ObjectIDs to strings for JSON
+    def clean(obj):
+        if isinstance(obj, list): return [clean(i) for i in obj]
+        if isinstance(obj, dict): return {k: clean(v) for k, v in obj.items()}
+        if isinstance(obj, ObjectId): return str(obj)
+        return obj
+
+    json_data = json.dumps(clean(data), indent=4)
+    return await send_file(
+        io.BytesIO(json_data.encode()),
+        mimetype="application/json",
+        attachment_filename=f"GATEKEEPER_BACKUP_{datetime.now().strftime('%Y%m%d')}.json",
+        as_attachment=True
+    )
+
+@auth_bp.route("/admin/system/archive-session", methods=["POST"])
+async def archive_session():
+    if not is_admin(): return "Unauthorized", 403
+    
+    db = get_db()
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M')
+    archive_tag = f"Archive_{timestamp}"
+
+    # 1. Fetch all current (non-archived) logs
+    current_logs = await db.logs.find({"is_archived": {"$ne": True}}).to_list(None)
+    
+    if not current_logs:
+        await flash("No active logs found to archive.", "info")
+        return redirect(url_for('auth.system_diagnostics'))
+
+    # 2. Mark them as archived in the DB (keeps them for Global Leaderboards)
+    # We add an 'is_archived' flag so the 'Active' leaderboard can ignore them
+    await db.logs.update_many(
+        {"is_archived": {"$ne": True}},
+        {"$set": {"is_archived": True, "archive_date": timestamp}}
+    )
+
+    # 3. Create a ZIP file in memory containing the logs as JSON
+    def clean_obj(obj):
+        if isinstance(obj, list): return [clean_obj(i) for i in obj]
+        if isinstance(obj, dict): return {k: clean_obj(v) for k, v in obj.items()}
+        if isinstance(obj, ObjectId): return str(obj)
+        return obj
+
+    json_data = json.dumps(clean_obj(current_logs), indent=4)
+    
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+        zip_file.writestr(f"logs_snapshot_{timestamp}.json", json_data)
+        # You can add more files to the zip here (e.g. user list)
+        
+    zip_buffer.seek(0)
+
+    await log_event(f"System Archived: Session {archive_tag} locked.", level="warn")
+    
+    return await send_file(
+        zip_buffer,
+        mimetype="application/zip",
+        attachment_filename=f"SYSTEM_ARCHIVE_{timestamp}.zip",
+        as_attachment=True
+    )
+
+@auth_bp.route("/admin/system/rollback-archive", methods=["POST"])
+async def rollback_archive():
+    if not is_admin(): return "Unauthorized", 403
+    
+    db = get_db()
+    
+    # 1. Find the most recent archive_date used in the system
+    latest_log = await db.logs.find_one(
+        {"is_archived": True}, 
+        sort=[("archive_date", -1)]
+    )
+    
+    if not latest_log or "archive_date" not in latest_log:
+        await flash("No archived sessions found to rollback.", "error")
+        return redirect(url_for('auth.system_diagnostics'))
+    
+    target_session = latest_log["archive_date"]
+
+    # 2. Revert all logs belonging to that specific session
+    result = await db.logs.update_many(
+        {"archive_date": target_session},
+        {
+            "$set": {"is_archived": False},
+            "$unset": {"archive_date": ""} # Remove the archive metadata
+        }
+    )
+
+    await log_event(f"EMERGENCY ROLLBACK: Session {target_session} restored to active.", level="error")
+    await flash(f"Rollback Successful. {result.modified_count} logs restored to Active status.", "success")
+    
+    return redirect(url_for('auth.system_diagnostics'))
