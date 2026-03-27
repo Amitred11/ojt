@@ -357,9 +357,10 @@ async def system_diagnostics():
 
     if request.method == "POST":
         form = await request.form
-        broadcast_msg = form.get("broadcast_msg", "").strip() # Get the text from the input
+        broadcast_msg = form.get("broadcast_msg", "").strip()
         
-        # Update the global config in MongoDB
+        # If the message is empty, the bar will automatically hide 
+        # because {% if system_broadcast %} will evaluate to false.
         await settings_col.update_one(
             {"type": "global_config"},
             {"$set": {"system_broadcast": broadcast_msg}},
