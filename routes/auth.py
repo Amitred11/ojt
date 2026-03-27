@@ -357,14 +357,18 @@ async def system_diagnostics():
 
     if request.method == "POST":
         form = await request.form
-        broadcast_msg = form.get("broadcast_msg")
+        broadcast_msg = form.get("broadcast_msg", "").strip() # Get the text from the input
+        
+        # Update the global config in MongoDB
         await settings_col.update_one(
             {"type": "global_config"},
             {"$set": {"system_broadcast": broadcast_msg}},
             upsert=True
         )
-        await log_event(f"Broadcast Updated: {broadcast_msg[:20]}", level="warn")
-        await flash("Broadcast deployed.", "success")
+        
+        # Log who did it
+        await log_event(f"BROADCAST DEPLOYED: {broadcast_msg[:30]}...", level="warn", user=session.get('username'))
+        await flash("Broadcast Signal Dispatched.", "success")
 
     stats = await db.command("dbStats")
     used_mb = round(stats.get('dataSize', 0) / (1024 * 1024), 2)
