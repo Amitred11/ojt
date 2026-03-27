@@ -111,7 +111,7 @@ async def check_maintenance_mode():
     config = await settings_col.find_one({"type": "global_config"})
     if config and config.get('maintenance_mode'):
         return await render_template('main/errors.html', 
-            code="MAINTENANCE", 
+            code="FIXING", 
             message="The system is currently undergoing a core update. Please standby.")
 
 @app.context_processor
