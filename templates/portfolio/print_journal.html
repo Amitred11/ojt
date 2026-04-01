@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; }
         
         /* Modern Paper Styling */
@@ -27,10 +27,29 @@
             border-radius: 20px;
         }
 
+        /* STRICT PRINT RULES TO PREVENT TEXT CUT-OFFS */
         @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            body { background: white !important; padding: 0 !important; color: #000 !important; }
             .no-print { display: none !important; }
-            body { background: white; padding: 0; }
-            .sheet { box-shadow: none; border: 1px solid #eee; margin-bottom: 20px; transform: none !important; }
+            .sheet { 
+                box-shadow: none !important; 
+                border: 1px solid #ccc !important; 
+                margin-bottom: 2rem !important; 
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            /* Darken text for printing so it doesn't wash out */
+            .text-slate-400, .text-slate-500, .text-slate-600 { color: #333 !important; }
+            .bg-slate-900 { background-color: #f1f5f9 !important; color: #000 !important; }
+            .bg-slate-900 span { color: #000 !important; }
+            
+            /* Prevent image breaks */
+            img { break-inside: avoid; page-break-inside: avoid; max-height: 400px; object-fit: contain; }
+            
             .page-break { page-break-after: always; }
         }
 
@@ -39,7 +58,7 @@
 </head>
 <body class="p-4 md:p-12 pb-32">
 
-    <!-- FLOATING NAV BAR (GUIDE-DRIVEN) -->
+    <!-- FLOATING NAV BAR -->
     <nav class="max-w-5xl mx-auto mb-10 sticky top-6 z-50 no-print">
         <div class="bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 shadow-2xl flex items-center justify-between px-6 border border-slate-700">
             <div class="flex items-center gap-3">
@@ -49,11 +68,11 @@
                 <h1 class="text-white font-bold text-sm tracking-tight">OJT Journal Assistant</h1>
             </div>
             <div class="flex gap-2">
-                <button onclick="window.print()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg text-xs font-bold hover:bg-indigo-500 transition-all flex items-center gap-2">
-                    <i data-lucide="printer" class="w-4 h-4"></i> Export PDF
+                <button onclick="window.print()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg text-xs font-bold hover:bg-indigo-500 transition-all flex items-center gap-2 shadow-lg hover:shadow-indigo-500/25">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Export / Print Journal
                 </button>
-                <a href="{{ url_for('portfolio.list_reports') }}" class="p-2 text-slate-400 hover:text-white transition-colors">
-                    <i data-lucide="x" class="w-6 h-6"></i>
+                <a href="{{ url_for('portfolio.list_reports') }}" class="p-2 text-slate-400 hover:text-white transition-colors bg-slate-800 rounded-lg hover:bg-red-500">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </a>
             </div>
         </div>
@@ -62,7 +81,7 @@
     <main class="max-w-5xl mx-auto space-y-12">
 
         <!-- 1. PRELIMINARY PAGES -->
-        <section class="space-y-4">
+        <section class="space-y-4 break-inside-avoid">
             <div class="flex items-center gap-2 mb-4 px-2">
                 <span class="w-6 h-6 rounded bg-slate-200 flex items-center justify-center text-[10px] font-black">1</span>
                 <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Preliminary Pages</h2>
@@ -70,21 +89,31 @@
             <div class="sheet rounded-3xl p-8 md:p-12">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                        <h3 class="font-bold text-sm mb-2">Title Page Data</h3>
-                        <p class="text-xs text-slate-500 mb-4">Copy these to your title page</p>
-                        <ul class="text-xs space-y-2">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-bold text-sm mb-1">Title Page Data</h3>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest no-print">Ready for copying</p>
+                            </div>
+                            <button onclick="copyToClipboard('title-page-data', 'Title Page Data Copied!')" class="no-print text-[10px] font-black bg-white px-3 py-1.5 rounded-full text-slate-600 border border-slate-200 uppercase hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-1">
+                                <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                            </button>
+                        </div>
+                        <ul id="title-page-data" class="text-sm space-y-2">
                             <li><b class="text-indigo-600">Name:</b> {{ p.full_name }}</li>
                             <li><b class="text-indigo-600">Course:</b> {{ p.course }}</li>
                             <li><b class="text-indigo-600">HTE:</b> {{ p.hte_name }}</li>
-                            <li><b class="text-indigo-600">Duration:</b> {{ p.duration }} Hours</li>
+                            <li><b class="text-indigo-600">Duration:</b> {{ p.duration }}</li>
+                            <li><b class="text-indigo-600">Recorded Hours:</b> {{ total_hours }} Hours</li>
                         </ul>
                     </div>
                     <div class="p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-sm text-indigo-900">Quick ToC List</h3>
-                            <button onclick="copyToC()" class="no-print text-[10px] font-black text-indigo-600 uppercase">Copy</button>
+                        <div class="flex justify-between items-center mb-4 border-b border-indigo-200 pb-2">
+                            <h3 class="font-bold text-sm text-indigo-900">Table of Contents</h3>
+                            <button onclick="copyToClipboard('toc-data', 'Table of Contents Copied!')" class="no-print text-[10px] font-black bg-white px-3 py-1 rounded-full text-indigo-600 uppercase border border-indigo-200 hover:bg-indigo-600 hover:text-white transition-colors flex items-center gap-1">
+                                <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                            </button>
                         </div>
-                        <div id="toc-data" class="text-[11px] text-indigo-800 space-y-2 font-medium">
+                        <div id="toc-data" class="text-xs text-indigo-800 space-y-2 font-medium">
                             <p>I. Preliminary Pages</p>
                             <p>II. Student Trainee Profile</p>
                             <p>III. Company Overview</p>
@@ -94,33 +123,90 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Approval Sheet & Acknowledgement -->
+                <div class="mt-8 p-6 bg-purple-50 rounded-2xl border border-purple-100 break-inside-avoid">
+                    <h3 class="font-bold text-sm text-purple-900 mb-4">Approval Sheet & Acknowledgement</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-[10px] font-black text-purple-500 uppercase tracking-widest">OJT Coordinator</p>
+                                <button onclick="copyToClipboard('coord-data', 'Coordinator Name Copied!')" class="no-print text-purple-400 hover:text-purple-700 bg-white px-2 py-1 rounded-md shadow-sm border border-purple-100 transition-all"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                            <p id="coord-data" class="text-sm font-bold text-slate-800 bg-white px-4 py-3 border border-purple-200 rounded-xl inline-block shadow-sm">{{ p.coordinator_name }}</p>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-[10px] font-black text-purple-500 uppercase tracking-widest">Acknowledgement Text</p>
+                                <button onclick="copyToClipboard('ack-data', 'Acknowledgement Copied!')" class="no-print text-purple-400 hover:text-purple-700 bg-white px-2 py-1 rounded-md shadow-sm border border-purple-100 transition-all"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                            <p id="ack-data" class="text-sm text-slate-700 whitespace-pre-wrap bg-white p-5 border border-purple-200 rounded-xl shadow-sm">{{ p.acknowledgement }}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
         <!-- 2. STUDENT TRAINEE PROFILE -->
-        <section class="space-y-4">
+        <section class="space-y-4 break-inside-avoid">
             <div class="flex items-center gap-2 mb-4 px-2">
                 <span class="w-6 h-6 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black">2</span>
                 <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Student Trainee Profile</h2>
             </div>
             <div class="sheet rounded-3xl p-8 md:p-12 border-l-4 border-indigo-500">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div class="space-y-6">
-                        <div>
-                            <span class="section-tag bg-indigo-50 text-indigo-600 mb-2 inline-block">Personal Information</span>
-                            <p class="text-sm font-bold">{{ p.full_name }}</p>
-                            <p class="text-xs text-slate-500 italic">{{ p.course }}</p>
+                    <div class="space-y-8">
+                        
+                        <!-- Profile Photo, Email, and Phone -->
+                        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left relative">
+                            {% if p.profile_photo %}
+                            <div class="w-32 h-32 rounded-3xl overflow-hidden bg-slate-100 border-2 border-slate-200 shrink-0 shadow-md relative group cursor-pointer" onclick="openModal(this.querySelector('img').src)">
+                                <img src="data:image/webp;base64,{{ p.profile_photo }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center no-print">
+                                    <i data-lucide="zoom-in" class="w-6 h-6 text-white"></i>
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="w-full relative">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="section-tag bg-indigo-50 text-indigo-600 inline-block">Personal Information</span>
+                                    <button onclick="copyToClipboard('personal-info-data', 'Personal Information Copied!')" class="no-print text-[10px] font-black bg-white px-3 py-1 rounded-full text-indigo-500 border border-indigo-100 hover:bg-indigo-500 hover:text-white transition-all uppercase flex items-center gap-1 shadow-sm"><i data-lucide="copy" class="w-3 h-3"></i> Copy</button>
+                                </div>
+                                <div id="personal-info-data">
+                                    <p class="text-xl font-black text-slate-800">{{ p.full_name }}</p>
+                                    <p class="text-sm text-slate-500 font-bold mb-4">{{ p.course }}</p>
+                                    <div class="text-sm text-slate-600 space-y-2 font-medium bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <p class="flex items-center justify-center sm:justify-start gap-2"><i data-lucide="mail" class="w-4 h-4 text-indigo-500"></i> {{ p.email }}</p>
+                                        <p class="flex items-center justify-center sm:justify-start gap-2"><i data-lucide="phone" class="w-4 h-4 text-indigo-500"></i> {{ p.phone }}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <span class="section-tag bg-slate-100 text-slate-600 mb-2 inline-block">Training Details</span>
-                            <p class="text-sm font-bold text-slate-700">{{ p.hte_name }}</p>
-                            <p class="text-xs text-slate-500 italic">Supervisor: {{ p.supervisor }}</p>
-                            <p class="text-xs text-slate-500">Dept: {{ p.dept_desc }}</p>
+
+                        <!-- Training details -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="section-tag bg-slate-100 text-slate-600 inline-block">Deployment Details</span>
+                                <button onclick="copyToClipboard('deploy-data', 'Deployment Details Copied!')" class="no-print text-[10px] font-black bg-slate-100 px-3 py-1 rounded-full text-slate-600 border border-slate-200 hover:bg-slate-800 hover:text-white transition-all uppercase flex items-center gap-1 shadow-sm"><i data-lucide="copy" class="w-3 h-3"></i> Copy</button>
+                            </div>
+                            <div id="deploy-data">
+                                <p class="text-lg font-black text-slate-800 mb-4">{{ p.hte_name }}</p>
+                                <div class="text-sm text-slate-600 space-y-3 border-l-2 border-indigo-200 pl-4">
+                                    <p class="flex flex-col"><span class="text-[10px] text-slate-400 font-bold uppercase">Supervisor</span> <span class="font-bold text-slate-800">{{ p.supervisor }}</span></p>
+                                    <p class="flex flex-col"><span class="text-[10px] text-slate-400 font-bold uppercase">Department Assigned</span> <span class="font-bold text-slate-800">{{ p.dept_assigned }}</span></p>
+                                    <p class="flex flex-col"><span class="text-[10px] text-slate-400 font-bold uppercase">Target Duration</span> <span class="font-bold text-slate-800">{{ p.duration }}</span></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <span class="section-tag bg-orange-50 text-orange-600 mb-2 inline-block">Learning Objectives</span>
-                        <div class="p-5 bg-orange-50/30 rounded-2xl border border-orange-100 italic text-sm text-slate-600 leading-relaxed">
+
+                    <!-- Learning Objectives -->
+                    <div class="h-full relative">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="section-tag bg-orange-50 text-orange-600 inline-block">Learning Objectives</span>
+                            <button onclick="copyToClipboard('obj-data', 'Learning Objectives Copied!')" class="no-print text-[10px] font-black bg-white px-3 py-1 rounded-full text-orange-500 border border-orange-100 hover:bg-orange-500 hover:text-white transition-all uppercase flex items-center gap-1 shadow-sm"><i data-lucide="copy" class="w-3 h-3"></i> Copy</button>
+                        </div>
+                        <div id="obj-data" class="p-6 bg-orange-50/50 rounded-3xl border border-orange-100 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap shadow-inner h-[calc(100%-2.5rem)]">
                             {{ p.objectives }}
                         </div>
                     </div>
@@ -131,25 +217,50 @@
         <!-- 3. COMPANY OVERVIEW -->
         <section class="space-y-4">
             <div class="flex items-center gap-2 mb-4 px-2">
-                <span class="w-6 h-6 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black">3</span>
+                <span class="w-6 h-6 rounded bg-cyan-100 text-cyan-600 flex items-center justify-center text-[10px] font-black">3</span>
                 <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Company Overview</h2>
             </div>
-            <div class="sheet rounded-3xl p-8 md:p-12 border-l-4 border-emerald-500">
-                <h3 class="font-bold text-slate-800 mb-4">Company Profile & Description</h3>
-                <div class="text-sm text-slate-600 leading-[1.8] text-justify whitespace-pre-line bg-slate-50 p-8 rounded-3xl border border-slate-100 italic mb-8">
-                    {{ p.company_desc }}
+            <div class="sheet rounded-3xl p-8 md:p-12 border-l-4 border-cyan-500">
+                
+                <!-- Company Profile -->
+                <div class="mb-10 relative">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-black text-slate-800 flex items-center gap-2 text-lg">
+                            <i data-lucide="building-2" class="w-5 h-5 text-cyan-500"></i> Company Profile & Description
+                        </h3>
+                        <button onclick="copyToClipboard('company-data', 'Company Profile Copied!')" class="no-print text-[10px] font-black bg-white px-3 py-1.5 rounded-full text-cyan-600 border border-cyan-100 uppercase hover:bg-cyan-500 hover:text-white transition-colors flex items-center gap-1 shadow-sm">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copy Text
+                        </button>
+                    </div>
+                    <div id="company-data" class="text-sm text-slate-700 leading-loose text-justify whitespace-pre-wrap bg-slate-50 p-8 rounded-3xl border border-slate-100">
+                        {{ p.company_desc }}
+                    </div>
                 </div>
 
-                <!-- Organizational Structure - LARGE VIEW -->
-                {% if p.structure_img %}
-                <div class="mt-8 pt-8 border-t border-slate-100">
-                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Organizational Structure</h4>
-                    <div class="bg-white rounded-2xl border border-slate-200 p-2 overflow-hidden shadow-sm">
-                        <img src="data:image/webp;base64,{{ p.structure_img }}" class="w-full h-auto rounded-xl">
+                <!-- Department Description -->
+                <div class="mb-8 relative">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-black text-slate-800 flex items-center gap-2 text-lg">
+                            <i data-lucide="network" class="w-5 h-5 text-cyan-500"></i> Department Description
+                        </h3>
+                        <button onclick="copyToClipboard('dept-data', 'Department Description Copied!')" class="no-print text-[10px] font-black bg-white px-3 py-1.5 rounded-full text-cyan-600 border border-cyan-100 uppercase hover:bg-cyan-500 hover:text-white transition-colors flex items-center gap-1 shadow-sm">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copy Text
+                        </button>
                     </div>
-                    <div class="no-print mt-3 flex justify-end">
-                        <a href="data:image/webp;base64,{{ p.structure_img }}" download="Organizational_Structure.webp" class="text-[10px] font-bold text-indigo-600 uppercase flex items-center gap-1 hover:underline">
-                            <i data-lucide="download" class="w-3 h-3"></i> Download Original
+                    <div id="dept-data" class="text-sm text-slate-700 leading-loose text-justify whitespace-pre-wrap bg-slate-50 p-8 rounded-3xl border border-slate-100">
+                        {{ p.dept_desc }}
+                    </div>
+                </div>
+
+                <!-- Organizational Structure -->
+                {% if p.structure_img %}
+                <div class="mt-10 pt-10 border-t border-slate-200 break-inside-avoid">
+                    <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 text-center">Organizational Structure</h4>
+                    <div class="relative group bg-white rounded-3xl border border-slate-200 p-4 shadow-sm max-w-3xl mx-auto flex justify-center overflow-hidden">
+                        <img src="data:image/webp;base64,{{ p.structure_img }}" class="max-w-full h-auto rounded-2xl cursor-pointer hover:scale-105 transition-transform duration-500" onclick="openModal(this.src)">
+                        <!-- Download Overlay -->
+                        <a href="data:image/webp;base64,{{ p.structure_img }}" download="Org_Structure.webp" class="no-print absolute top-6 right-6 bg-slate-900/50 hover:bg-indigo-600 text-white p-3 rounded-xl opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm shadow-xl flex items-center gap-2 text-xs font-bold uppercase">
+                            <i data-lucide="download" class="w-4 h-4"></i> Download
                         </a>
                     </div>
                 </div>
@@ -165,43 +276,46 @@
             </div>
 
             {% for log in weekly_logs %}
-            <div class="sheet rounded-[2.5rem] overflow-hidden group">
-                <div class="bg-slate-900 px-8 py-5 flex justify-between items-center">
-                    <span class="text-xs font-black text-white uppercase tracking-tighter italic">Week Ending: {{ log.week_end_date }}</span>
-                    <button onclick="copyWeeklyLog('{{ loop.index }}')" class="no-print bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all">
-                        Copy Week Data
+            <div class="sheet rounded-3xl group mb-8 break-inside-avoid">
+                <div class="bg-slate-900 px-8 py-4 flex justify-between items-center rounded-t-3xl print:bg-slate-100 print:border-b print:border-slate-300">
+                    <span class="text-sm font-black text-white print:text-slate-800 uppercase tracking-wider">Week Ending: {{ log.week_end_date }}</span>
+                    <button onclick="copyWeeklyLog('{{ loop.index }}')" class="no-print bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+                        <i data-lucide="copy" class="w-3 h-3"></i> Copy Week Data
                     </button>
                 </div>
                 <div class="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <div class="lg:col-span-8 space-y-6">
-                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Task Description</h4>
-                            <p id="tasks-{{loop.index}}" class="text-sm text-slate-700 leading-relaxed italic whitespace-pre-line">{{ log.tasks }}</p>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Task Description</h4>
+                            <p id="tasks-{{loop.index}}" class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{{ log.tasks }}</p>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                                <h4 class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Competencies</h4>
-                                <p id="skills-{{loop.index}}" class="text-[11px] text-slate-600 font-medium">{{ log.competencies }}</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                                <h4 class="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-2">Competencies Gained</h4>
+                                <p id="skills-{{loop.index}}" class="text-xs text-slate-700 font-medium leading-relaxed whitespace-pre-wrap">{{ log.competencies }}</p>
                             </div>
-                            <div class="p-4 bg-cyan-50/50 rounded-xl border border-cyan-100">
-                                <h4 class="text-[9px] font-black text-cyan-400 uppercase tracking-widest mb-1">New Knowledge</h4>
-                                <p id="know-{{loop.index}}" class="text-[11px] text-slate-600 font-medium">{{ log.knowledge }}</p>
+                            <div class="p-5 bg-cyan-50/50 rounded-2xl border border-cyan-100">
+                                <h4 class="text-[9px] font-black text-cyan-500 uppercase tracking-widest mb-2">New Knowledge</h4>
+                                <p id="know-{{loop.index}}" class="text-xs text-slate-700 font-medium leading-relaxed whitespace-pre-wrap">{{ log.knowledge }}</p>
                             </div>
                         </div>
                     </div>
-                    <div class="lg:col-span-4 no-print">
-                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Photo Samples</h4>
-                        <div class="grid grid-cols-2 gap-2">
+                    
+                    {% if log.images %}
+                    <div class="lg:col-span-4 break-inside-avoid">
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Photo Samples</h4>
+                        <div class="grid grid-cols-2 gap-3">
                             {% for img in log.images %}
-                            <div class="relative group aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
-                                <img src="data:image/webp;base64,{{ img }}" class="w-full h-full object-cover">
-                                <a href="data:image/webp;base64,{{ img }}" download="Log_Image_{{loop.index}}.webp" class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                    <i data-lucide="download" class="text-white w-5 h-5"></i>
+                            <div class="relative group aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm cursor-pointer">
+                                <img src="data:image/webp;base64,{{ img }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onclick="openModal(this.src)">
+                                <a href="data:image/webp;base64,{{ img }}" download="LogImage_W{{loop.index}}_{{loop.index0}}.webp" class="no-print absolute top-2 right-2 bg-slate-900/60 hover:bg-indigo-600 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm" onclick="event.stopPropagation()">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
                                 </a>
                             </div>
                             {% endfor %}
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -213,22 +327,34 @@
                 <span class="w-6 h-6 rounded bg-purple-100 text-purple-600 flex items-center justify-center text-[10px] font-black">5</span>
                 <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Reflection & Evaluation</h2>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 gap-8">
                 {% for ref in reflections %}
-                <div class="sheet rounded-[2rem] p-8 border-l-4 border-purple-500 relative group">
-                    <button onclick="copyToClipboard('ref-{{loop.index}}')" class="no-print absolute top-6 right-6 text-purple-300 hover:text-purple-600">
-                        <i data-lucide="copy" class="w-4 h-4"></i>
+                <div class="sheet rounded-3xl p-8 md:p-12 border-l-4 border-purple-500 relative group break-inside-avoid">
+                    <button onclick="copyToClipboard('ref-{{loop.index}}', 'Reflection Copied!')" class="no-print absolute top-8 right-8 text-purple-500 font-black text-[10px] uppercase bg-purple-50 hover:bg-purple-500 hover:text-white transition-all px-3 py-1.5 rounded-full flex items-center gap-1 border border-purple-100">
+                        <i data-lucide="copy" class="w-3 h-3"></i> Copy
                     </button>
-                    <span class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-4 block">{{ ref.month_date }} Reflection</span>
-                    <p id="ref-{{loop.index}}" class="text-sm text-slate-600 italic leading-relaxed mb-6 whitespace-pre-line">{{ ref.monthly_reflection }}</p>
-                    <div class="space-y-4 mt-6 pt-6 border-t border-slate-100">
-                        <div>
-                            <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Self Evaluation</h4>
-                            <p class="text-[11px] text-slate-500">{{ ref.self_evaluation }}</p>
+                    
+                    <span class="text-xs font-black text-white bg-purple-500 px-4 py-1.5 rounded-full uppercase tracking-widest mb-6 inline-block">{{ ref.month_date }}</span>
+                    
+                    <div class="mb-8">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Monthly Reflection</h4>
+                        <p id="ref-{{loop.index}}" class="text-sm text-slate-700 leading-loose whitespace-pre-wrap">{{ ref.monthly_reflection }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 pt-8 border-t border-slate-200">
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Self Evaluation</h4>
+                                <button onclick="copyToClipboard('self-eval-{{loop.index}}', 'Self Evaluation Copied!')" class="no-print text-slate-400 hover:text-indigo-600"><i data-lucide="copy" class="w-3 h-3"></i></button>
+                            </div>
+                            <p id="self-eval-{{loop.index}}" class="text-sm text-slate-700 whitespace-pre-wrap">{{ ref.self_evaluation }}</p>
                         </div>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 italic">
-                            <h4 class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Supervisor Feedback</h4>
-                            <p class="text-[11px] text-slate-500">"{{ ref.feedback }}"</p>
+                        <div class="bg-purple-50 p-6 rounded-2xl border border-purple-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="text-[10px] font-black text-purple-600 uppercase tracking-widest">Supervisor Feedback</h4>
+                                <button onclick="copyToClipboard('feedback-{{loop.index}}', 'Feedback Copied!')" class="no-print text-purple-400 hover:text-purple-700"><i data-lucide="copy" class="w-3 h-3"></i></button>
+                            </div>
+                            <p id="feedback-{{loop.index}}" class="text-sm text-slate-700 whitespace-pre-wrap font-medium italic">"{{ ref.feedback }}"</p>
                         </div>
                     </div>
                 </div>
@@ -237,79 +363,79 @@
         </section>
 
         <!-- 6. APPENDICES & DOCUMENTATION -->
-        <section class="space-y-8 pb-20">
+        <section class="space-y-8 pb-20 break-inside-avoid">
             <div class="flex items-center gap-2 mb-4 px-2">
                 <span class="w-6 h-6 rounded bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-black">6</span>
                 <h2 class="font-800 text-slate-400 uppercase text-xs tracking-widest">Appendices & Documentation</h2>
             </div>
 
-            <div class="sheet rounded-[2rem] p-8 md:p-12 space-y-12">
+            <div class="sheet rounded-3xl p-8 md:p-12 space-y-12">
                 
                 <!-- Documentation: Certificate -->
-                <div>
-                    <h3 class="font-bold text-sm text-slate-800 mb-6 flex items-center gap-2">
-                        <i data-lucide="award" class="w-4 h-4 text-orange-500"></i> Certificate of Completion
+                <div class="break-inside-avoid">
+                    <h3 class="font-black text-lg text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="award" class="w-5 h-5 text-orange-500"></i> Certificate of Completion
                     </h3>
                     {% if p.certificate_img %}
-                    <div class="bg-slate-50 border border-slate-200 rounded-3xl p-4 shadow-sm relative group">
-                        <img src="data:image/webp;base64,{{ p.certificate_img }}" class="w-full h-auto rounded-2xl">
-                        <a href="data:image/webp;base64,{{ p.certificate_img }}" download="Certificate_of_Completion.webp" class="no-print absolute top-8 right-8 bg-indigo-600 text-white p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i data-lucide="download" class="w-5 h-5"></i>
+                    <div class="relative group bg-slate-50 border border-slate-200 rounded-3xl p-4 shadow-sm flex justify-center inline-block w-full">
+                        <img src="data:image/webp;base64,{{ p.certificate_img }}" class="max-w-full h-auto rounded-2xl shadow cursor-pointer hover:scale-[1.02] transition-transform duration-500" onclick="openModal(this.src)">
+                        <a href="data:image/webp;base64,{{ p.certificate_img }}" download="Certificate.webp" class="no-print absolute top-8 right-8 bg-slate-900/60 hover:bg-orange-500 text-white p-3 rounded-xl opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm shadow-xl flex items-center gap-2 text-xs font-bold uppercase" onclick="event.stopPropagation()">
+                            <i data-lucide="download" class="w-5 h-5"></i> Download
                         </a>
                     </div>
                     {% else %}
-                    <div class="p-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
-                        <p class="text-xs text-slate-400 italic">No certificate uploaded to profile.</p>
+                    <div class="p-10 border-2 border-dashed border-slate-200 rounded-3xl text-center bg-slate-50">
+                        <p class="text-sm text-slate-400 font-medium">No certificate uploaded.</p>
                     </div>
                     {% endif %}
                 </div>
 
-                <!-- Work Samples - LARGE GRID -->
-                <div>
-                    <h3 class="font-bold text-sm text-slate-800 mb-6 flex items-center gap-2">
-                        <i data-lucide="briefcase" class="w-4 h-4 text-emerald-500"></i> Samples of Work
+                <!-- Work Samples -->
+                <div class="break-inside-avoid pt-8 border-t border-slate-100">
+                    <h3 class="font-black text-lg text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="briefcase" class="w-5 h-5 text-emerald-500"></i> Samples of Work
                     </h3>
                     {% if p.work_samples %}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {% for sample in p.work_samples %}
-                        <div class="bg-white border border-slate-200 rounded-2xl p-2 relative group shadow-sm">
-                            <img src="data:image/webp;base64,{{ sample }}" class="w-full aspect-video object-cover rounded-xl">
-                            <a href="data:image/webp;base64,{{ sample }}" download="Work_Sample_{{loop.index}}.webp" class="no-print absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all rounded-2xl">
-                                <i data-lucide="download" class="text-white w-6 h-6"></i>
+                        <div class="relative group bg-white border border-slate-200 rounded-2xl p-3 shadow-sm flex justify-center overflow-hidden">
+                            <img src="data:image/webp;base64,{{ sample }}" class="w-full h-auto object-cover rounded-xl cursor-pointer hover:scale-[1.03] transition-transform duration-500" onclick="openModal(this.src)">
+                            <a href="data:image/webp;base64,{{ sample }}" download="Work_Sample_{{loop.index}}.webp" class="no-print absolute top-6 right-6 bg-slate-900/60 hover:bg-emerald-500 text-white p-2.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm shadow-lg" onclick="event.stopPropagation()">
+                                <i data-lucide="download" class="w-5 h-5"></i>
                             </a>
                         </div>
                         {% endfor %}
                     </div>
                     {% else %}
-                    <div class="p-10 border-2 border-dashed border-slate-100 rounded-3xl text-center">
-                        <p class="text-xs text-slate-400 italic">No work samples uploaded to profile.</p>
+                    <div class="p-10 border-2 border-dashed border-slate-200 rounded-3xl text-center bg-slate-50">
+                        <p class="text-sm text-slate-400 font-medium">No work samples uploaded.</p>
                     </div>
                     {% endif %}
                 </div>
 
                 <!-- DTR SECTION -->
-                <div class="pt-12 border-t border-slate-100">
-                    <h3 class="font-bold text-sm text-slate-800 mb-6 flex items-center gap-2">
-                        <i data-lucide="calendar-check" class="w-4 h-4 text-orange-500"></i> Daily Time Record (DTR)
+                <div class="pt-8 border-t border-slate-100 break-inside-avoid">
+                    <h3 class="font-black text-lg text-slate-800 mb-6 flex items-center gap-2">
+                        <i data-lucide="calendar-check" class="w-5 h-5 text-indigo-500"></i> Daily Time Record (DTR)
                     </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {% for dtr in dtr_uploads %}
-                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 overflow-hidden shadow-sm">
-                            <p class="text-[10px] font-black text-slate-400 uppercase mb-3 text-center">{{ dtr.description }}</p>
-                            <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                            <p class="text-xs font-black text-slate-600 uppercase tracking-widest mb-4 text-center">{{ dtr.description }}</p>
+                            <div class="grid grid-cols-2 gap-3">
                                 {% if dtr.image_front %}
-                                <div class="aspect-[3/4] bg-white rounded-lg border border-slate-200 overflow-hidden relative group">
-                                    <img src="data:image/webp;base64,{{ dtr.image_front }}" class="w-full h-full object-cover">
-                                    <a href="data:image/webp;base64,{{ dtr.image_front }}" download="DTR_Front_{{dtr.description}}.webp" class="absolute inset-0 bg-orange-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all no-print">
-                                        <i data-lucide="download" class="text-white w-6 h-6"></i>
+                                <div class="aspect-[3/4] bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm relative group cursor-pointer">
+                                    <img src="data:image/webp;base64,{{ dtr.image_front }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onclick="openModal(this.src)">
+                                    <a href="data:image/webp;base64,{{ dtr.image_front }}" download="DTR_{{dtr.description}}_Front.webp" class="no-print absolute top-2 right-2 bg-slate-900/60 hover:bg-indigo-500 text-white p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm" onclick="event.stopPropagation()">
+                                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
                                     </a>
                                 </div>
                                 {% endif %}
                                 {% if dtr.image_back %}
-                                <div class="aspect-[3/4] bg-white rounded-lg border border-slate-200 overflow-hidden relative group">
-                                    <img src="data:image/webp;base64,{{ dtr.image_back }}" class="w-full h-full object-cover">
-                                    <a href="data:image/webp;base64,{{ dtr.image_back }}" download="DTR_Back_{{dtr.description}}.webp" class="absolute inset-0 bg-orange-600/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all no-print">
-                                        <i data-lucide="download" class="text-white w-6 h-6"></i>
+                                <div class="aspect-[3/4] bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm relative group cursor-pointer">
+                                    <img src="data:image/webp;base64,{{ dtr.image_back }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onclick="openModal(this.src)">
+                                    <a href="data:image/webp;base64,{{ dtr.image_back }}" download="DTR_{{dtr.description}}_Back.webp" class="no-print absolute top-2 right-2 bg-slate-900/60 hover:bg-indigo-500 text-white p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm" onclick="event.stopPropagation()">
+                                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
                                     </a>
                                 </div>
                                 {% endif %}
@@ -324,17 +450,28 @@
     </main>
 
     <!-- TOAST NOTIFICATION -->
-    <div id="copyToast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest opacity-0 pointer-events-none transition-all duration-300 z-[100] shadow-2xl flex items-center gap-3">
+    <div id="copyToast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest opacity-0 pointer-events-none transition-all duration-300 z-[100] shadow-2xl flex items-center gap-3 no-print">
         <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
         <span>Text Copied!</span>
+    </div>
+
+    <!-- IMAGE VIEWER MODAL -->
+    <div id="imageModal" onclick="closeModal()" class="fixed inset-0 z-[100] hidden bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-4 transition-all duration-300 opacity-0 no-print">
+        <button onclick="closeModal()" class="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-red-500 text-white flex items-center justify-center transition-all z-[110] shadow-xl">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <img id="modalImg" src="" class="max-w-full max-h-screen object-contain rounded-2xl shadow-2xl scale-95 transition-transform duration-300 border border-white/10" onclick="event.stopPropagation()">
     </div>
 
     <script>
         lucide.createIcons();
 
-        function copyToClipboard(elementId) {
-            const text = document.getElementById(elementId).innerText;
-            navigator.clipboard.writeText(text).then(() => showToast());
+        // --- Copy Text functionality ---
+        function copyToClipboard(elementId, successMsg = 'Text Copied!') {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            let text = el.innerText.trim();
+            navigator.clipboard.writeText(text).then(() => showToast(successMsg));
         }
 
         function copyWeeklyLog(index) {
@@ -345,12 +482,8 @@
             navigator.clipboard.writeText(fullText).then(() => showToast("Weekly Log Data Copied!"));
         }
 
-        function copyToC() {
-            const list = document.getElementById('toc-data').innerText;
-            navigator.clipboard.writeText(list).then(() => showToast("T.O.C. List Copied!"));
-        }
-
-        function showToast(msg = "Copied to Clipboard") {
+        // --- Toast Notification ---
+        function showToast(msg) {
             const toast = document.getElementById('copyToast');
             toast.querySelector('span').innerText = msg;
             toast.classList.remove('opacity-0');
@@ -360,6 +493,40 @@
                 toast.classList.remove('opacity-100', '-translate-y-4');
             }, 2000);
         }
+
+        // --- Image Viewer (Gallery) Modal functionality ---
+        function openModal(src) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImg');
+            img.src = src;
+            modal.classList.remove('hidden');
+            // Give a tiny delay for CSS transition to trigger
+            setTimeout(() => { 
+                modal.classList.remove('opacity-0'); 
+                img.classList.remove('scale-95'); 
+                img.classList.add('scale-100'); 
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImg');
+            modal.classList.add('opacity-0'); 
+            img.classList.remove('scale-100'); 
+            img.classList.add('scale-95');
+            // Wait for transition to finish before hiding
+            setTimeout(() => { 
+                modal.classList.add('hidden'); 
+                img.src = ''; 
+            }, 300);
+        }
+
+        // Close modal on Escape key press
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('imageModal').classList.contains('hidden')) {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>

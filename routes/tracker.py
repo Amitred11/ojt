@@ -1,6 +1,6 @@
 from datetime import datetime, date, timedelta, timezone
 from quart import Blueprint, render_template, request, redirect, url_for, session
-from db import logs_col, db, settings_col, notifications_col
+from db import logs_col, db, settings_col, notifications_col, users_col
 from bson.objectid import ObjectId
 
 tracker_bp = Blueprint('tracker', __name__)
@@ -125,6 +125,9 @@ async def mark_notifications_read():
 async def index():
     if 'user_id' not in session: return redirect(url_for('auth.login'))
     user_id = session['user_id']
+    user = await users_col.find_one({"_id": ObjectId(user_id)})
+    from db import db # ensure db is imported
+    p = await db.profiles.find_one({"user_id": str(user_id)}) or {}
     settings = await get_user_settings(user_id)
     transition_date = date(2026, 3, 16)
     
@@ -281,6 +284,8 @@ async def index():
 
     return await render_template(
         "main/index.html", grouped_logs=grouped, settings=settings, 
+        p=p,
+        user=user,
         total_str=minutes_to_string(total_credited_m),
         ot_total_str=minutes_to_string(total_ot_m),
         remaining_str=minutes_to_string(rem_m),

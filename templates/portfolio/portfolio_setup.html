@@ -8,16 +8,15 @@
         <h1 class="text-3xl font-black tracking-tight text-white">Journal Setup</h1>
     </div>
 
-    <!-- ADDED enctype for file uploads -->
     <form method="POST" enctype="multipart/form-data" class="space-y-6 pb-12">
         
-        <!-- SECTION 1: PRELIMINARY (New based on Guide) -->
+        <!-- SECTION 1: PRELIMINARY -->
         <div class="relative group">
             <div class="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-500"></div>
             <div class="relative card-glass rounded-[2rem] p-8 border border-white/10 bg-slate-900/40 backdrop-blur-xl">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-2 h-6 bg-purple-500 rounded-full"></div>
-                    <h2 class="text-purple-400 font-bold uppercase tracking-[0.2em] text-xs">Preliminary Details</h2>
+                    <h2 class="text-purple-400 font-bold uppercase tracking-[0.2em] text-xs">1. Preliminary Pages</h2>
                 </div>
                 <div class="grid gap-5">
                     <input type="text" name="coordinator_name" value="{{ p.coordinator_name }}" placeholder="OJT Coordinator Name (for Approval Sheet)" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all">
@@ -26,51 +25,99 @@
             </div>
         </div>
 
-        <!-- Section 2: Student Profile (Existing) -->
+        <!-- SECTION 2: STUDENT TRAINEE PROFILE -->
         <div class="relative group">
             <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-500"></div>
             <div class="relative card-glass rounded-[2rem] p-8 border border-white/10 bg-slate-900/40 backdrop-blur-xl">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-2 h-6 bg-indigo-500 rounded-full"></div>
-                    <h2 class="text-indigo-400 font-bold uppercase tracking-[0.2em] text-xs">Student Trainee Profile</h2>
+                    <h2 class="text-indigo-400 font-bold uppercase tracking-[0.2em] text-xs">2. Student Trainee Profile</h2>
                 </div>
-                <div class="grid gap-5">
-                    <input type="text" name="full_name" value="{{ p.full_name }}" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                    <input type="text" name="course" value="{{ p.course }}" placeholder="Course / Major" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                    <input type="text" name="duration" value="{{ p.duration }}" placeholder="Duration (e.g. 600 Hours)" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                    <textarea name="objectives" rows="3" placeholder="Learning Objectives (Specific skills to acquire)" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white resize-none focus:ring-2 focus:ring-indigo-500/50 transition-all">{{ p.objectives }}</textarea>
+                
+                <!-- Personal Information -->
+                <div class="mb-5">
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Personal Information</p>
+                    <div class="grid gap-4">
+                        <input type="text" name="full_name" value="{{ p.full_name }}" placeholder="Full Name" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                        
+                        <!-- SEPARATED CONTACT DETAILS -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <input type="email" name="email" value="{{ p.email }}" placeholder="Email Address" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                            <input type="tel" name="phone" value="{{ p.phone }}" placeholder="Phone Number" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                        </div>
+
+                        <!-- EXPLICIT EDUCATIONAL BACKGROUND -->
+                        <input type="text" name="course" value="{{ p.course }}" placeholder="Educational Background (e.g., BS Information Technology)" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                        
+                        <!-- PROFESSIONAL PHOTO -->
+                        <div class="p-4 bg-white/5 border border-white/10 rounded-xl">
+                            <label class="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Professional Photo</label>
+                            <input type="file" name="profile_photo" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-indigo-500/20 file:text-indigo-400">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-px w-full bg-white/5 my-6"></div>
+
+                <!-- Training Details -->
+                <div class="mb-5">
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Training Details</p>
+                    <div class="grid gap-4">
+                        <input type="text" name="hte_name" value="{{ p.hte_name }}" placeholder="Host Training Establishment (HTE) Name" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                        <input type="text" name="dept_assigned" value="{{ p.dept_assigned }}" placeholder="Department Assigned" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                        <input type="text" name="supervisor" value="{{ p.supervisor }}" placeholder="Direct Supervisor's Name" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                        <input type="text" name="duration" value="{{ p.duration }}" placeholder="Duration (e.g. 600 Hours)" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
+                    </div>
+                </div>
+
+                <div class="h-px w-full bg-white/5 my-6"></div>
+
+                <!-- Learning Objectives -->
+                <div>
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Learning Objectives</p>
+                    <textarea name="objectives" rows="3" placeholder="Specific skills or knowledge you intended to acquire" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white resize-none focus:ring-2 focus:ring-indigo-500/50 transition-all">{{ p.objectives }}</textarea>
                 </div>
             </div>
         </div>
 
-        <!-- SECTION 3: COMPANY & STRUCTURE (Updated) -->
+        <!-- SECTION 3: COMPANY OVERVIEW -->
         <div class="relative group">
-            <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-500"></div>
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-500"></div>
             <div class="relative card-glass rounded-[2rem] p-8 border border-white/10 bg-slate-900/40 backdrop-blur-xl">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-2 h-6 bg-cyan-500 rounded-full"></div>
-                    <h2 class="text-cyan-400 font-bold uppercase tracking-[0.2em] text-xs">Company Overview</h2>
+                    <h2 class="text-cyan-400 font-bold uppercase tracking-[0.2em] text-xs">3. Company Overview</h2>
                 </div>
-                <div class="grid gap-5">
-                    <input type="text" name="hte_name" value="{{ p.hte_name }}" placeholder="Company Name" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white">
-                    <input type="text" name="supervisor" value="{{ p.supervisor }}" placeholder="Supervisor Name" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white">
-                    <textarea name="company_desc" rows="2" placeholder="Company Profile (History/Mission)" class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white resize-none">{{ p.company_desc }}</textarea>
-                    
+                
+                <div class="grid gap-6">
+                    <!-- Company Profile -->
+                    <div>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Company Profile</p>
+                        <textarea name="company_desc" rows="3" placeholder="History, mission, vision, and core values..." class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white resize-none focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all">{{ p.company_desc }}</textarea>
+                    </div>
+
+                    <!-- Department Description -->
+                    <div>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Department Description</p>
+                        <textarea name="dept_desc" rows="3" placeholder="Specific functions of the office where you were deployed..." class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white resize-none focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all">{{ p.dept_desc }}</textarea>
+                    </div>
+
+                    <!-- Organizational Structure -->
                     <div class="p-4 bg-white/5 border border-white/10 rounded-xl">
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Organizational Structure (Image)</label>
-                        <input type="file" name="structure_img" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-indigo-500/20 file:text-indigo-400">
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Organizational Structure (Hierarchy Chart)</label>
+                        <input type="file" name="structure_img" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-cyan-500/20 file:text-cyan-400">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SECTION 4: DOCUMENTATION (New - Appendices) -->
+        <!-- SECTION 4: DOCUMENTATION -->
         <div class="relative group">
             <div class="absolute -inset-0.5 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-500"></div>
             <div class="relative card-glass rounded-[2rem] p-8 border border-white/10 bg-slate-900/40 backdrop-blur-xl">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-2 h-6 bg-orange-500 rounded-full"></div>
-                    <h2 class="text-orange-400 font-bold uppercase tracking-[0.2em] text-xs">Final Documentation</h2>
+                    <h2 class="text-orange-400 font-bold uppercase tracking-[0.2em] text-xs">6. Appendices & Documentation</h2>
                 </div>
                 <div class="grid gap-5">
                     <div class="p-4 bg-white/5 border border-white/10 rounded-xl">
@@ -85,7 +132,8 @@
             </div>
         </div>
 
-        <button type="submit" class="w-full py-4 font-bold text-white bg-indigo-600 rounded-2xl hover:bg-indigo-500 transition-all shadow-lg">
+        <!-- Submit -->
+        <button type="submit" class="w-full py-4 font-bold text-white bg-indigo-600 rounded-2xl hover:bg-indigo-500 transition-all shadow-lg active:scale-95">
             Save Journal Profile
         </button>
     </form>

@@ -26,9 +26,14 @@
                 </div>
                 
                 <div class="relative w-28 h-28 rounded-[2.2rem] bg-gradient-to-br from-slate-800 to-slate-900 p-1 shadow-2xl border border-white/10">
-                    <div class="w-full h-full rounded-[1.8rem] bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-700 flex items-center justify-center text-5xl font-black text-white italic">
-                        {{ p.full_name[0] if p.full_name else '?' }}
-                    </div>
+                    <!-- FIXED AVATAR WITH PHOTO SUPPORT -->
+                    {% if p.profile_photo %}
+                        <img src="data:image/webp;base64,{{ p.profile_photo }}" class="w-full h-full rounded-[1.8rem] object-cover" alt="Profile">
+                    {% else %}
+                        <div class="w-full h-full rounded-[1.8rem] bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-700 flex items-center justify-center text-5xl font-black text-white italic">
+                            {{ p.full_name[0] if p.full_name else '?' }}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 

@@ -365,11 +365,7 @@ async def system_diagnostics():
             {"$set": {"system_broadcast": broadcast_msg}},
             upsert=True
         )
-        
-        await log_event(f"BROADCAST DEPLOYED: {broadcast_msg[:30]}...", level="warn", user=session.get('username'))
         await flash("Broadcast Signal Dispatched.", "success")
-        
-        # ADD THIS REDIRECT:
         return redirect(url_for('auth.system_diagnostics'))
 
     # GET logic starts here

@@ -12,7 +12,6 @@
             <button onclick="copyProfileLink()" class="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all">
                 <i data-lucide="share-2" class="w-5 h-5"></i>
             </button>
-            <!-- NEW RECOVERY LINK -->
             <a href="{{ url_for('portfolio.manage_recovery') }}" class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all">
                 <i data-lucide="shield-check" class="w-5 h-5"></i>
             </a>
@@ -31,9 +30,14 @@
             <div class="relative mb-6">
                 <div class="absolute inset-0 bg-gradient-to-br from-indigo-500 to-blue-600 blur-2xl opacity-20 rounded-full animate-pulse"></div>
                 <div class="relative w-28 h-28 rounded-[2.2rem] bg-gradient-to-br from-slate-800 to-slate-900 p-1 shadow-2xl border border-white/10">
-                    <div class="w-full h-full rounded-[1.8rem] bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-600 flex items-center justify-center text-5xl font-black text-white shadow-inner">
-                        {{ p.full_name[0] if p.full_name else '?' }}
-                    </div>
+                    <!-- FIXED AVATAR WITH PHOTO SUPPORT -->
+                    {% if p.profile_photo %}
+                        <img src="data:image/webp;base64,{{ p.profile_photo }}" class="w-full h-full rounded-[1.8rem] object-cover" alt="Profile">
+                    {% else %}
+                        <div class="w-full h-full rounded-[1.8rem] bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-600 flex items-center justify-center text-5xl font-black text-white shadow-inner">
+                            {{ p.full_name[0] if p.full_name else '?' }}
+                        </div>
+                    {% endif %}
                 </div>
                 <div class="absolute -bottom-1 -right-1 flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950 border border-emerald-500/50 shadow-lg">
                     <span class="relative flex h-2 w-2">
@@ -116,37 +120,31 @@
     {% endif %}
 
     <!-- Achievements Section -->
-<div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
-    <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Earned Achievements</h3>
-    <div class="flex flex-wrap gap-2">
-        {% for ach in achievements %}
-        <div class="group/tooltip relative">
-            <!-- The Badge -->
-            <div class="flex items-center gap-2 bg-{{ ach.color }}-500/10 border border-{{ ach.color }}-500/20 px-4 py-2.5 rounded-xl cursor-help hover:bg-{{ ach.color }}-500/20 transition-all">
-                <i data-lucide="{{ ach.icon }}" class="w-4 h-4 text-{{ ach.color }}-400"></i>
-                <span class="text-[11px] font-black text-white uppercase tracking-tight">{{ ach.title }}</span>
-            </div>
-
-            <!-- The Tooltip (Visible on Hover) -->
-            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover/tooltip:block w-48 bg-slate-950 border border-white/10 p-3 rounded-xl shadow-2xl z-[1000] pointer-events-none backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2">
-                <!-- Tooltip Header -->
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-6 h-6 rounded-lg bg-{{ ach.color }}-500/20 flex items-center justify-center">
-                        <i data-lucide="{{ ach.icon }}" class="w-3.5 h-3.5 text-{{ ach.color }}-400"></i>
-                    </div>
-                    <p class="text-[10px] text-{{ ach.color }}-400 font-black uppercase tracking-widest">{{ ach.title }}</p>
+    <div class="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mb-6">
+        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Earned Achievements</h3>
+        <div class="flex flex-wrap gap-2">
+            {% for ach in achievements %}
+            <div class="group/tooltip relative">
+                <div class="flex items-center gap-2 bg-{{ ach.color }}-500/10 border border-{{ ach.color }}-500/20 px-4 py-2.5 rounded-xl cursor-help hover:bg-{{ ach.color }}-500/20 transition-all">
+                    <i data-lucide="{{ ach.icon }}" class="w-4 h-4 text-{{ ach.color }}-400"></i>
+                    <span class="text-[11px] font-black text-white uppercase tracking-tight">{{ ach.title }}</span>
                 </div>
-                <!-- Tooltip Description -->
-                <p class="text-[10px] text-slate-300 font-medium leading-relaxed italic">
-                    "{{ ach.desc or 'Achievement earned for outstanding performance.' }}"
-                </p>
-                <!-- Tooltip Arrow -->
-                <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-950 border-r border-b border-white/10 rotate-45"></div>
+                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover/tooltip:block w-48 bg-slate-950 border border-white/10 p-3 rounded-xl shadow-2xl z-[1000] pointer-events-none backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 rounded-lg bg-{{ ach.color }}-500/20 flex items-center justify-center">
+                            <i data-lucide="{{ ach.icon }}" class="w-3.5 h-3.5 text-{{ ach.color }}-400"></i>
+                        </div>
+                        <p class="text-[10px] text-{{ ach.color }}-400 font-black uppercase tracking-widest">{{ ach.title }}</p>
+                    </div>
+                    <p class="text-[10px] text-slate-300 font-medium leading-relaxed italic">
+                        "{{ ach.desc or 'Achievement earned for outstanding performance.' }}"
+                    </p>
+                    <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-950 border-r border-b border-white/10 rotate-45"></div>
+                </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
-</div>
 
     <!-- Training Environment -->
     <div class="space-y-4">

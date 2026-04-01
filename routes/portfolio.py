@@ -123,20 +123,23 @@ async def setup_profile():
         form = await request.form
         files = await request.files
         
-        # Process new document images
+        # Process new document images (ADDED profile_photo)
         cert_img = await process_multiple_images(files.getlist('certificate_img'))
         struct_img = await process_multiple_images(files.getlist('structure_img'))
         work_samples = await process_multiple_images(files.getlist('work_samples'))
+        prof_img = await process_multiple_images(files.getlist('profile_photo'))
 
         data = {
             'user_id': session['user_id'],
             'full_name': form.get('full_name'),
+            'email': form.get('email'),               # Added to fix missing email
+            'phone': form.get('phone'),               # Added to fix missing phone
             'course': form.get('course'),
             'duration': form.get('duration'),
             'objectives': form.get('objectives'),
             'hte_name': form.get('hte_name'),
+            'dept_assigned': form.get('dept_assigned'), # Added to fix missing dept_assigned
             'supervisor': form.get('supervisor'),
-            # New Guide Fields
             'coordinator_name': form.get('coordinator_name'),
             'acknowledgement': form.get('acknowledgement'),
             'company_desc': form.get('company_desc'),
@@ -147,10 +150,11 @@ async def setup_profile():
         # Only update images if new ones are uploaded
         if cert_img: data['certificate_img'] = cert_img[0]
         if struct_img: data['structure_img'] = struct_img[0]
-        if work_samples: data['work_samples'] = work_samples # List of images
+        if work_samples: data['work_samples'] = work_samples 
+        if prof_img: data['profile_photo'] = prof_img[0] # Save Profile Photo
 
         await db.profiles.update_one({'user_id': session['user_id']}, {'$set': data}, upsert=True)
-        return redirect(url_for('portfolio.list_reports'))
+        return redirect(url_for('portfolio.view_profile'))
 
     p = await db.profiles.find_one({'user_id': session['user_id']}) or {}
     return await render_template('portfolio/portfolio_setup.html', p=p)
