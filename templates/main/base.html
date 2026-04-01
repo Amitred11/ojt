@@ -5,401 +5,161 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OJT Premium</title>
     
-    <!-- TAILWIND & LUCIDE -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    
-    <!-- INSTANT PAGE (Speed) -->
     <script src="//instant.page/5.2.0" type="module"></script>
-    <!-- SWEETALERT2 (Custom Alerts) -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <div class="hidden 
-    bg-amber-500/10 border-amber-500/20 text-amber-400 
-    bg-rose-500/10 border-rose-500/20 text-rose-400 
-    bg-cyan-500/10 border-cyan-500/20 text-cyan-400 
-    bg-emerald-500/10 border-emerald-500/20 text-emerald-400 
-    bg-blue-500/10 border-blue-500/20 text-blue-400 
-    bg-indigo-500/10 border-indigo-500/20 text-indigo-400 
-    bg-orange-500/10 border-orange-500/20 text-orange-400
-    bg-red-500/10 border-red-500/20 text-red-400
-    bg-violet-500/10 border-violet-500/20 text-violet-400
-    bg-lime-500/10 border-lime-500/20 text-lime-400
-    bg-yellow-500/10 border-yellow-500/20 text-yellow-400
-    bg-purple-500/10 border-purple-500/20 text-purple-400
-    bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-400
-    bg-slate-500/10 border-slate-500/20 text-slate-400
-    bg-pink-500/10 border-pink-500/20 text-pink-400">
-    </div>
-    <style>
-        /* BASE STYLES */
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #020617; 
-            color: #f8fafc;
-            overflow-x: hidden; 
-        }
-        
-        .card-glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .input-glass { background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); }
-        input[type="time"], input[type="date"] { color-scheme: dark; }
-        .text-gold { background: linear-gradient(to right, #fbbf24, #d97706); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
-        /* --- PAGE TRANSITIONS --- */
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; overflow-x: hidden; }
+        .card-glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .text-gold { background: linear-gradient(to right, #fbbf24, #d97706); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
         #page-content { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .page-exiting { animation: fadeOut 0.2s forwards !important; pointer-events: none; }
         @keyframes fadeOut { to { opacity: 0; transform: scale(0.99); } }
-
-        /* --- CUSTOM SWEETALERT THEME (Dark/Glass) --- */
-        div:where(.swal2-container) div:where(.swal2-popup) {
-            background: rgba(30, 41, 59, 0.9) !important;
-            backdrop-filter: blur(16px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 2rem !important;
-            color: #fff !important;
-        }
-        div:where(.swal2-icon).swal2-warning { border-color: #fbbf24 !important; color: #fbbf24 !important; }
-        div:where(.swal2-icon).swal2-question { border-color: #818cf8 !important; color: #818cf8 !important; }
-        .swal2-title { font-size: 1.5rem !important; font-weight: 800 !important; letter-spacing: -0.02em; }
-        .swal2-confirm {
-            background: linear-gradient(to right, #4f46e5, #6366f1) !important;
-            border-radius: 1rem !important;
-            font-weight: 800 !important;
-            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3) !important;
-        }
-        .swal2-cancel {
-            background: rgba(255,255,255,0.05) !important;
-            color: #94a3b8 !important;
-            border-radius: 1rem !important;
-            font-weight: 700 !important;
-        }
-
-        /* --- PREMIUM TOAST OVERRIDES --- */
-        .swal2-toast {
-            background: rgba(15, 23, 42, 0.8) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
-            border-radius: 1.25rem !important;
-            padding: 0.75rem 1rem !important;
-        }
-
-        .swal2-toast .swal2-title {
-            color: #f8fafc !important;
-            font-size: 0.875rem !important;
-            font-weight: 700 !important;
-            margin-left: 0.5rem !important;
-        }
-
-        /* Success Toast Progress Bar */
-        .swal-type-success .swal2-timer-progress-bar { background: #10b981 !important; }
-        /* Error Toast Progress Bar */
-        .swal-type-error .swal2-timer-progress-bar { background: #f43f5e !important; }
-        /* Info/Warning Toast Progress Bar */
-        .swal-type-info .swal2-timer-progress-bar { background: #6366f1 !important; }
-
-        /* Custom Icon Colors */
-        .swal2-icon.swal2-success [class^=swal2-success-line] { background-color: #10b981 !important; }
-        .swal2-icon.swal2-success .swal2-success-ring { border-color: rgba(16, 185, 129, 0.3) !important; }
-        /* --- PREMIUM MODAL OVERRIDES --- */
-        .swal2-popup.premium-modal {
-            padding: 2rem !important;
-            background: rgba(15, 23, 42, 0.9) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
-        }
-
-        .swal2-title.premium-title {
-            color: #fff !important;
-            font-size: 1.5rem !important;
-            font-weight: 800 !important;
-            letter-spacing: -0.025em !important;
-        }
-
-        .swal2-html-container.premium-text {
-            color: #94a3b8 !important;
-            font-weight: 500 !important;
-        }
-
-        /* Gradient Confirm Button */
-        .premium-confirm {
-            background: linear-gradient(to right, #4f46e5, #6366f1) !important;
-            padding: 0.8rem 2rem !important;
-            font-weight: 800 !important;
-            border-radius: 1rem !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.05em !important;
-            font-size: 0.75rem !important;
-        }
-
-        /* Danger/Delete Button */
-        .premium-danger {
-            background: linear-gradient(to right, #e11d48, #fb7185) !important;
-            padding: 0.8rem 2rem !important;
-            font-weight: 800 !important;
-            border-radius: 1rem !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.05em !important;
-            font-size: 0.75rem !important;
-        }
-
-        /* Glass Cancel Button */
-        .premium-cancel {
-            background: rgba(255, 255, 255, 0.05) !important;
-            color: #94a3b8 !important;
-            padding: 0.8rem 2rem !important;
-            font-weight: 700 !important;
-            border-radius: 1rem !important;
-            font-size: 0.75rem !important;
-            text-transform: uppercase !important;
-        }
-
-        /* Custom Spinner Color */
-        .swal2-loader {
-            border-color: #6366f1 transparent #6366f1 transparent !important;
-        }
-
-        /* Custom Snippet Adjustments */
-        #stats-container {
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .is-snapping {
-            padding: 3rem !important; /* Extra padding for the image edges */
-            border: 2px solid rgba(255, 255, 255, 0.1) !important;
-        }
-        .is-snapping [class*="h-4"] {
-            height: 1.5rem !important;
-        }
-        @media (max-width: 640px) {
-            #stats-container .text-6xl {
-                font-size: 4rem;
-            }
-        }
-
+        
+        /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar {width: 4px;}
-        .custom-scrollbar::-webkit-scrollbar-track {background: rgba(255, 255, 255, 0.02);border-radius: 10px;}
-        .custom-scrollbar::-webkit-scrollbar-thumb {background: rgba(16, 185, 129, 0.2); /* Emerald color matching your HTE theme */border-radius: 10px;}
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {background: rgba(16, 185, 129, 0.4);}
+        .custom-scrollbar::-webkit-scrollbar-track {background: rgba(255, 255, 255, 0.02);}
+        .custom-scrollbar::-webkit-scrollbar-thumb {background: rgba(16, 185, 129, 0.2); border-radius: 10px;}
     </style>
 </head>
 <body class="min-h-screen pb-24 relative">
+
     {% include "main/partials/_update_marquee.html" %}
 
-        <!-- SYSTEM BROADCAST (UPGRADED) -->
-{% if system_broadcast %}
-<div id="system-broadcast-container" class="hidden sticky top-0 z-[10000] px-4 py-3">
-    <div class="max-w-4xl mx-auto relative group">
-        <!-- Main Bar with Glassmorphism -->
-        <div class="relative overflow-hidden bg-slate-900/80 backdrop-blur-xl border border-rose-500/30 rounded-2xl shadow-[0_0_30px_rgba(244,63,94,0.2)] flex items-center gap-4 px-5 py-3">
-            
-            <!-- Animated Pulse Icon -->
-            <div class="relative flex shrink-0">
-                <span class="absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-20 animate-ping"></span>
-                <div class="relative bg-rose-500 rounded-lg p-1.5">
-                    <i data-lucide="megaphone" class="w-4 h-4 text-white"></i>
+    <!-- SYSTEM BROADCAST -->
+    {% if system_broadcast and system_broadcast != "None" and system_broadcast != "" %}
+    <div id="system-broadcast-container" class="sticky top-0 z-[10000] px-4 py-3">
+        <div class="max-w-4xl mx-auto relative group">
+            <div class="relative overflow-hidden bg-slate-900/80 backdrop-blur-xl border border-rose-500/30 rounded-2xl shadow-[0_0_30px_rgba(244,63,94,0.2)] flex items-center gap-4 px-5 py-3">
+                <div class="relative flex shrink-0">
+                    <span class="absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-20 animate-ping"></span>
+                    <div class="relative bg-rose-500 rounded-lg p-1.5">
+                        <i data-lucide="megaphone" class="w-4 h-4 text-white"></i>
+                    </div>
                 </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-0.5">System Priority Alert</p>
+                    <p id="broadcast-text" class="text-sm font-bold text-slate-100 truncate italic">
+                        {{ system_broadcast | safe }}
+                    </p>
+                </div>
+                <button onclick="dismissBroadcast()" class="shrink-0 p-2 hover:bg-white/5 rounded-xl transition-colors text-slate-500 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
-
-            <!-- Message Content -->
-            <div class="flex-1 min-w-0">
-                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-0.5">System Priority Alert</p>
-                <p id="broadcast-text" class="text-sm font-bold text-slate-100 truncate italic">
-                    {{ system_broadcast }}
-                </p>
-            </div>
-
-            <!-- Close Button -->
-            <button onclick="dismissBroadcast()" class="shrink-0 p-2 hover:bg-white/5 rounded-xl transition-colors text-slate-500 hover:text-white">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            
-            <!-- Bottom Accent Glow -->
-            <div class="absolute bottom-0 left-0 h-[2px] w-full bg-gradient-to-right from-transparent via-rose-500 to-transparent opacity-50"></div>
         </div>
     </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const broadcastContainer = document.getElementById('system-broadcast-container');
-        const currentMsg = "{{ system_broadcast }}";
-        
-        // Use a simple hash of the message to see if it's "new" to this user
-        const dismissedMsg = localStorage.getItem('dismissed_broadcast');
-
-        if (dismissedMsg !== currentMsg) {
-            broadcastContainer.classList.remove('hidden');
-            broadcastContainer.classList.add('animate-in', 'slide-in-from-top', 'duration-500');
-        }
-    });
-
-    function dismissBroadcast() {
-        const currentMsg = "{{ system_broadcast }}";
-        localStorage.setItem('dismissed_broadcast', currentMsg);
-        
-        const container = document.getElementById('system-broadcast-container');
-        container.classList.add('animate-out', 'fade-out', 'slide-out-to-top', 'duration-300');
-        
-        setTimeout(() => {
-            container.style.display = 'none';
-        }, 300);
-    }
-</script>
-{% endif %}
+    {% endif %}
 
     <!-- NAVIGATION -->
     {% if session.get('user_id') %}
-<nav class="fixed bottom-0 w-full z-50 card-glass border-t border-white/10 px-6 py-4 flex justify-around items-center rounded-t-3xl backdrop-blur-xl">
-    <a href="{{ url_for('tracker.index') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if request.endpoint == 'tracker.index' else 'text-slate-500' }}">
-        <i data-lucide="clock" class="w-6 h-6"></i>
-    </a>
-    
-    <!-- ADDED: Only visible to the Master Admin -->
-    {% if session.get('user_id') == '6979fc7f59b791fd5fcbf90f' %}
-    <a href="{{ url_for('auth.manage_users') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if request.endpoint.startswith('auth.') else 'text-slate-500' }}">
-        <i data-lucide="shield-check" class="w-6 h-6"></i>
-    </a>
+    <nav class="fixed bottom-0 w-full z-50 card-glass border-t border-white/10 px-6 py-4 flex justify-around items-center rounded-t-3xl backdrop-blur-xl">
+        <a href="{{ url_for('tracker.index') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if request.endpoint == 'tracker.index' else 'text-slate-500' }}">
+            <i data-lucide="clock" class="w-6 h-6"></i>
+        </a>
+        
+        {% if session.get('user_id') == '6979fc7f59b791fd5fcbf90f' %}
+        <a href="{{ url_for('auth.manage_users') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if request.endpoint and request.endpoint.startswith('auth.') else 'text-slate-500' }}">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+        </a>
+        {% endif %}
+
+        <a href="{{ url_for('leaderboard.index') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if request.endpoint and 'leaderboard' in request.endpoint else 'text-slate-500' }}">
+            <i data-lucide="trophy" class="w-6 h-6"></i>
+        </a>
+        <a href="{{ url_for('portfolio.list_reports') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if request.endpoint and 'portfolio.list_reports' in request.endpoint else 'text-slate-500' }}">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+        </a>
+        <a href="{{ url_for('portfolio.view_profile') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if request.endpoint and 'portfolio.view_profile' in request.endpoint else 'text-slate-500' }}">
+            <i data-lucide="user" class="w-6 h-6"></i>
+        </a>
+        
+        <button onclick="confirmLogout(event, '{{ url_for('auth.logout') }}')" class="flex flex-col items-center gap-1 text-xs font-bold text-slate-500 hover:text-red-400 transition-colors">
+            <i data-lucide="log-out" class="w-6 h-6"></i>
+        </button>
+    </nav>
     {% endif %}
 
-    
-
-    <a href="{{ url_for('leaderboard.index') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'leaderboard' in request.endpoint else 'text-slate-500' }}">
-        <i data-lucide="trophy" class="w-6 h-6"></i>
-    </a>
-    <a href="{{ url_for('portfolio.list_reports') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'portfolio.list_reports' in request.endpoint else 'text-slate-500' }}">
-        <i data-lucide="book-open" class="w-6 h-6"></i>
-    </a>
-    <a href="{{ url_for('portfolio.view_profile') }}" class="nav-link flex flex-col items-center gap-1 text-xs font-bold {{ 'text-gold' if 'portfolio.view_profile' in request.endpoint else 'text-slate-500' }}">
-        <i data-lucide="user"></i>
-    </a>
-    
-    <button onclick="confirmLogout(event, '{{ url_for('auth.logout') }}')" class="flex flex-col items-center gap-1 text-xs font-bold text-slate-500 hover:text-red-400 transition-colors">
-        <i data-lucide="log-out" class="w-6 h-6"></i>
-    </button>
-</nav>
-{% endif %}
-
-
-    <!-- CONTENT WRAPPER -->
+    <!-- CONTENT -->
     <div id="page-content" class="max-w-md mx-auto px-6 pt-12">
-        <!-- (Remove the broadcast bar from here) -->
         {% block content %}{% endblock %}
     </div>
 
     <script>
+        // Initialize Icons
         lucide.createIcons();
 
-        // 1. Toast Notification Logic (Replaces Flash Messages)
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top', // Centered at top looks more "System-like" on mobile
-            showConfirmButton: false,
-            timer: 3500,
-            timerProgressBar: true,
-            showClass: {
-                popup: 'animate__animated animate__fadeInDown animate__faster'
-            },
-            hideClass: {
-                popup: 'animate__animated animate__fadeOutUp animate__faster'
-            },
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer)
-                toast.addEventListener('mouseleave', Swal.resumeTimer)
+        // Broadcast Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('system-broadcast-container');
+            const textEl = document.getElementById('broadcast-text');
+            
+            if (!container || !textEl) return;
+
+            const currentMsg = textEl.innerText.trim();
+            const dismissedMsg = localStorage.getItem('dismissed_broadcast');
+            
+            // ADMIN CHECK: If you are the admin, we won't auto-hide it based on history
+            const isAdmin = "{{ session.get('user_id') == '6979fc7f59b791fd5fcbf90f' }}".toLowerCase() === 'true';
+
+            console.log("Broadcast Debug:", { currentMsg, dismissedMsg, isAdmin });
+
+            // Logic to hide
+            if (currentMsg === "" || currentMsg === "None") {
+                container.remove();
+            } else if (dismissedMsg === currentMsg && !isAdmin) {
+                // Only hide for regular users if they dismissed it
+                container.style.display = 'none';
+            } else {
+                // Bar is staying! Re-init icons to be safe
+                if (window.lucide) { lucide.createIcons(); }
             }
         });
 
-        // Trigger Toasts from Backend
-        {% with messages = get_flashed_messages(with_categories=true) -%}
-            {%- if messages %}
-                {%- for category, message in messages %}
-                    Toast.fire({
-                        icon: "{{ 'success' if category == 'success' else 'error' if category == 'error' else 'info' }}",
-                        title: "{{ message }}",
-                        customClass: {
-                            popup: "swal-type-{{ 'success' if category == 'success' else 'error' if category == 'error' else 'info' }}"
-                        }
-                    });
-                {%- endfor %}
-            {%- endif %}
-        {%- endwith %}
+        function dismissBroadcast() {
+            const textEl = document.getElementById('broadcast-text');
+            const container = document.getElementById('system-broadcast-container');
+            if (!textEl || !container) return;
+            
+            const currentMsg = textEl.innerText.trim();
+            localStorage.setItem('dismissed_broadcast', currentMsg);
+            
+            container.classList.add('animate-out', 'fade-out', 'slide-out-to-top', 'duration-300');
+            setTimeout(() => { container.remove(); }, 300);
+        }
 
-        // 2. Custom LOGOUT Alert
+        // Toasts
+        const Toast = Swal.mixin({
+            toast: true, position: 'top', showConfirmButton: false, timer: 3000, timerProgressBar: true
+        });
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                Toast.fire({
+                    icon: "{{ 'success' if category == 'success' else 'error' if category == 'error' else 'info' }}",
+                    title: "{{ message }}"
+                });
+            {% endfor %}
+        {% endwith %}
+
+        // Logout/Delete confirms
         function confirmLogout(e, url) {
             e.preventDefault();
             Swal.fire({
-                title: 'Sign Out?',
-                text: "You will need to login again to access your dashboard.",
-                icon: 'question',
-                iconColor: '#818cf8',
-                showCancelButton: true,
-                confirmButtonText: 'Logout',
-                cancelButtonText: 'Stay',
-                reverseButtons: true,
-                customClass: {
-                    popup: 'premium-modal',
-                    title: 'premium-title',
-                    htmlContainer: 'premium-text',
-                    confirmButton: 'premium-confirm',
-                    cancelButton: 'premium-cancel'
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = url;
-                }
-            });
+                title: 'Sign Out?', text: "Session will be terminated.", icon: 'question',
+                showCancelButton: true, confirmButtonText: 'Logout', 
+                customClass: { popup: 'card-glass', confirmButton: 'bg-indigo-600', cancelButton: 'bg-slate-800' }
+            }).then((r) => { if (r.isConfirmed) window.location.href = url; });
         }
 
-        // 3. Custom DELETE Alert
-        function confirmDelete(e, url) {
-            e.preventDefault();
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "This record will be permanently deleted from the database.",
-                icon: 'warning',
-                iconColor: '#f43f5e',
-                showCancelButton: true,
-                confirmButtonText: 'Delete Now',
-                cancelButtonText: 'Cancel',
-                reverseButtons: true,
-                customClass: {
-                    popup: 'premium-modal',
-                    title: 'premium-title',
-                    htmlContainer: 'premium-text',
-                    confirmButton: 'premium-danger',
-                    cancelButton: 'premium-cancel'
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = url;
-                }
-            });
-        }
-
-        // 4. UPLOADING Loading Screen
-        function showUploading() {
-            Swal.fire({
-                title: 'Processing',
-                text: 'Optimizing and syncing your data...',
-                allowOutsideClick: false,
-                showConfirmButton: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                customClass: {
-                    popup: 'premium-modal',
-                    title: 'premium-title',
-                    htmlContainer: 'premium-text'
-                }
-            });
-        }
-
-        // 5. Page Transition Interceptor
+        // Transitions
         document.addEventListener('click', (e) => {
             const link = e.target.closest('a');
-            if (link && link.href && link.target !== '_blank' && !e.ctrlKey && link.hostname === window.location.hostname) {
-                if (link.href.includes('#') || link.getAttribute('onclick')) return;
+            if (link && link.href && !link.target && link.hostname === window.location.hostname && !link.href.includes('#')) {
                 e.preventDefault();
                 document.getElementById('page-content').classList.add('page-exiting');
                 setTimeout(() => { window.location.href = link.href; }, 200);

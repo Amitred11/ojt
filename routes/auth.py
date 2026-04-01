@@ -359,22 +359,23 @@ async def system_diagnostics():
         form = await request.form
         broadcast_msg = form.get("broadcast_msg", "").strip()
         
-        # If the message is empty, the bar will automatically hide 
-        # because {% if system_broadcast %} will evaluate to false.
+        # Save to database
         await settings_col.update_one(
             {"type": "global_config"},
             {"$set": {"system_broadcast": broadcast_msg}},
             upsert=True
         )
         
-        # Log who did it
         await log_event(f"BROADCAST DEPLOYED: {broadcast_msg[:30]}...", level="warn", user=session.get('username'))
         await flash("Broadcast Signal Dispatched.", "success")
+        
+        # ADD THIS REDIRECT:
+        return redirect(url_for('auth.system_diagnostics'))
 
+    # GET logic starts here
     stats = await db.command("dbStats")
     used_mb = round(stats.get('dataSize', 0) / (1024 * 1024), 2)
     
-    # GET CURRENT CONFIG STATES
     config = await settings_col.find_one({"type": "global_config"}) or {}
     
     db_stats = {
@@ -383,7 +384,6 @@ async def system_diagnostics():
         "percent": round((used_mb / 512) * 100, 1),
         "uptime": f"{int((time.time() - APP_START_TIME)//3600)}h {int(((time.time() - APP_START_TIME)%3600)//60)}m",
         "broadcast": config.get('system_broadcast', ""),
-        # ADD THESE TWO LINES BELOW:
         "maintenance_mode": config.get('maintenance_mode', False),
         "reg_open": config.get('registration_open', True),
         "collections": [

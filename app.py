@@ -117,11 +117,18 @@ async def check_maintenance_mode():
 @app.context_processor
 async def inject_global_settings():
     from db import settings_col
-    config = await settings_col.find_one({"type": "global_config"})
-    return {
-        "system_broadcast": config.get('system_broadcast'),
-        "maintenance_mode": config.get('maintenance_mode', False) if config else False
-    }
+    try:
+        config = await settings_col.find_one({"type": "global_config"})
+        if not config:
+            return {"system_broadcast": "", "maintenance_mode": False}
+        
+        return {
+            # Use .get() with a default empty string
+            "system_broadcast": config.get('system_broadcast', ""), 
+            "maintenance_mode": config.get('maintenance_mode', False)
+        }
+    except Exception:
+        return {"system_broadcast": "", "maintenance_mode": False}
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)
