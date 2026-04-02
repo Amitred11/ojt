@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal Studio | Pro Architect v17</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/docx@7.3.0/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=EB+Garamond:wght@400;700&family=Roboto:wght@400;700&family=Playfair+Display:wght@700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #010103; color: #94a3b8; overflow: hidden; }
+        .hud-glass { background: rgba(8, 8, 12, 0.95); backdrop-filter: blur(30px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .preview-paper { background: white; color: #1e293b; width: 100%; max-width: 800px; min-height: 1050px; box-shadow: 0 0 80px rgba(0,0,0,0.8); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .setting-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 1rem; padding: 1rem; }
+        .module-tab.active { background: #4f46e5; color: white; border-color: #6366f1; box-shadow: 0 10px 25px -10px rgba(79, 70, 229, 0.6); }
+        
+        .font-modern { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-classic { font-family: 'EB Garamond', serif; }
+        .font-clean { font-family: 'Roboto', sans-serif; }
+        .font-elegant { font-family: 'Playfair Display', serif; }
+        .font-mono { font-family: 'Fira Code', monospace; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col bg-slate-950">
+
+    <!-- TOP NAVIGATION -->
+    <nav class="h-20 hud-glass px-8 flex items-center justify-between z-50">
+        <div class="flex items-center gap-6">
+            <button onclick="window.history.back()" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-500 hover:text-white transition-all"><i data-lucide="power"></i></button>
+            <h1 class="text-xl font-800 text-white tracking-tighter uppercase leading-none">Journal <span class="text-indigo-500">Architect</span></h1>
+        </div>
+
+        <div class="flex bg-black/60 p-1.5 rounded-2xl border border-white/5 gap-1">
+            <button onclick="setModule('weekly')" id="tab-weekly" class="module-tab active px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Logs</button>
+            <button onclick="setModule('dtr')" id="tab-dtr" class="module-tab px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">DTR</button>
+            <button onclick="setModule('photo')" id="tab-photo" class="module-tab px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Gallery</button>
+            <button onclick="setModule('reflection')" id="tab-reflection" class="module-tab px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Reflections</button>
+        </div>
+
+        <button id="download-btn" onclick="exportDOCX()" class="px-10 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-xl flex items-center gap-2 transition-all">
+            <i data-lucide="zap"></i> Build & Export
+        </button>
+    </nav>
+
+    <main class="flex-1 overflow-hidden grid grid-cols-12 z-10">
+        <!-- LEFT: ASSEMBLY SETTINGS -->
+        <aside class="col-span-3 p-8 overflow-y-auto border-r border-white/5 hud-glass flex flex-col gap-5 hide-scrollbar">
+            <h3 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Assembly Settings</h3>
+            
+            <div class="setting-card">
+                <p class="text-[10px] font-black text-slate-500 uppercase mb-3">Typography Identity</p>
+                <select onchange="setStyle('font', this.value)" class="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-xs text-white">
+                    <option value="modern">Modern Sans</option>
+                    <option value="classic">Classic Serif</option>
+                    <option value="clean">Corporate Clean</option>
+                    <option value="elegant">Formal Elegant</option>
+                    <option value="mono">Technical Mono</option>
+                </select>
+            </div>
+
+            <div class="setting-card">
+                <p class="text-[10px] font-black text-slate-500 uppercase mb-3">Spacing & Scale</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <select onchange="setStyle('size', this.value)" class="bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-white">
+                        <option value="11">11pt</option>
+                        <option value="12" selected>12pt</option>
+                        <option value="13">13pt</option>
+                    </select>
+                    <select onchange="setStyle('spacing', this.value)" class="bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-white">
+                        <option value="240">Tight (1.0)</option>
+                        <option value="276" selected>Normal (1.15)</option>
+                        <option value="360">Loose (1.5)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <p class="text-[10px] font-black text-slate-500 uppercase mb-3">Page Structures</p>
+                <div class="space-y-3">
+                    <label class="flex items-center justify-between cursor-pointer text-[10px] font-bold text-slate-400">Signature Fields <input type="checkbox" id="check-sig" checked onchange="updatePreview()" class="accent-indigo-500"></label>
+                    <label class="flex items-center justify-between cursor-pointer text-[10px] font-bold text-slate-400">Date Formatting <input type="checkbox" id="check-date" onchange="updatePreview()" class="accent-indigo-500"></label>
+                    <label class="flex items-center justify-between cursor-pointer text-[10px] font-bold text-slate-400">Page Numbers <input type="checkbox" id="check-pagenum" checked class="accent-indigo-500"></label>
+                    <label class="flex items-center justify-between cursor-pointer text-[10px] font-bold text-slate-400">Box Borders <input type="checkbox" id="check-box" checked onchange="updatePreview()" class="accent-indigo-500"></label>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <p class="text-[10px] font-black text-slate-500 uppercase mb-3">Paper Size</p>
+                <select onchange="setStyle('paper', this.value)" class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white">
+                    <option value="A4">Standard A4</option>
+                    <option value="LETTER">US Letter</option>
+                </select>
+            </div>
+        </aside>
+
+        <!-- CENTER: PREVIEW AREA -->
+        <section class="col-span-6 p-10 overflow-y-auto flex flex-col items-center bg-black/20 hide-scrollbar">
+            <div id="preview-area" class="preview-paper p-16 space-y-12"></div>
+        </section>
+
+        <!-- RIGHT: STATUS HUD -->
+        <aside class="col-span-3 p-8 border-l border-white/5 hud-glass flex flex-col gap-6">
+            <div class="p-6 bg-indigo-500/5 border border-indigo-500/10 rounded-3xl">
+                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">Unit Summary</p>
+                <div class="space-y-3 text-[10px] font-bold">
+                    <div class="flex justify-between"><span>Work Logs:</span> <span class="text-white">{{ weekly_logs|length }}</span></div>
+                    <div class="flex justify-between"><span>DTR Scans:</span> <span class="text-white">{{ dtr_uploads|length }}</span></div>
+                </div>
+            </div>
+            <div class="flex-1 bg-black/40 rounded-3xl p-6 overflow-hidden flex flex-col">
+                <p class="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">Process Log</p>
+                <div id="log-feed" class="text-[9px] font-mono space-y-2 overflow-y-auto hide-scrollbar text-slate-600">
+                    <p>> ENGINE_READY_V17</p>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        const g_weeklyLogs = {{ weekly_logs | tojson | safe }};
+        const g_dtrUploads = {{ dtr_uploads | tojson | safe }};
+        const g_reflections = {{ reflections | tojson | safe }};
+
+        let currentModule = 'weekly';
+        let currentSettings = { font: 'modern', size: '12', spacing: '276', paper: 'A4', sig: true, dateLong: false, box: true };
+
+        function setModule(m) { 
+            currentModule = m; 
+            document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${m}`).classList.add('active');
+            updatePreview(); 
+        }
+        function setStyle(k, v) { currentSettings[k] = v; updatePreview(); }
+
+        function formatDate(dStr) {
+            if(!currentSettings.dateLong) return dStr;
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(dStr).toLocaleDateString(undefined, options);
+        }
+
+        function updatePreview() {
+            currentSettings.sig = document.getElementById('check-sig').checked;
+            currentSettings.dateLong = document.getElementById('check-date').checked;
+            currentSettings.box = document.getElementById('check-box').checked;
+
+            const area = document.getElementById('preview-area');
+            area.className = `preview-paper p-16 space-y-12 font-${currentSettings.font}`;
+            area.style.fontSize = currentSettings.size + 'pt';
+            area.style.lineHeight = currentSettings.spacing / 240;
+
+            const sigHtml = currentSettings.sig ? `<div class="text-right pt-6"><span class="border-t border-slate-900 px-8 pt-1 text-[9px] font-black uppercase text-slate-400">Supervisor Signature</span></div>` : '';
+            const boxCls = currentSettings.box ? 'border border-slate-200 p-6 rounded-lg' : 'p-0';
+
+            let html = '';
+            if (currentModule === 'weekly') {
+                g_weeklyLogs.slice(0, 2).forEach(log => {
+                    html += `<div>
+                        <h2 class="font-bold border-b-2 border-slate-900 pb-1 mb-4 uppercase text-[1.1em]">Week Ending: ${formatDate(log.week_end_date)}</h2>
+                        <div class="pl-8 space-y-4">
+                            <div class="${boxCls}"><p class="text-[9px] font-black text-slate-400 uppercase mb-2">Work Activities</p>${log.tasks}</div>
+                            <p><span class="text-[9px] font-black text-indigo-500 uppercase mr-3">Competencies</span> ${log.competencies}</p>
+                            <p><span class="text-[9px] font-black text-cyan-500 uppercase mr-3">Knowledge Gained</span> ${log.knowledge}</p>
+                        </div>
+                        ${sigHtml}
+                    </div>`;
+                });
+            } else if (currentModule === 'dtr') {
+                g_dtrUploads.slice(0, 1).forEach(dtr => {
+                    html += `<div><h2 class="font-bold border-b-2 border-slate-900 pb-1 mb-6 uppercase">DTR: ${dtr.description}</h2><div class="grid grid-cols-2 gap-4 h-48"><div class="bg-slate-50 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-300">FRONT (KASYA)</div><div class="bg-slate-50 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-300">BACK (KASYA)</div></div>${sigHtml}</div>`;
+                });
+            } else if (currentModule === 'photo') {
+                g_weeklyLogs.slice(0, 1).forEach(log => {
+                    html += `<div><h2 class="font-bold border-b-2 border-slate-900 pb-1 mb-6 uppercase">Gallery Fit: ${formatDate(log.week_end_date)}</h2><div class="h-48 bg-slate-50 border-4 border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-300 italic uppercase">OPTIMIZED_PHOTO_FRAME</div>${sigHtml}</div>`;
+                });
+            } else if (currentModule === 'reflection') {
+                g_reflections.slice(0, 1).forEach(ref => {
+                    html += `<div><h2 class="font-bold border-b-2 border-slate-900 pb-1 mb-6 uppercase">Evaluation: ${ref.month_date}</h2><div class="pl-8 space-y-6"><p><span class="text-[9px] font-black text-indigo-500 uppercase block mb-1">Student Journal</span>${ref.monthly_reflection}</p><p><span class="text-[9px] font-black text-slate-400 uppercase block mb-1">Feedback</span><span class="italic text-slate-500">"${ref.feedback}"</span></p></div>${sigHtml}</div>`;
+                });
+            }
+            area.innerHTML = html;
+        }
+
+        async function convertWebP(b64) {
+            return new Promise((r) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                    ctx.drawImage(img,0,0); r(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+                };
+                img.src = 'data:image/webp;base64,' + b64;
+            });
+        }
+
+        // --- ENHANCED DOCX ENGINE (THE "KASYA" FIX) ---
+        async function exportDOCX() {
+            const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak, ImageRun, BorderStyle, Footer, PageNumber } = docx;
+            let content = [];
+            const fs = parseInt(currentSettings.size) * 2;
+            const ln = parseInt(currentSettings.spacing);
+            
+            // Map settings selection to MS Word compatible font names
+            const fontMap = {
+                'modern': 'Plus Jakarta Sans',
+                'classic': 'EB Garamond',
+                'clean': 'Roboto',
+                'elegant': 'Playfair Display',
+                'mono': 'Fira Code'
+            };
+            const activeFont = fontMap[currentSettings.font] || 'Arial';
+
+            const COLOR_LABEL = "94A3B8";
+            const COLOR_PRIMARY = "6366F1";
+            const COLOR_CYAN = "06B6D4";
+
+            const addSigLine = () => {
+                if(currentSettings.sig) {
+                    content.push(new Paragraph({
+                        children: [
+                            new TextRun({ text: "__________________________\n", bold: true, font: activeFont }), 
+                            new TextRun({ text: "Supervisor Signature", size: fs - 6, color: COLOR_LABEL, font: activeFont })
+                        ],
+                        alignment: AlignmentType.RIGHT, spacing: { before: 200, after: 600 }
+                    }));
+                }
+            };
+
+            try {
+                if (currentModule === 'weekly') {
+                    for (let i = 0; i < g_weeklyLogs.length; i++) {
+                        const log = g_weeklyLogs[i];
+                        content.push(new Paragraph({ 
+                            children: [new TextRun({ text: `PERIOD ENDING: ${formatDate(log.week_end_date)}`, bold: true, size: fs + 6, font: activeFont })], 
+                            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" } }, 
+                            spacing: { before: 400, after: 300, line: ln } 
+                        }));
+                        
+                        content.push(new Paragraph({ 
+                            children: [
+                                new TextRun({ text: "WORK ACTIVITIES: ", bold: true, size: fs - 6, color: COLOR_LABEL, font: activeFont }), 
+                                new TextRun({ text: log.tasks, size: fs, font: activeFont })
+                            ], 
+                            border: currentSettings.box ? { top: {style: 'single', size: 1, color: 'E2E8F0'}, bottom: {style: 'single', size: 1, color: 'E2E8F0'}, left: {style: 'single', size: 1, color: 'E2E8F0'}, right: {style: 'single', size: 1, color: 'E2E8F0'}} : null, 
+                            indent: { left: 400, right: 400 }, 
+                            spacing: { line: ln, before: 100, after: 200 } 
+                        }));
+                        
+                        content.push(new Paragraph({ 
+                            children: [
+                                new TextRun({ text: "COMPETENCIES: ", bold: true, size: fs - 6, color: COLOR_PRIMARY, font: activeFont }), 
+                                new TextRun({ text: log.competencies, size: fs, font: activeFont })
+                            ], 
+                            indent: { left: 400 }, 
+                            spacing: { line: ln, after: 100 } 
+                        }));
+                        
+                        content.push(new Paragraph({ 
+                            children: [
+                                new TextRun({ text: "KNOWLEDGE GAINED: ", bold: true, size: fs - 6, color: COLOR_CYAN, font: activeFont }), 
+                                new TextRun({ text: log.knowledge, size: fs, font: activeFont })
+                            ], 
+                            indent: { left: 400 }, 
+                            spacing: { line: ln, after: 400 } 
+                        }));
+                        
+                        addSigLine();
+                        if ((i + 1) % 2 === 0 && (i+1) < g_weeklyLogs.length) content.push(new Paragraph({ children: [new PageBreak()] }));
+                    }
+                } else if (currentModule === 'dtr') {
+                    for (let dtr of g_dtrUploads) {
+                        content.push(new Paragraph({ 
+                            children: [new TextRun({ text: `DAILY TIME RECORD: ${dtr.description}`, bold: true, size: fs + 8, font: activeFont })], 
+                            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" } }, 
+                            spacing: { after: 600, line: ln } 
+                        }));
+                        
+                        const scans = [dtr.image_front, dtr.image_back].filter(s => s && s !== 'None');
+                        for (let s of scans) {
+                            const img = await convertWebP(s);
+                            content.push(new Paragraph({ children: [new ImageRun({ data: Uint8Array.from(atob(img), c => c.charCodeAt(0)), transformation: { width: 400, height: 280 } })], alignment: AlignmentType.CENTER, spacing: { after: 150 } }));
+                        }
+                        addSigLine();
+                        content.push(new Paragraph({ children: [new PageBreak()] }));
+                    }
+                } else if (currentModule === 'photo') {
+                    for (let log of g_weeklyLogs) {
+                        if (log.images && log.images.length > 0) {
+                            content.push(new Paragraph({ 
+                                children: [new TextRun({ text: `GALLERY: ${formatDate(log.week_end_date)}`, bold: true, size: fs + 6, font: activeFont })], 
+                                border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" } }, 
+                                spacing: { after: 400, line: ln } 
+                            }));
+                            for (let imgRaw of log.images) {
+                                const j = await convertWebP(imgRaw);
+                                content.push(new Paragraph({ children: [new ImageRun({ data: Uint8Array.from(atob(j), c => c.charCodeAt(0)), transformation: { width: 460, height: 260 } })], alignment: AlignmentType.CENTER, spacing: { after: 150 } }));
+                                content.push(new Paragraph({ children: [new TextRun({ text: `Proof of Activity - ${formatDate(log.week_end_date)}`, italics: true, size: fs - 6, color: COLOR_LABEL, font: activeFont })], alignment: AlignmentType.CENTER, spacing: { after: 400, line: ln } }));
+                            }
+                            addSigLine();
+                            content.push(new Paragraph({ children: [new PageBreak()] }));
+                        }
+                    }
+                } else if (currentModule === 'reflection') {
+                    for (let ref of g_reflections) {
+                        content.push(new Paragraph({ children: [new TextRun({ text: `EVALUATION: ${ref.month_date}`, bold: true, size: fs + 8, font: activeFont })], border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" } }, spacing: { after: 600, line: ln } }));
+                        content.push(new Paragraph({ children: [new TextRun({ text: "MY REFLECTION\n", bold: true, size: fs - 6, color: COLOR_PRIMARY, font: activeFont }), new TextRun({ text: ref.monthly_reflection, size: fs, font: activeFont })], border: { top: {style: 'single', size: 1, color: 'E2E8F0'}, bottom: {style: 'single', size: 1, color: 'E2E8F0'}, left: {style: 'single', size: 1, color: 'E2E8F0'}, right: {style: 'single', size: 1, color: 'E2E8F0'}}, indent: { left: 400, right: 400 }, spacing: { after: 400, line: ln } }));
+                        content.push(new Paragraph({ children: [new TextRun({ text: "SUPERVISOR FEEDBACK\n", bold: true, size: fs - 6, color: COLOR_LABEL, font: activeFont }), new TextRun({ text: ref.feedback, italic: true, size: fs, font: activeFont })], indent: { left: 400 }, spacing: { line: ln } }));
+                        addSigLine();
+                        content.push(new Paragraph({ children: [new PageBreak()] }));
+                    }
+                }
+
+                const doc = new Document({
+                    sections: [{
+                        properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }, size: currentSettings.paper === 'LETTER' ? { width: 12240, height: 15840 } : { width: 11906, height: 16838 } } },
+                        footers: { default: new Footer({ children: [new Paragraph({ children: [new TextRun({text: "Page ", font: activeFont}), new TextRun({ children: [PageNumber.CURRENT], bold: true, font: activeFont })], alignment: AlignmentType.CENTER })] }) },
+                        children: content
+                    }]
+                });
+
+                const blob = await Packer.toBlob(doc);
+                saveAs(blob, `OJT_STATION_EXPORT_${currentModule.toUpperCase()}.docx`);
+            } catch (e) { console.error(e); }
+        }
+
+        window.onload = updatePreview;
+    </script>
+</body>
+</html>

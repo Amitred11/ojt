@@ -523,3 +523,44 @@ async def manage_recovery():
         return redirect(url_for('portfolio.view_profile'))
 
     return await render_template('portfolio/recovery_method.html', u=user)
+
+@portfolio_bp.route("/journal/assembly")
+async def journal():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+        
+    db = get_db()
+    user_id = session['user_id']
+    
+    # 1. Fetch Profile
+    portfolio = await db.profiles.find_one({"user_id": user_id})
+    if not portfolio:
+        return redirect(url_for('portfolio.setup_profile'))
+
+    # 2. Fetch Weekly Logs
+    weekly_logs = await db.weekly_logs.find({"user_id": user_id}).sort("week_end_date", 1).to_list(100)
+    
+    # Clean ObjectIds for JSON serialization in the frontend
+    for log in weekly_logs:
+        log['_id'] = str(log['_id'])
+        log['user_id'] = str(log['user_id'])
+
+    # 3. Fetch DTR
+    dtr_uploads = await db.dtr_uploads.find({"user_id": user_id}).sort("uploaded_at", 1).to_list(100)
+    for dtr in dtr_uploads:
+        dtr['_id'] = str(dtr['_id'])
+        dtr['user_id'] = str(dtr['user_id'])
+
+    # 4. Fetch Reflections
+    reflections = await db.reflections.find({"user_id": user_id}).sort("created_at", 1).to_list(100)
+    for ref in reflections:
+        ref['_id'] = str(ref['_id'])
+        ref['user_id'] = str(ref['user_id'])
+
+    return await render_template(
+        'portfolio/journal.html',
+        p=portfolio,
+        weekly_logs=weekly_logs,
+        dtr_uploads=dtr_uploads,
+        reflections=reflections
+    )
