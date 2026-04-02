@@ -1,0 +1,177 @@
+<!-- APPRECIATION CERTIFICATE OVERLAY -->
+<div id="appreciation-view" class="hidden fixed inset-0 z-[9999] bg-[#020617] overflow-y-auto no-scrollbar selection:bg-indigo-500/30">
+    
+    <!-- Appreciation Confetti (Cyan/Indigo) -->
+    <canvas id="apcert-confetti" class="fixed inset-0 pointer-events-none z-0 no-print"></canvas>
+
+    <div class="relative z-10 max-w-[1300px] mx-auto p-4 sm:p-12 flex flex-col items-center">
+        
+        <!-- NAV (NO-PRINT) -->
+        <div class="no-print w-full flex justify-between items-center mb-6">
+            <button onclick="hideAppreciation()" class="group flex items-center gap-3 text-slate-400 hover:text-white transition-all uppercase text-[10px] font-bold tracking-[0.2em]">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Return to Portal
+            </button>
+            <div class="px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                Official LHA Recognition
+            </div>
+        </div>
+
+        <div class="cert-scale-wrapper">
+            <!-- THE MASTER CANVAS -->
+            <div id="ap-printable-area" class="certificate-master-canvas relative bg-[#020617] shadow-2xl">
+                
+                <div id="ap-certificate-card" class="relative w-full h-full border-[16px] border-double border-indigo-900/30 p-12 text-center flex flex-col justify-between items-center overflow-hidden box-border">
+                    
+                    <!-- Background Accents -->
+                    <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');"></div>
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.12),transparent)]"></div>
+                    <div class="absolute top-0 left-0 w-24 h-24 border-t-2 border-l-2 border-indigo-500/20 m-6 rounded-tl-xl"></div>
+                    <div class="absolute bottom-0 right-0 w-24 h-24 border-b-2 border-r-2 border-indigo-500/20 m-6 rounded-br-xl"></div>
+
+                    <!-- TOP SECTION -->
+                    <div class="relative z-10 w-full pt-4">
+                        <div class="flex flex-col items-center mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-br from-indigo-400 to-cyan-600 rounded-full flex items-center justify-center shadow-lg mb-3 ring-4 ring-indigo-500/20">
+                                <i data-lucide="sparkles" class="text-slate-950 w-8 h-8"></i>
+                            </div>
+                            <h2 class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.8em]">System Engagement Recognition</h2>
+                        </div>
+
+                        <h1 class="text-[80px] font-serif text-white italic tracking-tight leading-[1.1] mb-8">Appreciation</h1>
+                        <p class="text-slate-500 text-[11px] font-bold tracking-[0.5em] uppercase mb-4">Presented for dedicated platform usage</p>
+                    </div>
+
+                    <!-- MIDDLE SECTION -->
+                    <div class="relative z-10 w-full px-12">
+                        <p class="text-slate-400 text-sm italic mb-6">This token of gratitude is awarded to</p>
+                        
+                        <div class="inline-block relative mb-8">
+                            <h2 class="text-5xl font-serif text-white px-12 leading-[1.2]">
+                                {{ p.full_name or user.username }}
+                            </h2>
+                            <div class="absolute -bottom-4 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent"></div>
+                        </div>
+
+                        <p class="max-w-3xl mx-auto text-slate-300 text-lg leading-relaxed mt-10">
+                            For actively utilizing the <span class="text-white font-bold uppercase">OJT Log System (LHA)</span> 
+                            to track and manage professional growth. By logging a total of 
+                            <span class="text-indigo-400 font-black">{{ total_str.split(' ')[0] }}</span> 
+                            within this digital ecosystem, you have demonstrated exceptional commitment to your career documentation.
+                        </p>
+                    </div>
+
+                    <!-- BOTTOM SECTION (SIGNATURES) -->
+                    <div class="relative z-10 w-full pb-6">
+                        <div class="grid grid-cols-3 items-end gap-12 max-w-4xl mx-auto px-10 mb-10">
+                            <!-- Developer Column -->
+                            <div class="text-center">
+                                <p class="text-white text-[14px] font-bold uppercase border-b border-white/10 pb-2 mb-2">Amitred11</p>
+                                <p class="text-[9px] text-slate-500 uppercase tracking-widest font-black">System Architect</p>
+                            </div>
+                            
+                            <!-- Center Badge -->
+                            <div class="flex flex-col items-center">
+                                <div class="w-14 h-14 border border-indigo-500/20 rounded-full flex items-center justify-center mb-3 mt-4">
+                                    <i data-lucide="shield-check" class="w-7 h-7 text-indigo-500/40"></i>
+                                </div>
+                                <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Verified User Access</p>
+                            </div>
+
+                            <!-- LHA Head Column -->
+                            <div class="text-center">
+                                <p class="text-white text-[14px] font-bold uppercase border-b border-white/10 pb-2 mb-2">Baklang Erehe</p>
+                                <p class="text-[9px] text-slate-500 uppercase tracking-widest font-black">LHA Head Hunter</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Issued / ID -->
+                        <div class="flex justify-center gap-12 text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
+                            <span>Generation Date: {{ today }}</span>
+                            <span>Credential ID: LHA-AP-{{ cert_id }}</span>
+                        </div>
+                    </div>
+
+                    <div class="absolute bottom-0 inset-x-0 h-2 bg-gradient-to-r from-indigo-600 via-cyan-400 to-indigo-600"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="no-print mt-12 flex flex-wrap justify-center gap-6 pb-20">
+            <button onclick="downloadAppreciationImage()" class="px-10 py-5 bg-indigo-600 rounded-2xl text-[12px] font-black uppercase tracking-widest text-white shadow-2xl shadow-indigo-900/40 hover:bg-indigo-500 transition-all flex items-center gap-4">
+                <i data-lucide="download" class="w-5 h-5"></i> Download Recognition PNG
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let apConfettiActive = false;
+
+    function showAppreciation() {
+        document.getElementById('appreciation-view').classList.remove('hidden');
+        if(window.lucide) { lucide.createIcons(); }
+        apConfettiActive = true;
+        startApConfetti();
+    }
+
+    function hideAppreciation() {
+        document.getElementById('appreciation-view').classList.add('hidden');
+        apConfettiActive = false;
+    }
+
+    function downloadAppreciationImage() {
+        const target = document.getElementById('ap-printable-area');
+        const originalStyle = target.style.cssText;
+        target.style.transform = 'none';
+        
+        html2canvas(target, {
+            backgroundColor: '#020617',
+            scale: 3,
+            useCORS: true,
+            width: 1122,
+            height: 793
+        }).then(canvas => {
+            target.style.cssText = originalStyle;
+            const link = document.createElement('a');
+            link.download = `Recognition_LHA_${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL("image/png", 1.0);
+            link.click();
+        });
+    }
+
+    function startApConfetti() {
+        const canvas = document.getElementById('apcert-confetti');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+        let pieces = [];
+        for (let i = 0; i < 70; i++) {
+            pieces.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 3 + 2,
+                color: ['#6366f1', '#06b6d4', '#ffffff'],
+                speed: Math.random() * 0.8 + 0.3,
+                osc: Math.random() * 2
+            });
+        }
+        function draw() {
+            if (!apConfettiActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pieces.forEach(p => {
+                p.y += p.speed;
+                p.x += Math.sin(p.y / 40) * p.osc;
+                if (p.y > canvas.height) p.y = -10;
+                ctx.fillStyle = p.color[Math.floor(Math.random() * 3)];
+                ctx.globalAlpha = 0.2;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+    }
+</script>

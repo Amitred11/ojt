@@ -2,6 +2,7 @@ from datetime import datetime, date, timedelta, timezone
 from quart import Blueprint, render_template, request, redirect, url_for, session
 from db import logs_col, db, settings_col, notifications_col, users_col
 from bson.objectid import ObjectId
+import hashlib
 
 tracker_bp = Blueprint('tracker', __name__)
 
@@ -282,6 +283,13 @@ async def index():
         grouped[l['month_key']]['logs'].append(l); grouped[l['month_key']]['month_total_m'] += l['credited_m']
     for k in grouped: grouped[k]['month_total_str'] = minutes_to_string(grouped[k]['month_total_m'])
 
+    uid_string = str(user_id)
+    user_hash = hashlib.sha256(uid_string.encode()).hexdigest()
+    perm_nums = "".join([c for c in user_hash if c.isdigit()])[:4].zfill(4)
+    perm_lets = "".join([c for c in user_hash if c.isalpha()])[:4].upper()
+    cert_id = f"{perm_nums}-{perm_lets}"
+    clean_hours = minutes_to_string(total_credited_m).split(' ')[0]
+
     return await render_template(
         "main/index.html", grouped_logs=grouped, settings=settings, 
         p=p,
@@ -303,7 +311,8 @@ async def index():
         session_count=len(worked_days),
         next_ms=next_ms, ms_progress=ms_p, 
         pulse_trend="up", log_count=len(processed_logs),
-        ph_holidays=PH_HOLIDAYS, today_type=get_day_type(today_iso)
+        ph_holidays=PH_HOLIDAYS, today_type=get_day_type(today_iso),
+        cert_id=cert_id
     )
 
 @tracker_bp.route("/punch", methods=["POST"])

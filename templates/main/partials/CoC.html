@@ -59,7 +59,7 @@
                         <p class="max-w-3xl mx-auto text-slate-300 text-lg leading-relaxed">
                             Has successfully completed the <span class="text-white font-bold uppercase">Industry Practicum</span> 
                             requirements at <span class="text-amber-400 font-bold uppercase">{{ p.hte_name or 'HTE Partner' }}</span> 
-                            for a total of <span class="text-white font-black">{{ total_hours }} training hours</span>, 
+                            for a total of <span class="text-white font-black">{{ total_str.split(' ')[0] }} training hours</span>,
                             exhibiting exceptional professional competence and technical skill.
                         </p>
                     </div>
@@ -69,7 +69,7 @@
                         <div class="grid grid-cols-3 items-end gap-12 max-w-4xl mx-auto px-10 mb-10">
                             <div class="text-center">
                                 <p class="text-white text-[14px] font-bold uppercase border-b border-white/10 pb-2 mb-2">{{ p.supervisor or 'HTE Supervisor' }}</p>
-                                <p class="text-[9px] text-slate-500 uppercase tracking-widest font-black">Industry Supervisor</p>
+                                <p class="text-[9px] text-slate-500 uppercase tracking-widest font-black">Company Supervisor</p>
                             </div>
                             <div class="flex flex-col items-center">
                                 <div class="w-14 h-14 border border-amber-500/20 rounded-full flex items-center justify-center mb-3 mt-4">
@@ -86,7 +86,7 @@
                         <!-- Issued / ID -->
                         <div class="flex justify-center gap-12 text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
                             <span>Issued: {{ today }}</span>
-                            <span>Credential ID: LHA-{{ user.id or '001' }}-OJT</span>
+                            <span>Credential ID: LHA-{{ cert_id }}-OJT</span>
                         </div>
                     </div>
 
