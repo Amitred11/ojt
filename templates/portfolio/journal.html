@@ -290,22 +290,78 @@
                         content.push(new Paragraph({ children: [new PageBreak()] }));
                     }
                 } else if (currentModule === 'photo') {
-                    for (let log of g_weeklyLogs) {
-                        if (log.images && log.images.length > 0) {
-                            content.push(new Paragraph({ 
-                                children: [new TextRun({ text: `GALLERY: ${formatDate(log.week_end_date)}`, bold: true, size: fs + 6, font: activeFont })], 
-                                border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" } }, 
-                                spacing: { after: 400, line: ln } 
-                            }));
-                            for (let imgRaw of log.images) {
-                                const j = await convertWebP(imgRaw);
-                                content.push(new Paragraph({ children: [new ImageRun({ data: Uint8Array.from(atob(j), c => c.charCodeAt(0)), transformation: { width: 460, height: 260 } })], alignment: AlignmentType.CENTER, spacing: { after: 150 } }));
-                                content.push(new Paragraph({ children: [new TextRun({ text: `Proof of Activity - ${formatDate(log.week_end_date)}`, italics: true, size: fs - 6, color: COLOR_LABEL, font: activeFont })], alignment: AlignmentType.CENTER, spacing: { after: 400, line: ln } }));
-                            }
-                            addSigLine();
-                            content.push(new Paragraph({ children: [new PageBreak()] }));
+                    content.push(new Paragraph({ 
+                        children: [new TextRun({ text: "PHOTO DOCUMENTATION", bold: true, size: fs + 8, font: activeFont })], 
+                        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" } }, 
+                        spacing: { after: 200 } 
+                    }));
+
+                    // Flatten all images into one list
+                    let allPhotos = [];
+                    g_weeklyLogs.forEach(log => {
+                        if (log.images) {
+                            log.images.forEach(img => allPhotos.push({ data: img, date: formatDate(log.week_end_date) }));
                         }
+                    });
+
+                    // Process photos in pairs (2 per line)
+                    for (let i = 0; i < allPhotos.length; i += 2) {
+                        const photo1 = allPhotos[i];
+                        const photo2 = allPhotos[i + 1]; // Might be undefined
+
+                        // 1. IMAGE ROW
+                        const imageChildren = [];
+                        const img1Data = await convertWebP(photo1.data);
+                        imageChildren.push(new ImageRun({
+                            data: Uint8Array.from(atob(img1Data), c => c.charCodeAt(0)),
+                            transformation: { width: 230, height: 170 } // Compact size
+                        }));
+
+                        if (photo2) {
+                            const img2Data = await convertWebP(photo2.data);
+                            imageChildren.push(new TextRun({ text: "\t" })); // Tab spacer
+                            imageChildren.push(new ImageRun({
+                                data: Uint8Array.from(atob(img2Data), c => c.charCodeAt(0)),
+                                transformation: { width: 230, height: 170 }
+                            }));
+                        }
+
+                        content.push(new Paragraph({
+                            children: imageChildren,
+                            spacing: { before: 100 },
+                            // This tab stop aligns the second image to the middle of the page
+                            tabStops: [{ type: docx.TabStopType.LEFT, position: 5000 }] 
+                        }));
+
+                        // 2. CAPTION ROW (Immediately below)
+                        const captionChildren = [];
+                        captionChildren.push(new TextRun({ 
+                            text: `Ref: ${photo1.date}`, 
+                            size: fs - 8, 
+                            color: COLOR_LABEL, 
+                            font: activeFont, 
+                            italics: true 
+                        }));
+
+                        if (photo2) {
+                            captionChildren.push(new TextRun({ text: "\t" })); // Tab spacer
+                            captionChildren.push(new TextRun({ 
+                                text: `Ref: ${photo2.date}`, 
+                                size: fs - 8, 
+                                color: COLOR_LABEL, 
+                                font: activeFont, 
+                                italics: true 
+                            }));
+                        }
+
+                        content.push(new Paragraph({
+                            children: captionChildren,
+                            spacing: { after: 200 },
+                            tabStops: [{ type: docx.TabStopType.LEFT, position: 5000 }]
+                        }));
                     }
+                    
+                    addSigLine();
                 } else if (currentModule === 'reflection') {
                     for (let ref of g_reflections) {
                         content.push(new Paragraph({ children: [new TextRun({ text: `EVALUATION: ${ref.month_date}`, bold: true, size: fs + 8, font: activeFont })], border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" } }, spacing: { after: 600, line: ln } }));
