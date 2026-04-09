@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DTR_LONG_FORMAT_{{ user.username }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+
+        @media print {
+            @page { 
+                size: 8.5in 13in; /* Philippine Long Bond Paper */
+                margin: 0.3in; 
+            }
+            .no-print { display: none !important; }
+            body { background: white !important; padding: 0 !important; }
+            .print-container { border: none !important; box-shadow: none !important; width: 100% !important; max-width: 100% !important; }
+            tr { page-break-inside: avoid; }
+            .dtr-table th { background-color: #f1f5f9 !important; border: 1px solid #000 !important; }
+            .dtr-table td { border: 1px solid #000 !important; }
+            .highlight-10h { background-color: #fff9eb !important; }
+        }
+
+        .dtr-table th { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.025em; }
+        .dtr-table td { font-size: 10px; padding: 3px 2px; }
+        .highlight-10h { border-left: 3px solid #f59e0b; background-color: #fffbeb; }
+    </style>
+</head>
+<body class="bg-slate-200 p-2 md:p-6">
+
+    <div class="print-container max-w-[8.5in] mx-auto bg-white p-6 shadow-xl border border-slate-300">
+        
+        <!-- COMPACT HEADER -->
+        <div class="flex justify-between items-start border-b-2 border-slate-900 pb-3 mb-4">
+            <div class="space-y-0.5">
+                <h1 class="text-xl font-800 tracking-tighter uppercase leading-none">Daily Time Record</h1>
+                <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Official Log &bull; CS Form No. 48</p>
+                
+                <div class="grid grid-cols-2 gap-x-6 pt-2">
+                    <p class="text-[9px]"><span class="font-bold text-slate-400 uppercase">Name:</span> <span class="font-800 uppercase">{{ p.full_name if p.full_name else user.username }}</span></p>
+                    <p class="text-[9px]"><span class="font-bold text-slate-400 uppercase">Agency:</span> <span class="font-800 uppercase">{{ p.hte_name or 'HTE Agency' }}</span></p>
+                    <p class="text-[9px]"><span class="font-bold text-slate-400 uppercase">Course:</span> <span class="font-800 uppercase">{{ p.course or 'OJT Intern' }}</span></p>
+                    <p class="text-[9px]"><span class="font-bold text-slate-400 uppercase">Dept:</span> <span class="font-800 uppercase">{{ p.dept_assigned or 'N/A' }}</span></p>
+                </div>
+            </div>
+            
+            <div class="bg-slate-900 text-white p-2 rounded-lg text-center min-w-[100px]">
+                <p class="text-[7px] font-black uppercase tracking-tighter opacity-70">Accumulated</p>
+                <p class="text-lg font-900 leading-none">{{ total_hrs }}</p>
+                <p class="text-[7px] font-bold uppercase">Hours</p>
+            </div>
+        </div>
+
+        <!-- SQUISHED TABLE -->
+        <table class="w-full text-center border-collapse dtr-table">
+            <thead>
+                <tr class="bg-slate-100 divide-x divide-slate-300">
+                    <th rowspan="2" class="p-1 w-16">Date</th>
+                    <th rowspan="2" class="p-1 w-10">Day</th>
+                    <th colspan="2" class="p-0.5 border-b border-slate-300">Morning Shift</th>
+                    <th colspan="2" class="p-0.5 border-b border-slate-300">Afternoon Shift</th>
+                    <th rowspan="2" class="p-1 w-12 bg-indigo-50 text-indigo-700">Daily</th>
+                    <th rowspan="2" class="p-1 w-16">Running Total</th>
+                </tr>
+                <tr class="bg-slate-50 divide-x divide-slate-300 border-b border-slate-300">
+                    <th class="p-0.5 text-[7px] text-slate-400">In</th>
+                    <th class="p-0.5 text-[7px] text-slate-400">Out</th>
+                    <th class="p-0.5 text-[7px] text-slate-400">In</th>
+                    <th class="p-0.5 text-[7px] text-slate-400">Out</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for log in logs %}
+                <tr class="divide-x divide-slate-100 hover:bg-slate-50 {% if log.is_10h %}highlight-10h{% endif %}">
+                    <td class="font-mono font-bold text-[9px]">{{ log.date }}</td>
+                    <td class="text-[8px] font-bold uppercase text-slate-400">{{ log.day[:3] }}</td>
+                    <td class="text-slate-600">{{ log.am_in }}</td>
+                    <td class="text-slate-600">{{ log.am_out }}</td>
+                    <td class="text-slate-600">{{ log.pm_in }}</td>
+                    <td class="text-slate-600">{{ log.pm_out }}</td>
+                    <td class="font-bold text-indigo-600 bg-indigo-50/20">{{ log.hours }}</td>
+                    <td class="font-mono text-[9px] text-slate-400">{{ log.cumulative }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- COMPACT SIGNATURES -->
+        <div class="mt-6">
+            <p class="text-[8px] italic text-slate-500 text-center mb-6">
+                I certify on my honor that the above is a true and correct report of the hours rendered.
+            </p>
+            
+            <div class="grid grid-cols-2 gap-12 px-6">
+                <div class="text-center">
+                    <p class="text-[10px] font-bold border-b border-slate-900 pb-1 uppercase">
+                        {{ p.full_name if p.full_name else user.username }}
+                    </p>
+                    <p class="text-[7px] font-black text-slate-400 uppercase mt-1">Trainee</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] font-bold border-b border-slate-900 pb-1 uppercase">
+                        {{ p.supervisor or 'N/A' }}
+                    </p>
+                    <p class="text-[7px] font-black text-slate-400 uppercase mt-1">Supervisor / LGU Official</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NO-PRINT ACTIONS -->
+        <div class="no-print mt-10 pt-4 border-t flex justify-between items-center">
+            <span class="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                Mode: {{ '10h Compressed' if settings.is_10h_mode else '8h Standard' }}
+            </span>
+            <div class="flex gap-2">
+                <a href="{{ url_for('tracker.index') }}" class="px-4 py-2 text-[9px] font-bold bg-slate-100 rounded-lg uppercase">Cancel</a>
+                <button onclick="window.print()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase shadow-lg shadow-indigo-200">
+                    Print Official DTR (Long Bond)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="no-print text-center py-4">
+        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">System Certified &bull; 2026 OJT Log Assembly</p>
+    </div>
+
+</body>
+</html>

@@ -341,3 +341,75 @@ async def punch():
 async def delete_log(log_id):
     if 'user_id' in session: await logs_col.delete_one({"_id": ObjectId(log_id), "user_id": session['user_id']})
     return redirect(url_for("tracker.index"))
+
+@tracker_bp.route("/print_dtr")
+async def print_dtr():
+    if 'user_id' not in session: return redirect(url_for('auth.login'))
+    user_id = session['user_id']
+    
+    # 1. FETCH PROFILE DATA
+    from db import db # Ensure db is imported
+    p = await db.profiles.find_one({"user_id": str(user_id)}) or {}
+    user = await users_col.find_one({"_id": ObjectId(user_id)})
+    
+    # 2. GET SETTINGS
+    settings = await get_user_settings(user_id)
+    raw_logs = await logs_col.find({"user_id": user_id}).sort("log_date", 1).to_list(None)
+    
+    # Constants
+    transition_date = date(2026, 3, 16)
+    PH_HOLIDAYS = ["2026-01-01", "2026-02-17", "2026-04-02", "2026-04-03", "2026-04-04", "2026-04-09", "2026-05-01", "2026-06-12", "2026-08-31", "2026-11-01", "2026-11-30", "2026-12-08", "2026-12-25", "2026-12-30"]
+    
+    processed_logs = []
+    cumulative_m = 0
+    
+    for rl in raw_logs:
+        log_dt = datetime.strptime(rl['log_date'], '%Y-%m-%d').date()
+        is_holiday = rl['log_date'] in PH_HOLIDAYS
+        is_weekend = log_dt.weekday() >= 5
+        
+        # Calculation Engine
+        manual_val = rl.get('manual_credit')
+        if manual_val is not None:
+            day_total_m = int(manual_val * 60)
+        else:
+            m_am = get_minutes_diff(rl.get('am_in'), rl.get('am_out'))
+            m_pm = get_minutes_diff(rl.get('pm_in'), rl.get('pm_out'))
+            m_lunch = 60 if (settings.get('count_lunch') and rl.get('am_out') and rl.get('pm_in')) else 0
+            day_total_m = m_am + m_pm + m_lunch
+
+            # 10HR LGU Logic
+            if settings.get('is_10h_mode'):
+                if log_dt < transition_date:
+                    day_total_m = min(day_total_m, 480) 
+                else:
+                    day_total_m = min(day_total_m, 600) 
+            elif settings.get('strict_8h'):
+                day_total_m = min(day_total_m, 480)
+
+        if (is_weekend and not settings.get('allow_weekend_duty')) or (is_holiday and not settings.get('allow_holiday_duty')):
+            day_total_m = 0
+
+        cumulative_m += day_total_m
+        
+        processed_logs.append({
+            'date': rl['log_date'],
+            'day': log_dt.strftime('%a'),
+            'am_in': rl.get('am_in') or '-',
+            'am_out': rl.get('am_out') or '-',
+            'pm_in': rl.get('pm_in') or '-',
+            'pm_out': rl.get('pm_out') or '-',
+            'is_10h': (settings.get('is_10h_mode') and log_dt >= transition_date),
+            'hours': round(day_total_m / 60, 2),
+            'cumulative': round(cumulative_m / 60, 2)
+        })
+
+    return await render_template(
+        "main/printDTR.html", 
+        logs=processed_logs, 
+        p=p, # Pass profile
+        user=user, 
+        total_hrs=round(cumulative_m / 60, 2),
+        settings=settings,
+        today=date.today().strftime("%B %d, %Y")
+    )

@@ -123,35 +123,64 @@ async def setup_profile():
         form = await request.form
         files = await request.files
         
-        # Process new document images (ADDED profile_photo)
+        # 1. Process standard single images
         cert_img = await process_multiple_images(files.getlist('certificate_img'))
         struct_img = await process_multiple_images(files.getlist('structure_img'))
-        work_samples = await process_multiple_images(files.getlist('work_samples'))
         prof_img = await process_multiple_images(files.getlist('profile_photo'))
+
+        # 2. Process Work Sample PAIRS (Image + Description)
+        # Use 'work_images' to match the name in your HTML input
+        work_images_files = files.getlist('work_images') 
+        work_descriptions = form.getlist('work_descriptions')
+        
+        # We start with an empty list for the new samples being uploaded
+        new_samples_to_add = []
+
+        # Loop through the uploaded files and match them with descriptions
+        for i in range(len(work_images_files)):
+            file = work_images_files[i]
+            # Get the corresponding description for this specific image
+            desc = work_descriptions[i] if i < len(work_descriptions) else ""
+            
+            if file and file.filename != '':
+                # Process the individual image
+                processed_img_list = await process_multiple_images([file])
+                if processed_img_list:
+                    new_samples_to_add.append({
+                        'image': processed_img_list[0],
+                        'description': desc
+                    })
+
+        # 3. Get existing profile to preserve old work samples
+        existing_p = await db.profiles.find_one({'user_id': session['user_id']}) or {}
+        final_work_samples = existing_p.get('work_samples', [])
+        
+        # Append only the newly uploaded samples to the existing ones
+        final_work_samples.extend(new_samples_to_add)
 
         data = {
             'user_id': session['user_id'],
             'full_name': form.get('full_name'),
-            'email': form.get('email'),               # Added to fix missing email
-            'phone': form.get('phone'),               # Added to fix missing phone
+            'email': form.get('email'),
+            'phone': form.get('phone'),
             'course': form.get('course'),
             'duration': form.get('duration'),
             'objectives': form.get('objectives'),
             'hte_name': form.get('hte_name'),
-            'dept_assigned': form.get('dept_assigned'), # Added to fix missing dept_assigned
+            'dept_assigned': form.get('dept_assigned'),
             'supervisor': form.get('supervisor'),
             'coordinator_name': form.get('coordinator_name'),
             'acknowledgement': form.get('acknowledgement'),
             'company_desc': form.get('company_desc'),
             'dept_desc': form.get('dept_desc'),
+            'work_samples': final_work_samples, # This is the correctly named variable now
             'updated_at': datetime.utcnow()
         }
 
-        # Only update images if new ones are uploaded
+        # Update specific images only if new ones were provided
         if cert_img: data['certificate_img'] = cert_img[0]
         if struct_img: data['structure_img'] = struct_img[0]
-        if work_samples: data['work_samples'] = work_samples 
-        if prof_img: data['profile_photo'] = prof_img[0] # Save Profile Photo
+        if prof_img: data['profile_photo'] = prof_img[0]
 
         await db.profiles.update_one({'user_id': session['user_id']}, {'$set': data}, upsert=True)
         return redirect(url_for('portfolio.view_profile'))
@@ -536,6 +565,10 @@ async def journal():
     portfolio = await db.profiles.find_one({"user_id": user_id})
     if not portfolio:
         return redirect(url_for('portfolio.setup_profile'))
+    
+    portfolio['_id'] = str(portfolio['_id'])
+    if 'user_id' in portfolio:
+        portfolio['user_id'] = str(portfolio['user_id'])
 
     # 2. Fetch Weekly Logs
     weekly_logs = await db.weekly_logs.find({"user_id": user_id}).sort("week_end_date", 1).to_list(100)

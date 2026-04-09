@@ -632,6 +632,10 @@
     <div class="px-4 mb-6 flex items-center justify-between">
         <h2 class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">History Engine</h2>
         <div class="flex gap-2">
+            <a href="{{ url_for('tracker.print_dtr') }}" target="_blank" class="text-[8px] font-black text-white uppercase bg-indigo-500 px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-indigo-400 transition-colors">
+                <i data-lucide="printer" class="w-3 h-3"></i>
+                Print DTR
+            </a>
             <span class="md:hidden text-[8px] font-bold text-indigo-400 uppercase bg-indigo-500/10 px-2 py-1 rounded">Mobile Calendar</span>
             <span class="hidden md:block text-[8px] font-bold text-emerald-400 uppercase bg-emerald-500/10 px-2 py-1 rounded">Desktop List</span>
         </div>

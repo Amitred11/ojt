@@ -246,30 +246,39 @@
 
                 <!-- Work Samples - LARGE GRID -->
                 <div>
-                    <label class="text-[9px] font-black text-emerald-400 uppercase mb-3 block tracking-[0.2em]">Samples of Work</label>
-                    {% if p.work_samples %}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {% for sample in p.work_samples %}
+                <label class="text-[9px] font-black text-emerald-400 uppercase mb-3 block tracking-[0.2em]">Samples of Work</label>
+                {% if p.work_samples %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {% for sample in p.work_samples %}
+                    <div class="flex flex-col gap-3">
                         <div class="relative group aspect-video rounded-xl overflow-hidden border border-white/10 bg-slate-950">
-                            <img src="data:image/webp;base64,{{ sample }}" 
-                                 class="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-110"
-                                 onclick="openModal(this.src)">
+                            <!-- Change: sample is now an object, use sample.image -->
+                            <img src="data:image/webp;base64,{{ sample.image }}" 
+                                class="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-110"
+                                onclick="openModal(this.src)">
                             <div class="absolute top-2 right-2">
                                 <a href="{{ url_for('portfolio.delete_work_sample', index=loop.index0) }}" 
-                                   onclick="confirmDelete(event, this.href)"
-                                   class="w-8 h-8 bg-red-500/90 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-lg">
+                                onclick="confirmDelete(event, this.href)"
+                                class="w-8 h-8 bg-red-500/90 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-lg">
                                     <i data-lucide="x" class="w-4 h-4"></i>
                                 </a>
                             </div>
                         </div>
-                        {% endfor %}
+                        <!-- Added: Description text below the image -->
+                        {% if sample.description %}
+                        <p class="text-[11px] text-slate-400 leading-relaxed italic px-2 border-l-2 border-emerald-500/30">
+                            {{ sample.description }}
+                        </p>
+                        {% endif %}
                     </div>
-                    {% else %}
-                    <div class="p-8 border-2 border-dashed border-white/5 rounded-2xl text-center">
-                        <p class="text-xs text-slate-600 italic">No work samples uploaded.</p>
-                    </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="p-8 border-2 border-dashed border-white/5 rounded-2xl text-center">
+                    <p class="text-xs text-slate-600 italic">No work samples uploaded.</p>
+                </div>
+                {% endif %}
+            </div>
             </div>
         </div>
 
