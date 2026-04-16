@@ -1,17 +1,17 @@
 <!-- PREMIUM CERTIFICATE OVERLAY -->
-<div id="certificate-view" class="hidden fixed inset-0 z-[9999] bg-[#020617] overflow-y-auto no-scrollbar selection:bg-amber-500/30">
+<div id="certificate-view" class="hidden fixed inset-0 z-[9999] bg-slate-50/98 overflow-y-auto no-scrollbar selection:bg-amber-100">
     
-    <!-- Continuous Confetti -->
+    <!-- Continuous Confetti (Gold/Amber) -->
     <canvas id="cert-confetti" class="fixed inset-0 pointer-events-none z-0 no-print"></canvas>
 
     <div class="relative z-10 max-w-[1300px] mx-auto p-4 sm:p-12 flex flex-col items-center">
         
         <!-- NAV (NO-PRINT) -->
         <div class="no-print w-full flex justify-between items-center mb-6">
-            <button onclick="hideCertificate()" class="group flex items-center gap-3 text-slate-400 hover:text-white transition-all uppercase text-[10px] font-bold tracking-[0.2em]">
+            <button onclick="hideCertificate()" class="group flex items-center gap-3 text-slate-500 hover:text-slate-900 transition-all uppercase text-[10px] font-bold tracking-[0.2em]">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> Return to Portal
             </button>
-            <div class="px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[9px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2">
+            <div class="px-4 py-1.5 rounded-full bg-white border border-amber-200 text-[9px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 shadow-sm">
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                 Official LHA Digital Credential
             </div>
@@ -20,46 +20,62 @@
         <!-- THE SCALED WRAPPER -->
         <div class="cert-scale-wrapper">
             <!-- THE MASTER CANVAS (A4 Landscape: 1122x793) -->
-            <div id="printable-area" class="certificate-master-canvas relative bg-[#020617] shadow-2xl">
+            <div id="printable-area" class="certificate-master-canvas relative bg-white shadow-2xl">
                 
                 <!-- Main Certificate Card -->
-                <div id="certificate-card" class="relative w-full h-full border-[16px] border-double border-amber-900/30 p-12 text-center flex flex-col justify-between items-center overflow-hidden box-border">
+                <div id="certificate-card" class="relative w-full h-full border-[16px] border-double border-amber-100 p-12 text-center flex flex-col justify-between items-center overflow-hidden box-border">
                     
+                    <!-- NEW TOP DESIGN ELEMENT (Amber/Gold Theme) -->
+                    <div class="absolute top-0 inset-x-0 h-40 overflow-hidden pointer-events-none opacity-40">
+                        <svg width="100%" height="100%" viewBox="0 0 800 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full">
+                            <path d="M0 0H800V60C800 60 600 100 400 100C200 100 0 60 0 60V0Z" fill="url(#premium-grad)" fill-opacity="0.05"/>
+                            <path d="M0 5L800 5M0 15L800 15M0 25L800 25" stroke="url(#premium-grad)" stroke-width="0.5" stroke-opacity="0.3"/>
+                            <circle cx="400" cy="-30" r="120" stroke="url(#premium-grad)" stroke-width="1" stroke-opacity="0.1"/>
+                            <circle cx="400" cy="-30" r="140" stroke="url(#premium-grad)" stroke-width="0.5" stroke-opacity="0.1" stroke-dasharray="8 4"/>
+                            <defs>
+                                <linearGradient id="premium-grad" x1="0" y1="0" x2="800" y2="0" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#d97706" />
+                                    <stop offset="50%" stop-color="#f59e0b" />
+                                    <stop offset="100%" stop-color="#d97706" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+
                     <!-- Background Elements -->
-                    <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');"></div>
-                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(30,58,138,0.15),transparent)]"></div>
-                    <div class="absolute top-0 left-0 w-24 h-24 border-t-2 border-l-2 border-amber-500/30 m-6 rounded-tl-xl"></div>
-                    <div class="absolute bottom-0 right-0 w-24 h-24 border-b-2 border-r-2 border-amber-500/30 m-6 rounded-br-xl"></div>
+                    <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(245,158,11,0.05),transparent)]"></div>
+                    <div class="absolute top-0 left-0 w-24 h-24 border-t-2 border-l-2 border-amber-200 m-6 rounded-tl-xl"></div>
+                    <div class="absolute bottom-0 right-0 w-24 h-24 border-b-2 border-r-2 border-amber-200 m-6 rounded-br-xl"></div>
 
                     <!-- TOP SECTION -->
                     <div class="relative z-10 w-full pt-4">
                         <div class="flex flex-col items-center mb-6">
-                            <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-700 rounded-full flex items-center justify-center shadow-lg mb-3 ring-4 ring-amber-500/20">
-                                <i data-lucide="award" class="text-slate-950 w-8 h-8"></i>
+                            <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg mb-3 ring-4 ring-amber-50">
+                                <i data-lucide="award" class="text-white w-8 h-8"></i>
                             </div>
-                            <h2 class="text-amber-500 text-[10px] font-black uppercase tracking-[0.8em]">On-the-Job Training Program</h2>
+                            <h2 class="text-amber-600 text-[10px] font-black uppercase tracking-[0.8em]">On-the-Job Training Program</h2>
                         </div>
 
-                        <!-- Fixed leading to prevent overlap -->
-                        <h1 class="text-[90px] font-serif text-white italic tracking-tight leading-[1.1] mb-8 bottom-8">Certificate</h1>
-                        <p class="text-slate-500 text-[11px] font-bold tracking-[0.5em] uppercase mb-4">of professional completion</p>
+                        <h1 class="text-[90px] font-serif text-slate-900 italic tracking-tight leading-[1.1] mb-8 bottom-8">Certificate</h1>
+                        <p class="text-slate-400 text-[11px] font-bold tracking-[0.5em] uppercase mb-4">of professional completion</p>
                     </div>
 
                     <!-- MIDDLE SECTION -->
                     <div class="relative z-10 w-full px-12">
-                        <p class="text-slate-400 text-sm italic mb-6">This document officially certifies that</p>
+                        <p class="text-slate-500 text-sm italic mb-6">This document officially certifies that</p>
                         
                         <div class="inline-block relative mb-8 bottom-4">
-                            <h2 class="text-5xl font-serif text-white px-12 leading-[1.2]">
+                            <h2 class="text-5xl font-serif text-slate-900 px-12 leading-[1.2]">
                                 {{ p.full_name }}
                             </h2>
-                            <div class="absolute -bottom-8 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
+                            <div class="absolute -bottom-8 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-300 to-transparent"></div>
                         </div>
 
-                        <p class="max-w-3xl mx-auto text-slate-300 text-lg leading-relaxed">
-                            Has successfully completed the <span class="text-white font-bold uppercase">Industry Practicum</span> 
-                            requirements at <span class="text-amber-400 font-bold uppercase">{{ p.hte_name or 'HTE Partner' }}</span> 
-                            for a total of <span class="text-white font-black">{{ total_str.split(' ')[0] }} training hours</span>,
+                        <p class="max-w-3xl mx-auto text-slate-600 text-lg leading-relaxed">
+                            Has successfully completed the <span class="text-slate-900 font-bold uppercase">Industry Practicum</span> 
+                            requirements at <span class="text-amber-600 font-bold uppercase">{{ p.hte_name or 'HTE Partner' }}</span> 
+                            for a total of <span class="text-slate-900 font-black">{{ total_str.split(' ')[0] }} training hours</span>,
                             exhibiting exceptional professional competence and technical skill.
                         </p>
                     </div>
@@ -68,23 +84,23 @@
                     <div class="relative z-10 w-full pb-6">
                         <div class="grid grid-cols-3 items-end gap-12 max-w-4xl mx-auto px-10 mb-10">
                             <div class="text-center">
-                                <p class="text-white text-[14px] font-bold uppercase border-b border-white/10 pb-2 mb-2">{{ p.supervisor or 'HTE Supervisor' }}</p>
-                                <p class="text-[9px] text-slate-500 uppercase tracking-widest font-black">Company Supervisor</p>
+                                <p class="text-slate-900 text-[14px] font-bold uppercase border-b border-slate-200 pb-2 mb-2">{{ p.supervisor or 'HTE Supervisor' }}</p>
+                                <p class="text-[9px] text-slate-400 uppercase tracking-widest font-black">Company Supervisor</p>
                             </div>
                             <div class="flex flex-col items-center">
-                                <div class="w-14 h-14 border border-amber-500/20 rounded-full flex items-center justify-center mb-3 mt-4">
+                                <div class="w-14 h-14 border border-amber-100 rounded-full flex items-center justify-center mb-3 mt-4 bg-amber-50/50">
                                     <i data-lucide="shield-check" class="w-7 h-7 text-amber-500/40"></i>
                                 </div>
-                                <p class="text-[9px] font-bold text-slate-600 uppercase tracking-widest">In courtesy of LHA</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">In courtesy of LHA</p>
                             </div>
                             <div class="text-center">
-                                <p class="text-white text-[14px] font-bold uppercase border-b border-white/10 pb-2 mb-2">{{ p.coordinator_name or 'Program Coordinator' }}</p>
-                                <p class="text-[9px] text-slate-500 uppercase tracking-widest font-black">OJT Program Coordinator</p>
+                                <p class="text-slate-900 text-[14px] font-bold uppercase border-b border-slate-200 pb-2 mb-2">{{ p.coordinator_name or 'Program Coordinator' }}</p>
+                                <p class="text-[9px] text-slate-400 uppercase tracking-widest font-black">OJT Program Coordinator</p>
                             </div>
                         </div>
                         
                         <!-- Issued / ID -->
-                        <div class="flex justify-center gap-12 text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
+                        <div class="flex justify-center gap-12 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
                             <span>Issued: {{ today }}</span>
                             <span>Credential ID: LHA-{{ cert_id }}-OJT</span>
                         </div>
@@ -97,7 +113,7 @@
 
         <!-- ACTION BUTTONS -->
         <div class="no-print mt-12 flex flex-wrap justify-center gap-6 pb-20">
-            <button onclick="downloadCertImage()" class="px-10 py-5 bg-amber-600 rounded-2xl text-[12px] font-black uppercase tracking-widest text-white shadow-2xl shadow-amber-900/40 hover:bg-amber-500 transition-all flex items-center gap-4">
+            <button onclick="downloadCertImage()" class="px-10 py-5 bg-slate-900 rounded-2xl text-[12px] font-black uppercase tracking-widest text-white shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center gap-4">
                 <i data-lucide="download" class="w-5 h-5"></i> Download High-Res PNG
             </button>
         </div>
@@ -140,7 +156,7 @@
         body, html {
             margin: 0 !important;
             padding: 0 !important;
-            background: #020617 !important;
+            background: #ffffff !important;
             -webkit-print-color-adjust: exact;
         }
 
@@ -154,7 +170,7 @@
             height: 100% !important;
             padding: 0 !important;
             margin: 0 !important;
-            background: #020617 !important;
+            background: #ffffff !important;
         }
 
         .cert-scale-wrapper {
@@ -176,42 +192,34 @@
         }
 
         #certificate-card {
-            border-width: 15px !important; /* Slightly smaller for print bleed */
+            border-width: 15px !important;
         }
     }
     
     .no-scrollbar::-webkit-scrollbar { display: none; }
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
     let confettiActive = false;
 
     function downloadCertImage() {
         const target = document.getElementById('printable-area');
-        
-        // Temporarily reset scaling for high-quality capture
         const originalStyle = target.style.cssText;
         target.style.transform = 'none';
         target.style.margin = '0';
 
         html2canvas(target, {
-            backgroundColor: '#020617',
-            scale: 3, // High Resolution
+            backgroundColor: '#ffffff',
+            scale: 3, 
             useCORS: true,
             allowTaint: false,
             logging: false,
             width: 1122,
-            height: 793,
-            onclone: (clonedDoc) => {
-                // Ensure the cloned element for capture is visible and properly sized
-                const clonedTarget = clonedDoc.getElementById('printable-area');
-                clonedTarget.style.transform = 'none';
-            }
+            height: 793
         }).then(canvas => {
             target.style.cssText = originalStyle;
             const link = document.createElement('a');
-            link.download = `Certificate_${new Date().getTime()}.png`;
+            link.download = `Certificate_LHA_${new Date().getTime()}.png`;
             link.href = canvas.toDataURL("image/png", 1.0);
             link.click();
         });
@@ -230,7 +238,7 @@
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
                 size: Math.random() * 4 + 2,
-                color: ['#f59e0b', '#78350f', '#ffffff'][Math.floor(Math.random() * 3)],
+                color: ['#f59e0b', '#d97706', '#fbbf24'],
                 speed: Math.random() * 1 + 0.5,
                 osc: Math.random() * 2
             });
@@ -243,7 +251,7 @@
                 p.x += Math.sin(p.y / 40) * p.osc;
                 if (p.y > canvas.height) p.y = -10;
                 ctx.fillStyle = p.color;
-                ctx.globalAlpha = 0.3;
+                ctx.globalAlpha = 0.4;
                 ctx.fillRect(p.x, p.y, p.size, p.size);
             });
             requestAnimationFrame(draw);

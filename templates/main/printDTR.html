@@ -3,130 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DTR_LONG_FORMAT_{{ user.username }}</title>
+    <title>DTR_LONG_{{ user.username }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         
-        body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
-
-        @media print {
-            @page { 
-                size: 8.5in 13in; /* Philippine Long Bond Paper */
-                margin: 0.3in; 
-            }
-            .no-print { display: none !important; }
-            body { background: white !important; padding: 0 !important; }
-            .print-container { border: none !important; box-shadow: none !important; width: 100% !important; max-width: 100% !important; }
-            tr { page-break-inside: avoid; }
-            .dtr-table th { background-color: #f1f5f9 !important; border: 1px solid #000 !important; }
-            .dtr-table td { border: 1px solid #000 !important; }
-            .highlight-10h { background-color: #fff9eb !important; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-print-color-adjust: exact; 
+            margin: 0; 
+            padding: 0;
+            background-color: #f1f5f9;
         }
 
-        .dtr-table th { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.025em; }
-        .dtr-table td { font-size: 10px; padding: 3px 2px; }
-        .highlight-10h { border-left: 3px solid #f59e0b; background-color: #fffbeb; }
+        /* PRINT SETTINGS */
+        @media print {
+            @page { 
+                size: 8.5in 13in; 
+                margin: 0.3in 0.4in 0.3in 0.4in;
+            }
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .print-container { 
+                box-shadow: none !important; 
+                border: none !important; 
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+
+            .page-footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                display: flex !important;
+                justify-content: space-between;
+                font-size: 10px;
+                color: #64748b;
+                padding: 0 10px 10px 10px;
+            }
+        }
+
+        .page-footer { display: none; }
+
+        .dtr-table th { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 6px 4px; border: 1px solid #000; }
+        .dtr-table td { font-size: 11px; padding: 5px 4px; border: 1px solid #000; line-height: 1.2; font-weight: 600; }
+        .signature-line { border-top: 2px solid black; width: 80%; margin: 0 auto; padding-top: 4px; }
     </style>
 </head>
-<body class="bg-slate-200 p-2 md:p-6">
+<body class="p-4 md:p-8">
 
-    <div class="print-container max-w-[8.5in] mx-auto bg-white p-6 shadow-xl border border-slate-300">
+    {% set hide_val = request.args.get('hide_supervisor') %}
+
+    <div class="print-container max-w-[8.5in] mx-auto bg-white p-10 shadow-2xl border border-slate-200">
         
-        <!-- COMPACT HEADER -->
-        <div class="flex justify-between items-start border-b-2 border-slate-900 pb-3 mb-4">
-            <div class="space-y-0.5">
-                <h1 class="text-xl font-800 tracking-tighter uppercase leading-none">Daily Time Record</h1>
-                <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Official Log &bull; CS Form No. 48</p>
-                
-                <div class="grid grid-cols-2 gap-x-6 pt-2">
-                    <p class="text-[9px]"><span class="font-bold text-slate-400 uppercase">Name:</span> <span class="font-800 uppercase">{{ p.full_name if p.full_name else user.username }}</span></p>
-                    <p class="text-[9px]"><span class="font-bold text-slate-400 uppercase">Agency:</span> <span class="font-800 uppercase">{{ p.hte_name or 'HTE Agency' }}</span></p>
-                    <p class="text-[9px]"><span class="font-bold text-slate-400 uppercase">Course:</span> <span class="font-800 uppercase">{{ p.course or 'OJT Intern' }}</span></p>
-                    <p class="text-[9px]"><span class="font-bold text-slate-400 uppercase">Dept:</span> <span class="font-800 uppercase">{{ p.dept_assigned or 'N/A' }}</span></p>
+        <!-- HEADER -->
+        <div class="header-section mb-6">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h1 class="text-[38px] font-800 tracking-tighter text-[#1e293b] leading-none uppercase">Daily Time Record</h1>
+                    <div class="mt-2 flex items-center gap-3">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CS Form No. 48</p>
+                        <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+                        <p class="text-[11px] font-bold text-indigo-600/80 uppercase tracking-widest italic">LHA OJT Portal</p>
+                    </div>
+                </div>
+                <!-- Total Hours Box -->
+                <div class="bg-[#1e293b] text-white px-7 py-4 rounded-2xl text-center min-w-[130px] top-12">
+                    <p class="text-[10px] font-bold uppercase opacity-60 tracking-tight">Total Hours</p>
+                    <p class="text-4xl font-700 leading-none mt-1">{{ total_hrs }}</p>
+                </div>
+            </div>
+
+            <div class="mt-10 mb-6 border-l-4 border-slate-200 pl-4">
+                <span class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.2em] mb-1">
+                    Employee Profile
+                </span>
+                <h2 class="text-3xl font-black text-slate-800 leading-none tracking-tight">
+                    {{ p.full_name if p.full_name else user.username }}
+                </h2>
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-bold uppercase tracking-wide">
+                        {{ p.course or 'Intern' }}
+                    </span>
+                    <span class="text-slate-300">/</span>
+                    <span class="text-[12px] font-bold text-slate-500 uppercase tracking-tight">
+                        {{ p.hte_name or 'N/A' }}
+                    </span>
                 </div>
             </div>
             
-            <div class="bg-slate-900 text-white p-2 rounded-lg text-center min-w-[100px]">
-                <p class="text-[7px] font-black uppercase tracking-tighter opacity-70">Accumulated</p>
-                <p class="text-lg font-900 leading-none">{{ total_hrs }}</p>
-                <p class="text-[7px] font-bold uppercase">Hours</p>
-            </div>
+            <!-- Thick Divider -->
+            <div class="border-b-[3px] border-[#0f172a] w-full mb-10 mt-4"></div>
         </div>
 
-        <!-- SQUISHED TABLE -->
+        <!-- MAIN TABLE -->
         <table class="w-full text-center border-collapse dtr-table">
             <thead>
-                <tr class="bg-slate-100 divide-x divide-slate-300">
-                    <th rowspan="2" class="p-1 w-16">Date</th>
-                    <th rowspan="2" class="p-1 w-10">Day</th>
-                    <th colspan="2" class="p-0.5 border-b border-slate-300">Morning Shift</th>
-                    <th colspan="2" class="p-0.5 border-b border-slate-300">Afternoon Shift</th>
-                    <th rowspan="2" class="p-1 w-12 bg-indigo-50 text-indigo-700">Daily</th>
-                    <th rowspan="2" class="p-1 w-16">Running Total</th>
+                <tr class="bg-slate-50">
+                    <th rowspan="2" class="w-20">Date</th>
+                    <th rowspan="2" class="w-16">Day</th>
+                    <th colspan="2">Morning</th>
+                    <th colspan="2">Afternoon</th>
+                    <th rowspan="2" class="w-20 bg-slate-100">Daily</th>
                 </tr>
-                <tr class="bg-slate-50 divide-x divide-slate-300 border-b border-slate-300">
-                    <th class="p-0.5 text-[7px] text-slate-400">In</th>
-                    <th class="p-0.5 text-[7px] text-slate-400">Out</th>
-                    <th class="p-0.5 text-[7px] text-slate-400">In</th>
-                    <th class="p-0.5 text-[7px] text-slate-400">Out</th>
+                <tr class="bg-slate-50">
+                    <th>In</th>
+                    <th>Out</th>
+                    <th>In</th>
+                    <th>Out</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200">
+            <tbody>
                 {% for log in logs %}
-                <tr class="divide-x divide-slate-100 hover:bg-slate-50 {% if log.is_10h %}highlight-10h{% endif %}">
-                    <td class="font-mono font-bold text-[9px]">{{ log.date }}</td>
-                    <td class="text-[8px] font-bold uppercase text-slate-400">{{ log.day[:3] }}</td>
-                    <td class="text-slate-600">{{ log.am_in }}</td>
-                    <td class="text-slate-600">{{ log.am_out }}</td>
-                    <td class="text-slate-600">{{ log.pm_in }}</td>
-                    <td class="text-slate-600">{{ log.pm_out }}</td>
-                    <td class="font-bold text-indigo-600 bg-indigo-50/20">{{ log.hours }}</td>
-                    <td class="font-mono text-[9px] text-slate-400">{{ log.cumulative }}</td>
+                <tr>
+                    <td class="font-bold text-slate-800">{{ log.date }}</td>
+                    <td class="text-[10px] font-bold text-green-500 uppercase">{{ log.day[:3] }}</td>
+                    <td>{{ log.am_in or '-' }}</td>
+                    <td>{{ log.am_out or '-' }}</td>
+                    <td>{{ log.pm_in or '-' }}</td>
+                    <td>{{ log.pm_out or '-' }}</td>
+                    <td class="font-black text-indigo-600">{{ log.hours }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <!-- COMPACT SIGNATURES -->
-        <div class="mt-6">
-            <p class="text-[8px] italic text-slate-500 text-center mb-6">
+        <!-- SIGNATURE SECTION -->
+        <div class="signature-section mt-12">
+            <p class="text-sm italic text-slate-500 text-center mb-16 px-10">
                 I certify on my honor that the above is a true and correct report of the hours rendered.
             </p>
             
-            <div class="grid grid-cols-2 gap-12 px-6">
+            <div class="grid {% if hide_val == 'true' %}grid-cols-1 max-w-md mx-auto{% else %}grid-cols-2 gap-20{% endif %}">
                 <div class="text-center">
-                    <p class="text-[10px] font-bold border-b border-slate-900 pb-1 uppercase">
-                        {{ p.full_name if p.full_name else user.username }}
-                    </p>
-                    <p class="text-[7px] font-black text-slate-400 uppercase mt-1">Trainee</p>
+                    <div class="signature-line"></div>
+                    <p class="text-base font-900 uppercase mt-1">{{ p.full_name if p.full_name else user.username }}</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Employee / Trainee</p>
                 </div>
+                
+                {% if hide_val != 'true' %}
                 <div class="text-center">
-                    <p class="text-[10px] font-bold border-b border-slate-900 pb-1 uppercase">
-                        {{ p.supervisor or 'N/A' }}
-                    </p>
-                    <p class="text-[7px] font-black text-slate-400 uppercase mt-1">Supervisor / LGU Official</p>
+                    <div class="signature-line"></div>
+                    <p class="text-base font-900 uppercase mt-1">{{ p.supervisor or 'N/A' }}</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Supervisor / OIC</p>
                 </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- NO-PRINT ACTIONS -->
-        <div class="no-print mt-10 pt-4 border-t flex justify-between items-center">
-            <span class="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                Mode: {{ '10h Compressed' if settings.is_10h_mode else '8h Standard' }}
-            </span>
-            <div class="flex gap-2">
-                <a href="{{ url_for('tracker.index') }}" class="px-4 py-2 text-[9px] font-bold bg-slate-100 rounded-lg uppercase">Cancel</a>
-                <button onclick="window.print()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase shadow-lg shadow-indigo-200">
-                    Print Official DTR (Long Bond)
-                </button>
-            </div>
+        <!-- PRINT CONTROLS (Screen Only) -->
+        <div class="no-print mt-20 p-6 bg-slate-800 text-white rounded-2xl flex justify-between items-center shadow-2xl">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" id="toggleOIC" class="w-6 h-6 rounded border-none text-indigo-500" 
+                       onclick="toggleSupervisorView()" {% if hide_val == 'true' %}checked{% endif %}>
+                <span class="text-sm font-bold uppercase">Hide OIC Signature</span>
+            </label>
+            <button onclick="window.print()" class="px-10 py-4 bg-white text-slate-900 rounded-xl font-900 uppercase tracking-tighter hover:bg-indigo-50 transition-all">
+                Print Official DTR
+            </button>
         </div>
     </div>
 
-    <div class="no-print text-center py-4">
-        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">System Certified &bull; 2026 OJT Log Assembly</p>
-    </div>
-
+    <script>
+        function toggleSupervisorView() {
+            const isChecked = document.getElementById('toggleOIC').checked;
+            const url = new URL(window.location);
+            if (isChecked) url.searchParams.set('hide_supervisor', 'true');
+            else url.searchParams.delete('hide_supervisor');
+            window.location.href = url.href;
+        }
+    </script>
 </body>
 </html>
